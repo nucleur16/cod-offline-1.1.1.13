@@ -1,0 +1,5 @@
+material	$defeatbackdrop
+material	$levelbriefing
+material	compass_map_mp_fav_tropical
+rawfile	mp_fav_tropical_load
+techset	2d

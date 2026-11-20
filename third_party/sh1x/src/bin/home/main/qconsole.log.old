@@ -1,0 +1,2434 @@
+
+Logfile opened on Tue Sep 15 02:37:24 2026
+
+
+Current language: chinese
+Current fs_basepath: d:/cod/codol builds/call of duty online 1.1.1.13
+Current fs_homepath: d:/cod/cod4x_server/bin/home
+Current search path:
+d:/cod/cod4x_server/bin/home/main
+d:/cod/cod4x_server/bin/home/main_shared
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_sound_03.iwd (4 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_sound_02.iwd (1 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_sound_01.iwd (820 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_sound_00.iwd (221 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_05.iwd (30 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_04.iwd (121 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_03.iwd (12 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_02.iwd (25 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_01.iwd (4 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_00.iwd (3246 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_12.iwd (144 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_11.iwd (279 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_10.iwd (124 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_09.iwd (58 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_08.iwd (32 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_07.iwd (266 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_06.iwd (1159 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_05.iwd (1489 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_04.iwd (1224 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_03.iwd (2072 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_02.iwd (2667 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_01.iwd (2938 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_00.iwd (2529 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_07.iwd (144 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_06.iwd (279 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_05.iwd (124 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_04.iwd (58 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_03.iwd (32 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_02.iwd (724 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_01.iwd (5492 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_00.iwd (8128 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_config_00.iwd (1 files)
+d:/cod/codol builds/call of duty online 1.1.1.13/main
+d:/cod/codol builds/call of duty online 1.1.1.13/main_shared
+d:/cod/codol builds/call of duty online 1.1.1.13/players
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_sound_02.iwd (31 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_sound_01.iwd (40 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_sound_00.iwd (7632 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_image_01.iwd (3 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_image_00.iwd (45 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_imagestripped_01.iwd (3 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_imagestripped_00.iwd (45 files)
+    localized assets iwd file for chinese
+
+File Handles:
+handle 1: qconsole.log
+----------------------
+42246 files in iwd files
+couldn't exec default_mp.cfg
+dedicated is write protected.
+fs_basepath is write protected.
+fs_homepath is write protected.
+net_port will be changed upon restarting.
+-------- Plugins initialization completed --------
+QUERY LIMIT: Querylimiting is enabled
+^1Error: steam_api.dll not found or it was not possible to load. Error is: The specified module could not be found.
+. Steam is not going to work.
+^2Couldn't open nvconfig_v2.dat for reading
+begin $init
+end $init 1 ms
+CoDOL native startup archives mounted: 9 (first: d:/cod/codol builds/call of duty online 1.1.1.13/client_shipRetail/chinese/code_post_gfx_default_mp.ff)
+--- Common Initialization Complete ---
+Hunk available: 10, Hunk total: 10
+^5Hitch warning: 1884 msec frame time
+^2Couldn't open nvconfig_v2.dat for reading
+------ Server Initialization ------
+Server: mp_killhouse_sh
+SV_SpawnServer checksum feed: 0x1685478f
+Current language: chinese
+Current fs_basepath: d:/cod/codol builds/call of duty online 1.1.1.13
+Current fs_homepath: d:/cod/cod4x_server/bin/home
+Current search path:
+d:/cod/cod4x_server/bin/home/main
+d:/cod/cod4x_server/bin/home/main_shared
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_sound_03.iwd (4 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_sound_02.iwd (1 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_sound_01.iwd (820 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_sound_00.iwd (221 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_05.iwd (30 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_04.iwd (121 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_03.iwd (12 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_02.iwd (25 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_01.iwd (4 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_model_00.iwd (3246 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_12.iwd (144 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_11.iwd (279 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_10.iwd (124 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_09.iwd (58 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_08.iwd (32 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_07.iwd (266 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_06.iwd (1159 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_05.iwd (1489 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_04.iwd (1224 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_03.iwd (2072 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_02.iwd (2667 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_01.iwd (2938 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_image_00.iwd (2529 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_07.iwd (144 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_06.iwd (279 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_05.iwd (124 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_04.iwd (58 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_03.iwd (32 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_02.iwd (724 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_01.iwd (5492 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_imagestripped_00.iwd (8128 files)
+d:\cod\codol builds\call of duty online 1.1.1.13\main\iw_config_00.iwd (1 files)
+d:/cod/codol builds/call of duty online 1.1.1.13/main
+d:/cod/codol builds/call of duty online 1.1.1.13/main_shared
+d:/cod/codol builds/call of duty online 1.1.1.13/players
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_sound_02.iwd (31 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_sound_01.iwd (40 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_sound_00.iwd (7632 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_image_01.iwd (3 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_image_00.iwd (45 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_imagestripped_01.iwd (3 files)
+    localized assets iwd file for chinese
+d:\cod\codol builds\call of duty online 1.1.1.13\main\localized_chinese_iw_imagestripped_00.iwd (45 files)
+    localized assets iwd file for chinese
+
+File Handles:
+handle 1: qconsole.log
+----------------------
+42246 files in iwd files
+CoDOL native map archives mounted: 6 (mp_killhouse_sh, mp)
+CoDOL inherited configstrings installed: 2053 (mp)
+CoDOL mantle census: brush 2955 mins (340 1054 148) maxs (466 1107 190) contents 0x9000000
+CoDOL mantle census: brush 2966 mins (184 1030 148) maxs (250 1052 200) contents 0x9000000
+CoDOL mantle census: brush 2990 mins (-304 1152 12) maxs (-180 1174 54) contents 0x9000000
+CoDOL mantle census: brush 2998 mins (-75 1057 12) maxs (-23 1125 64) contents 0x9000000
+CoDOL mantle census: 90 of 27672 brushes carry CONTENTS_MANTLE
+CoDOL native collision installed: maps/mp/mp_killhouse_sh.d3dbsp, 4689 leaves, 191/0 dynamic entities, checksum a26a76c3 (all-visible policy)
+CoDOL native common world installed: maps/mp/mp_killhouse_sh.d3dbsp, 30 primary lights
+CoDOL glass: installed 0 pieces for maps/mp/mp_killhouse_sh.d3dbsp
+------- Game Initialization -------
+gamename: Call of Duty Online Closed Alpha Server
+gamedate: Feb 12 2009
+^2----------------------
+^2Game: G_SetupWeaponDef
+CoDOL native weapon lookup: none
+CoDOL native weapon lookup: defaultweapon_mp
+CoDOL native weapon lookup: defaultweapon_mp
+^2----------------------
+fs_ignoreLocalized is cheat protected.
+fs_ignoreLocalized is cheat protected.
+^2CoDOL lowering: codescripts/delete.gsc (85 bytes)
+^2CoDOL lowering: codescripts/struct.gsc (142 bytes)
+^2CoDOL lowering: maps/mp/gametypes/war.gsc (5540 bytes)
+^2CoDOL lowering: maps/mp/_utility.gsc (58654 bytes)
+^2CoDOL lowering: common_scripts/utility.gsc (87056 bytes)
+^2CoDOL lowering: common_scripts/_createfx.gsc (42494 bytes)
+^2CoDOL lowering: common_scripts/_fx.gsc (13421 bytes)
+^2CoDOL lowering: common_scripts/_createfxmenu.gsc (13284 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_hud_util.gsc (16060 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_persistence.gsc (7252 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_class.gsc (45946 bytes)
+^2CoDOL lowering: maps/mp/perks/_perks.gsc (14255 bytes)
+^2CoDOL lowering: maps/mp/perks/_perkfunctions.gsc (24886 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_tweakables.gsc (9335 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_weapons.gsc (66943 bytes)
+^2CoDOL lowering: maps/mp/equipment/_scrambler.gsc (5751 bytes)
+^2CoDOL lowering: maps/mp/equipment/_pickup.gsc (2677 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_damagefeedback.gsc (2201 bytes)
+^2CoDOL lowering: maps/mp/equipment/_bouncingbetty.gsc (7843 bytes)
+^2CoDOL lowering: maps/mp/_empgrenade.gsc (3691 bytes)
+^2CoDOL lowering: maps/mp/equipment/_tabun.gsc (10585 bytes)
+^2CoDOL lowering: maps/mp/_flashgrenades.gsc (3831 bytes)
+^2CoDOL lowering: maps/mp/_entityheadicons.gsc (6597 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_teams.gsc (26362 bytes)
+^2CoDOL lowering: mptype/mptype_ally_ghillie_desert.gsc (183 bytes)
+^2CoDOL lowering: character/mp_character_ally_ghillie_desert.gsc (468 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_ghillie_desert.gsc (179 bytes)
+^2CoDOL lowering: character/mp_character_op_ghillie_desert.gsc (447 bytes)
+^2CoDOL lowering: mptype/mptype_ally_ghillie_arctic.gsc (183 bytes)
+^2CoDOL lowering: character/mp_character_ally_ghillie_arctic.gsc (468 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_ghillie_arctic.gsc (179 bytes)
+^2CoDOL lowering: character/mp_character_op_ghillie_arctic.gsc (450 bytes)
+^2CoDOL lowering: mptype/mptype_ally_ghillie_urban.gsc (181 bytes)
+^2CoDOL lowering: character/mp_character_ally_ghillie_urban.gsc (456 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_ghillie_urban.gsc (177 bytes)
+^2CoDOL lowering: character/mp_character_op_ghillie_urban.gsc (443 bytes)
+^2CoDOL lowering: mptype/mptype_ally_ghillie_forest.gsc (183 bytes)
+^2CoDOL lowering: character/mp_character_ally_ghillie_forest.gsc (468 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_ghillie_forest.gsc (179 bytes)
+^2CoDOL lowering: character/mp_character_op_ghillie_forest.gsc (450 bytes)
+^2CoDOL lowering: mptype/mptype_seal_udt_sniper.gsc (175 bytes)
+^2CoDOL lowering: character/mp_character_seal_udt_sniper.gsc (415 bytes)
+^2CoDOL lowering: mptype/mptype_seal_udt_lmg.gsc (169 bytes)
+^2CoDOL lowering: character/mp_character_seal_udt_lmg.gsc (434 bytes)
+^2CoDOL lowering: xmodelalias/alias_seal_udt_heads.gsc (175 bytes)
+^2CoDOL lowering: codescripts/character.gsc (5707 bytes)
+^2CoDOL lowering: mptype/mptype_seal_udt_assault.gsc (181 bytes)
+^2CoDOL lowering: character/mp_character_seal_udt_assault_a.gsc (446 bytes)
+^2CoDOL lowering: mptype/mptype_seal_udt_shotgun.gsc (181 bytes)
+^2CoDOL lowering: character/mp_character_seal_udt_assault_b.gsc (446 bytes)
+^2CoDOL lowering: mptype/mptype_seal_udt_smg.gsc (169 bytes)
+^2CoDOL lowering: character/mp_character_seal_udt_smg.gsc (434 bytes)
+^2CoDOL lowering: mptype/mptype_seal_udt_riot.gsc (161 bytes)
+^2CoDOL lowering: character/mp_character_udt_riot.gsc (345 bytes)
+^2CoDOL lowering: mptype/mptype_us_army_sniper.gsc (173 bytes)
+^2CoDOL lowering: character/mp_character_us_army_sniper.gsc (416 bytes)
+^2CoDOL lowering: mptype/mptype_us_army_lmg.gsc (484 bytes)
+^2CoDOL lowering: character/mp_character_us_army_lmg.gsc (441 bytes)
+^2CoDOL lowering: xmodelalias/alias_us_army_heads.gsc (197 bytes)
+^2CoDOL lowering: character/mp_character_us_army_lmg_b.gsc (445 bytes)
+^2CoDOL lowering: character/mp_character_us_army_lmg_c.gsc (445 bytes)
+^2CoDOL lowering: mptype/mptype_us_army_assault.gsc (512 bytes)
+^2CoDOL lowering: character/mp_character_us_army_assault_a.gsc (453 bytes)
+^2CoDOL lowering: character/mp_character_us_army_assault_b.gsc (453 bytes)
+^2CoDOL lowering: character/mp_character_us_army_assault_c.gsc (453 bytes)
+^2CoDOL lowering: mptype/mptype_us_army_shotgun.gsc (508 bytes)
+^2CoDOL lowering: character/mp_character_us_army_shotgun.gsc (449 bytes)
+^2CoDOL lowering: character/mp_character_us_army_shotgun_b.gsc (453 bytes)
+^2CoDOL lowering: character/mp_character_us_army_shotgun_c.gsc (453 bytes)
+^2CoDOL lowering: mptype/mptype_us_army_smg.gsc (484 bytes)
+^2CoDOL lowering: character/mp_character_us_army_smg.gsc (441 bytes)
+^2CoDOL lowering: character/mp_character_us_army_smg_b.gsc (445 bytes)
+^2CoDOL lowering: character/mp_character_us_army_smg_c.gsc (445 bytes)
+^2CoDOL lowering: mptype/mptype_us_army_riot.gsc (169 bytes)
+^2CoDOL lowering: character/mp_character_us_army_riot.gsc (440 bytes)
+^2CoDOL lowering: xmodelalias/alias_us_army_riot.gsc (94 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_comp_assault.gsc (183 bytes)
+^2CoDOL lowering: character/mp_character_composite_assault_a.gsc (474 bytes)
+^2CoDOL lowering: xmodelalias/alias_opforce_arab_heads.gsc (226 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_comp_lmg.gsc (171 bytes)
+^2CoDOL lowering: character/mp_character_composite_lmg.gsc (466 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_comp_shotgun.gsc (179 bytes)
+^2CoDOL lowering: character/mp_character_composite_shotgun.gsc (474 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_comp_smg.gsc (171 bytes)
+^2CoDOL lowering: character/mp_character_composite_smg.gsc (466 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_comp_sniper.gsc (173 bytes)
+^2CoDOL lowering: character/mp_character_op_arab_sniper.gsc (397 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_comp_riot.gsc (169 bytes)
+^2CoDOL lowering: character/mp_character_op_arab_riot.gsc (373 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_arctic_assault.gsc (554 bytes)
+^2CoDOL lowering: character/mp_character_opforce_arctic_assault_a.gsc (501 bytes)
+^2CoDOL lowering: xmodelalias/alias_opforce_arctic_heads.gsc (199 bytes)
+^2CoDOL lowering: character/mp_character_opforce_arctic_assault_b.gsc (501 bytes)
+^2CoDOL lowering: character/mp_character_opforce_arctic_assault_c.gsc (501 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_arctic_lmg.gsc (526 bytes)
+^2CoDOL lowering: character/mp_character_opforce_arctic_lmg.gsc (489 bytes)
+^2CoDOL lowering: character/mp_character_opforce_arctic_lmg_b.gsc (493 bytes)
+^2CoDOL lowering: character/mp_character_opforce_arctic_lmg_c.gsc (493 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_arctic_shotgun.gsc (550 bytes)
+^2CoDOL lowering: character/mp_character_opforce_arctic_shotgun.gsc (497 bytes)
+^2CoDOL lowering: character/mp_character_opforce_arctic_shotgun_b.gsc (501 bytes)
+^2CoDOL lowering: character/mp_character_opforce_arctic_shotgun_c.gsc (501 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_arctic_smg.gsc (526 bytes)
+^2CoDOL lowering: character/mp_character_opforce_arctic_smg.gsc (489 bytes)
+^2CoDOL lowering: character/mp_character_opforce_arctic_smg_b.gsc (493 bytes)
+^2CoDOL lowering: character/mp_character_opforce_arctic_smg_c.gsc (493 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_arctic_sniper.gsc (177 bytes)
+^2CoDOL lowering: character/mp_character_op_arctic_sniper.gsc (414 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_arctic_riot.gsc (173 bytes)
+^2CoDOL lowering: character/mp_character_op_arctic_riot.gsc (400 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_airborne_assault.gsc (518 bytes)
+^2CoDOL lowering: character/mp_character_airborne_assault_a.gsc (475 bytes)
+^2CoDOL lowering: xmodelalias/alias_airborne_heads.gsc (202 bytes)
+^2CoDOL lowering: character/mp_character_airborne_assault_b.gsc (475 bytes)
+^2CoDOL lowering: character/mp_character_airborne_assault_c.gsc (475 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_airborne_lmg.gsc (490 bytes)
+^2CoDOL lowering: character/mp_character_airborne_lmg.gsc (463 bytes)
+^2CoDOL lowering: character/mp_character_airborne_lmg_b.gsc (467 bytes)
+^2CoDOL lowering: character/mp_character_airborne_lmg_c.gsc (467 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_airborne_shotgun.gsc (514 bytes)
+^2CoDOL lowering: character/mp_character_airborne_shotgun.gsc (471 bytes)
+^2CoDOL lowering: character/mp_character_airborne_shotgun_b.gsc (475 bytes)
+^2CoDOL lowering: character/mp_character_airborne_shotgun_c.gsc (475 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_airborne_smg.gsc (490 bytes)
+^2CoDOL lowering: character/mp_character_airborne_smg.gsc (463 bytes)
+^2CoDOL lowering: character/mp_character_airborne_smg_b.gsc (467 bytes)
+^2CoDOL lowering: character/mp_character_airborne_smg_c.gsc (467 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_airborne_sniper.gsc (181 bytes)
+^2CoDOL lowering: character/mp_character_op_airborne_sniper.gsc (428 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_airborne_riot.gsc (177 bytes)
+^2CoDOL lowering: character/mp_character_op_airborne_riot.gsc (411 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_militia_assault.gsc (677 bytes)
+^2CoDOL lowering: character/mp_character_militia_assault_aa_blk.gsc (501 bytes)
+^2CoDOL lowering: xmodelalias/alias_opforce_militia_heads_blk.gsc (195 bytes)
+^2CoDOL lowering: character/mp_character_militia_assault_aa_wht.gsc (501 bytes)
+^2CoDOL lowering: xmodelalias/alias_opforce_militia_heads_wht.gsc (97 bytes)
+^2CoDOL lowering: character/mp_character_militia_assault_ab_blk.gsc (501 bytes)
+^2CoDOL lowering: character/mp_character_militia_assault_ac_blk.gsc (501 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_militia_lmg.gsc (518 bytes)
+^2CoDOL lowering: character/mp_character_militia_lmg_aa_blk.gsc (493 bytes)
+^2CoDOL lowering: character/mp_character_militia_lmg_ab_blk.gsc (493 bytes)
+^2CoDOL lowering: character/mp_character_militia_lmg_ac_blk.gsc (493 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_militia_shotgun.gsc (407 bytes)
+^2CoDOL lowering: character/mp_character_militia_shotgun_aa_blk.gsc (493 bytes)
+^2CoDOL lowering: character/mp_character_militia_shotgun_aa_wht.gsc (493 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_militia_smg.gsc (645 bytes)
+^2CoDOL lowering: character/mp_character_militia_smg_aa_blk.gsc (493 bytes)
+^2CoDOL lowering: character/mp_character_militia_smg_aa_wht.gsc (493 bytes)
+^2CoDOL lowering: character/mp_character_militia_smg_ab_blk.gsc (493 bytes)
+^2CoDOL lowering: character/mp_character_militia_smg_ac_blk.gsc (493 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_militia_sniper.gsc (179 bytes)
+^2CoDOL lowering: character/mp_character_op_militia_sniper.gsc (402 bytes)
+^2CoDOL lowering: mptype/mptype_opforce_militia_riot.gsc (175 bytes)
+^2CoDOL lowering: character/mp_character_op_militia_riot.gsc (394 bytes)
+^2CoDOL lowering: mptype/mptype_socom_assault.gsc (800 bytes)
+^2CoDOL lowering: character/mp_character_seal_socom_assault_a.gsc (482 bytes)
+^2CoDOL lowering: xmodelalias/alias_seal_soccom_heads_mp.gsc (159 bytes)
+^2CoDOL lowering: character/mp_character_seal_socom_assault_b.gsc (482 bytes)
+^2CoDOL lowering: character/mp_character_seal_socom_assault_b_blk.gsc (502 bytes)
+^2CoDOL lowering: xmodelalias/alias_seal_soccom_heads_mp_blk.gsc (98 bytes)
+^2CoDOL lowering: character/mp_character_seal_socom_assault_c.gsc (482 bytes)
+^2CoDOL lowering: character/mp_character_seal_socom_assault_d.gsc (482 bytes)
+^2CoDOL lowering: mptype/mptype_socom_lmg.gsc (939 bytes)
+^2CoDOL lowering: character/mp_character_seal_socom_assault_c_blk.gsc (502 bytes)
+^2CoDOL lowering: mptype/mptype_socom_shotgun.gsc (800 bytes)
+^2CoDOL lowering: mptype/mptype_socom_smg.gsc (939 bytes)
+^2CoDOL lowering: mptype/mptype_socom_sniper.gsc (939 bytes)
+^2CoDOL lowering: mptype/mptype_tf141_desert_assault.gsc (411 bytes)
+^2CoDOL lowering: character/mp_character_tf_141_desert_assault_a.gsc (475 bytes)
+^2CoDOL lowering: xmodelalias/alias_tf141_heads_desert.gsc (191 bytes)
+^2CoDOL lowering: character/mp_character_tf_141_desert_assault_b.gsc (475 bytes)
+^2CoDOL lowering: mptype/mptype_tf141_desert_lmg.gsc (179 bytes)
+^2CoDOL lowering: character/mp_character_tf_141_desert_lmg.gsc (463 bytes)
+^2CoDOL lowering: mptype/mptype_tf141_desert_smg.gsc (179 bytes)
+^2CoDOL lowering: character/mp_character_tf_141_desert_smg.gsc (463 bytes)
+^2CoDOL lowering: mptype/mptype_tf141_desert_shotgun.gsc (187 bytes)
+^2CoDOL lowering: character/mp_character_tf_141_desert_shotgun.gsc (471 bytes)
+^2CoDOL lowering: mptype/mptype_tf141_desert_sniper.gsc (183 bytes)
+^2CoDOL lowering: character/mp_character_tf141_desert_sniper.gsc (458 bytes)
+^2CoDOL lowering: mptype/mptype_tf141_desert_riot.gsc (179 bytes)
+^2CoDOL lowering: character/mp_character_tf141_desert_riot.gsc (399 bytes)
+^2CoDOL lowering: mptype/mptype_tf141_forest_assault.gsc (411 bytes)
+^2CoDOL lowering: character/mp_character_tf_141_forest_assault_a.gsc (475 bytes)
+^2CoDOL lowering: xmodelalias/alias_tf141_heads_forest.gsc (191 bytes)
+^2CoDOL lowering: character/mp_character_tf_141_forest_assault_b.gsc (475 bytes)
+^2CoDOL lowering: mptype/mptype_tf141_forest_lmg.gsc (179 bytes)
+^2CoDOL lowering: character/mp_character_tf_141_forest_lmg.gsc (463 bytes)
+^2CoDOL lowering: mptype/mptype_tf141_forest_smg.gsc (179 bytes)
+^2CoDOL lowering: character/mp_character_tf_141_forest_smg.gsc (463 bytes)
+^2CoDOL lowering: mptype/mptype_tf141_forest_shotgun.gsc (187 bytes)
+^2CoDOL lowering: character/mp_character_tf_141_forest_shotgun.gsc (471 bytes)
+^2CoDOL lowering: mptype/mptype_tf141_forest_sniper.gsc (183 bytes)
+^2CoDOL lowering: character/mp_character_tf141_forest_sniper.gsc (458 bytes)
+^2CoDOL lowering: mptype/mptype_tf141_forest_riot.gsc (179 bytes)
+^2CoDOL lowering: character/mp_character_tf141_forest_riot.gsc (399 bytes)
+^2CoDOL lowering: mptype/mptype_tf141_arctic_assault.gsc (411 bytes)
+^2CoDOL lowering: character/mp_character_tf_141_arctic_assault_a.gsc (461 bytes)
+^2CoDOL lowering: xmodelalias/alias_tf141_heads_arctic.gsc (191 bytes)
+^2CoDOL lowering: character/mp_character_tf_141_arctic_assault_b.gsc (461 bytes)
+^2CoDOL lowering: mptype/mptype_tf141_arctic_lmg.gsc (179 bytes)
+^2CoDOL lowering: character/mp_character_tf_141_arctic_lmg.gsc (449 bytes)
+^2CoDOL lowering: mptype/mptype_tf141_arctic_smg.gsc (179 bytes)
+^2CoDOL lowering: character/mp_character_tf_141_arctic_smg.gsc (449 bytes)
+^2CoDOL lowering: mptype/mptype_tf141_arctic_shotgun.gsc (187 bytes)
+^2CoDOL lowering: character/mp_character_tf_141_arctic_shotgun.gsc (457 bytes)
+^2CoDOL lowering: mptype/mptype_tf141_arctic_sniper.gsc (183 bytes)
+^2CoDOL lowering: character/mp_character_tf141_arctic_sniper.gsc (458 bytes)
+^2CoDOL lowering: mptype/mptype_tf141_arctic_riot.gsc (179 bytes)
+^2CoDOL lowering: character/mp_character_tf141_arctic_riot.gsc (401 bytes)
+^2CoDOL lowering: maps/mp/_stinger.gsc (7881 bytes)
+^2CoDOL lowering: maps/mp/_javelin.gsc (12126 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_missions.gsc (58965 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_hud_message.gsc (33466 bytes)
+^2CoDOL lowering: maps/mp/killstreaks/_killstreaks.gsc (27984 bytes)
+^2CoDOL lowering: maps/mp/killstreaks/_ac130.gsc (52197 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_spawnlogic.gsc (52860 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_callbacksetup.gsc (6892 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_gamelogic.gsc (58686 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_gamescore.gsc (9160 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_rank.gsc (16418 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_hud.gsc (5364 bytes)
+^2CoDOL lowering: maps/mp/_load.gsc (11441 bytes)
+^2CoDOL lowering: maps/mp/_minefields.gsc (881 bytes)
+^2CoDOL lowering: maps/mp/_radiation.gsc (5280 bytes)
+^2CoDOL lowering: common_scripts/_dynamic_world.gsc (40201 bytes)
+^2CoDOL lowering: maps/mp/_shutter.gsc (4743 bytes)
+^2CoDOL lowering: maps/mp/_destructables.gsc (2141 bytes)
+^2CoDOL lowering: common_scripts/_elevator.gsc (40194 bytes)
+^2CoDOL lowering: common_scripts/_destructible.gsc (6244 bytes)
+^2CoDOL lowering: common_scripts/_pipes.gsc (7413 bytes)
+^2CoDOL lowering: maps/mp/_art.gsc (6819 bytes)
+^2CoDOL lowering: common_scripts/_artcommon.gsc (4874 bytes)
+^2CoDOL lowering: maps/mp/_createfx.gsc (1900 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_playerlogic.gsc (41764 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_spectating.gsc (3188 bytes)
+^2CoDOL lowering: maps/mp/_events.gsc (20471 bytes)
+^2CoDOL lowering: maps/mp/_matchdata.gsc (12874 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_menus.gsc (13626 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_quickmessages.gsc (6382 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_hostmigration.gsc (3443 bytes)
+^2CoDOL lowering: maps/mp/_global_fx.gsc (6556 bytes)
+^2CoDOL lowering: maps/mp/_animatedmodels.gsc (3113 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_serversettings.gsc (2442 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_killcam.gsc (14766 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_shellshock.gsc (2878 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_deathicons.gsc (1476 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_healthoverlay.gsc (4484 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_damage.gsc (70310 bytes)
+^2CoDOL lowering: maps/mp/_skill.gsc (1024 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_battlechatter_mp.gsc (4455 bytes)
+^2CoDOL lowering: maps/mp/_awards.gsc (26713 bytes)
+^2CoDOL lowering: maps/mp/_highlights.gsc (550 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_gameobjects.gsc (47910 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_objpoints.gsc (3034 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_music_and_dialog.gsc (14819 bytes)
+^2CoDOL lowering: maps/mp/_areas.gsc (2458 bytes)
+^2CoDOL lowering: maps/mp/_defcon.gsc (3673 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_codol_bots.gsc (2268 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_friendicons.gsc (2169 bytes)
+^2CoDOL lowering: maps/mp/_scoreboard.gsc (4499 bytes)
+^2CoDOL lowering: maps/mp/killstreaks/_airstrike.gsc (31551 bytes)
+^2CoDOL lowering: maps/mp/killstreaks/_harrier.gsc (27090 bytes)
+^2CoDOL lowering: maps/mp/killstreaks/_remotemissile.gsc (8860 bytes)
+^2CoDOL lowering: maps/mp/killstreaks/_uav.gsc (13918 bytes)
+^2CoDOL lowering: maps/mp/killstreaks/_sr71.gsc (3629 bytes)
+^2CoDOL lowering: maps/mp/killstreaks/_airdrop.gsc (40338 bytes)
+^2CoDOL lowering: maps/mp/killstreaks/_autosentry.gsc (15819 bytes)
+^2CoDOL lowering: maps/mp/killstreaks/_helicopter.gsc (54730 bytes)
+^2CoDOL lowering: maps/mp/killstreaks/_tank.gsc (49626 bytes)
+^2CoDOL lowering: maps/mp/killstreaks/_emp.gsc (7574 bytes)
+^2CoDOL lowering: maps/mp/killstreaks/_nuke.gsc (7857 bytes)
+^2CoDOL lowering: maps/mp/killstreaks/_mortar.gsc (8939 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_playercards.gsc (1724 bytes)
+^2CoDOL lowering: maps/mp/gametypes/_globallogic.gsc (5447 bytes)
+^2Notice: Could not find label 'CodeCallback_ScriptCommand' in script 'maps/mp/gametypes/_callbacksetup' - this part will be disabled
+^2CoDOL lowering: maps/mp/mp_killhouse_sh.gsc (1141 bytes)
+^2CoDOL lowering: maps/mp/mp_killhouse_sh_fx.gsc (584 bytes)
+^2CoDOL lowering: maps/mp/_compass.gsc (2300 bytes)
+^2CoDOL mounted animtree: animtrees/animated_props.atr
+^2CoDOL lowering: animtrees/animated_props.atr (3553 bytes)
+^2CoDOL mounted animtree: animtrees/multiplayer.atr
+^2CoDOL lowering: animtrees/multiplayer.atr (28397 bytes)
+^3Warning: CoDOL weapon 'mp5k_codo_so' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL weapon 'mp5k_codo_so' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL xmodel 'codo_weapon_mp5k_world' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL weapon 'flash_grenade_so' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL weapon 'flash_grenade_so' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL weapon 'flash_grenade_so' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL weapon 'flash_grenade_so' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL weapon 'flash_grenade_so' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL weapon 'flash_grenade_so' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL weapon 'flash_grenade_so' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL weapon 'flash_grenade_so' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL weapon 'usp_so' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL weapon 'usp_so' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL xmodel 'weapon_USP' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL weapon 'ak47_eotech_codo_so' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL weapon 'ak47_eotech_codo_so' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL xmodel 'codo_weapon_ak104_world' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL weapon 'ak47' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL weapon 'ak47' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL weapon 'ak47_thermal' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL weapon 'ak47_thermal' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL weapon 'm4_grunt_reflex_so' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL weapon 'm4_grunt_reflex_so' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL weapon 'usp_so' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL weapon 'usp_so' is not in any mounted zone; using defaultweapon_mp
+^3Warning: CoDOL xmodel 'vehicle_little_bird_bench' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'com_floodlight' is not in any mounted zone; using void (reported once)
+-----------------------------------
+^2getMapCustom thermal -> ''
+^2getMapCustom allieschar -> 'socom_141_desert'
+^2getMapCustom axischar -> 'opforce_composite'
+^2tableLookup miss: mp/ranktable.csv column 0 value '70' return column 1 (71x18)
+^2tableLookup miss: mp/challenges/ChallengeTable_Secret.csv column 0 value 'ch_radiationsickness' return column 1 (18x1)
+^2tableLookup miss: mp/challenges/ChallengeTable_Secret.csv column 0 value 'ch_infected' return column 1 (18x1)
+^2tableLookup miss: mp/challenges/ChallengeTable_Secret.csv column 0 value 'ch_plague' return column 1 (18x1)
+^2tableLookup miss: mp/challenges/ChallengeTable_Secret.csv column 0 value 'ch_renaissance' return column 1 (18x1)
+^2tableLookup miss: mp/challenges/ChallengeTable_Secret.csv column 0 value 'ch_theloner' return column 1 (18x1)
+^2tableLookup miss: mp/challenges/ChallengeTable_Secret.csv column 0 value 'ch_6fears7' return column 1 (18x1)
+^2tableLookup miss: mp/challenges/ChallengeTable_Secret.csv column 0 value 'ch_thenumb' return column 1 (18x1)
+^2tableLookup miss: mp/challenges/ChallengeTable_Secret.csv column 0 value 'ch_martyr' return column 1 (18x1)
+^2tableLookup miss: mp/challenges/ChallengeTable_Secret.csv column 0 value 'ch_livingdead' return column 1 (18x1)
+^2tableLookup miss: mp/challenges/ChallengeTable_Secret.csv column 0 value 'ch_thenumb' return column 1 (18x1)
+^2tableLookup miss: mp/challenges/ChallengeTable_Secret.csv column 0 value 'ch_martyr' return column 1 (18x1)
+^2tableLookup miss: mp/challenges/ChallengeTable_Secret.csv column 0 value 'ch_livingdead' return column 1 (18x1)
+^2tableLookup miss: mp/challenges/ChallengeTable_Secret.csv column 0 value 'ch_sidekick' return column 1 (18x1)
+^2tableLookup miss: mp/challenges/ChallengeTable_Secret.csv column 0 value 'ch_clickclickboom' return column 1 (18x1)
+^2tableLookup miss: mp/challenges/ChallengeTable_Secret.csv column 0 value 'ch_hijacker' return column 1 (18x1)
+^2tableLookup miss: mp/challenges/ChallengeTable_Secret.csv column 0 value 'ch_no' return column 1 (18x1)
+^2tableLookup miss: mp/challenges/ChallengeTable_Secret.csv column 0 value 'ch_prestige' return column 1 (18x1)
+^2tableLookup miss: mp/challenges/ChallengeTable_Secret.csv column 0 value 'ch_avenger' return column 1 (18x1)
+^2tableLookup miss: mp/challenges/riotshield_challenges.csv column 0 value 'ch_shieldvet' return column 1 (6x1)
+^2tableLookup miss: mp/challenges/riotshield_challenges.csv column 0 value 'ch_smasher' return column 1 (6x1)
+^2tableLookup miss: mp/challenges/riotshield_challenges.csv column 0 value 'ch_backsmasher' return column 1 (6x1)
+^2tableLookup miss: mp/challenges/riotshield_challenges.csv column 0 value 'ch_shield_damage' return column 1 (6x1)
+^2tableLookup miss: mp/challenges/riotshield_challenges.csv column 0 value 'ch_shield_bullet' return column 1 (6x1)
+^2tableLookup miss: mp/challenges/riotshield_challenges.csv column 0 value 'ch_shield_explosive' return column 1 (6x1)
+^2CoDOL precached menu slot 26: muteplayer
+^3Warning: CoDOL xmodel 'mp_body_desert_tf141_assault_a' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'head_tf141_desert_a' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'head_tf141_desert_b' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'head_tf141_desert_c' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'head_tf141_desert_d' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'mp_body_desert_tf141_assault_b' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'mp_body_desert_tf141_lmg' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'mp_body_desert_tf141_smg' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'mp_body_desert_tf141_shotgun' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'mp_body_tf141_desert_sniper' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'head_allies_tf141_desert_sniper' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'viewhands_sniper_tf141_desert' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'mp_body_riot_tf141_desert' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'head_riot_tf141_desert' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'mp_body_opforce_arab_assault_a' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'head_opforce_arab_a' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'head_opforce_arab_b' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'head_opforce_arab_c' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'head_opforce_arab_d_hat' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'head_opforce_arab_e' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'viewhands_militia' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'mp_body_opforce_arab_lmg_a' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'mp_body_opforce_arab_shotgun_a' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'mp_body_opforce_arab_smg_a' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'mp_body_op_arab_sniper' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'head_op_arab_sniper' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'viewhands_sniper_op_arab' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'mp_body_riot_op_arab' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'head_riot_op_arab' is not in any mounted zone; using void (reported once)
+^2getMapCustom environment -> 'urban'
+^3Warning: CoDOL xmodel 'mp_body_ally_sniper_ghillie_urban' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'head_allies_sniper_ghillie_urban' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'viewhands_ghillie_urban' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'mp_body_op_sniper_ghillie_urban' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'head_op_sniper_ghillie_urban' is not in any mounted zone; using void (reported once)
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_physics' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambdist1' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambdist2' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto2' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_autodog' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_bulletimpact' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_bulletwhizby' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_explosiveimpact' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_element' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto2d' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_vehicle' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_vehiclelimited' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_menu' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_body' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_body2d' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_reload' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_reload2d' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_item' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_effects1' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_effects2' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_weapon' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_weapon2d' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_nonshock' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_voice' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local2' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local3' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambient' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_hurt' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_player1' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_player2' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_music' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_musicnopause' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_mission' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_announcer' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_shellshock' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_physics' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambdist1' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambdist2' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto2' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_autodog' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_bulletimpact' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_bulletwhizby' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_explosiveimpact' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_element' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto2d' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_vehicle' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_vehiclelimited' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_menu' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_body' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_body2d' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_reload' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_reload2d' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_item' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_effects1' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_effects2' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_weapon' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_weapon2d' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_nonshock' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_voice' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local2' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local3' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambient' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_hurt' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_player1' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_player2' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_music' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_musicnopause' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_mission' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_announcer' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_shellshock' in file 'shock/tabun_gas_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_physics' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambdist1' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambdist2' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto2' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_autodog' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_bulletimpact' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_bulletwhizby' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_explosiveimpact' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_element' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto2d' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_vehicle' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_vehiclelimited' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_menu' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_body' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_body2d' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_reload' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_reload2d' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_item' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_effects1' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_effects2' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_weapon' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_weapon2d' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_nonshock' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_voice' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local2' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local3' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambient' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_hurt' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_player1' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_player2' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_music' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_musicnopause' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_mission' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_announcer' in file 'shock/tabun_gas_nokick_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_shellshock' in file 'shock/tabun_gas_nokick_mp.shock'
+^2tableLookup miss: mp/attachmentTable.csv column 9 value '18' return column 4 (19x19)
+^2tableLookup miss: mp/statstable.csv column 0 value '58' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '95' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '96' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '97' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '98' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '99' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '100' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '101' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '102' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '103' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '104' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '105' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '106' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '107' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '108' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '109' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '110' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '111' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '112' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '113' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '114' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '115' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '116' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '117' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '118' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '119' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '120' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '121' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '122' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '123' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '124' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '125' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '126' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '127' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '128' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '129' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '130' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '131' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '132' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '133' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '134' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '135' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '136' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '137' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '138' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '139' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '140' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '141' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '142' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '143' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '144' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '145' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '146' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '147' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '148' return column 4 (95x27)
+^2tableLookup miss: mp/statstable.csv column 0 value '149' return column 4 (95x27)
+^2precacheItem: weapon 'onemanarmy_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: throwingknife_mp
+CoDOL native weapon lookup: throwingknife_mp
+CoDOL native weapon lookup: concussion_grenade_mp
+CoDOL native weapon lookup: concussion_grenade_mp
+^2concussion_grenade_mp: WEAPON_CONCUSSION_GRENADE
+CoDOL native weapon lookup: smoke_grenade_mp
+CoDOL native weapon lookup: smoke_grenade_mp
+^2smoke_grenade_mp: WEAPON_SMOKEGRENADE
+CoDOL native weapon lookup: flash_grenade_mp
+CoDOL native weapon lookup: flash_grenade_mp
+^2flash_grenade_mp: WEAPON_FLASHGRENADE
+CoDOL native weapon lookup: frag_grenade_mp
+CoDOL native weapon lookup: frag_grenade_mp
+^2frag_grenade_mp: WEAPON_FRAGGRENADE
+CoDOL native weapon lookup: semtex_mp
+CoDOL native weapon lookup: semtex_mp
+^2semtex_mp: WEAPON_FRAGGRENADE
+CoDOL native weapon lookup: airdrop_marker_mp
+CoDOL native weapon lookup: airdrop_marker_mp
+CoDOL native weapon lookup: claymore_mp
+CoDOL native weapon lookup: claymore_mp
+^2claymore_mp: WEAPON_CLAYMORE
+CoDOL native weapon lookup: c4_mp
+CoDOL native weapon lookup: c4_mp
+^2c4_mp: WEAPON_C4
+^2precacheItem: weapon 'aug_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_acog_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_acog_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_eotech_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_eotech_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_fmj_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_fmj_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_grip_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_grip_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_grip_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_grip_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_grip_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_heartbeat_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_heartbeat_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_heartbeat_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_heartbeat_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aug_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: aug_mp
+CoDOL native weapon lookup: aug_mp
+^2precacheItem: weapon 'm240_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_acog_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_acog_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_eotech_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_eotech_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_fmj_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_fmj_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_grip_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_grip_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_grip_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_grip_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_grip_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_heartbeat_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_heartbeat_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_heartbeat_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_heartbeat_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm240_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: m240_mp
+CoDOL native weapon lookup: m240_mp
+^2precacheItem: weapon 'mg4_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_acog_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_acog_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_eotech_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_eotech_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_fmj_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_fmj_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_grip_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_grip_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_grip_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_grip_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_grip_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_heartbeat_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_heartbeat_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_heartbeat_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_heartbeat_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mg4_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: mg4_mp
+CoDOL native weapon lookup: mg4_mp
+^2precacheItem: weapon 'sa80_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_acog_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_acog_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_eotech_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_eotech_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_fmj_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_fmj_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_grip_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_grip_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_grip_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_grip_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_grip_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_heartbeat_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_heartbeat_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_heartbeat_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_heartbeat_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_acog_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'sa80_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_acog_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_acog_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_eotech_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_eotech_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_fmj_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_fmj_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_grip_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_grip_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_grip_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_grip_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_grip_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_heartbeat_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_heartbeat_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_heartbeat_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_heartbeat_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'rpd_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: rpd_mp
+CoDOL native weapon lookup: rpd_mp
+^2precacheItem: weapon 'spas12_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'spas12_eotech_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'spas12_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'spas12_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'spas12_fmj_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'spas12_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'spas12_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'spas12_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'spas12_grip_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'spas12_grip_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'spas12_grip_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'spas12_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'spas12_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'spas12_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'spas12_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'spas12_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'spas12_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'spas12_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'spas12_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'spas12_eotech_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: spas12_mp
+CoDOL native weapon lookup: spas12_mp
+^2precacheItem: weapon 'm1014_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm1014_eotech_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm1014_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm1014_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm1014_fmj_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm1014_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm1014_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm1014_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm1014_grip_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm1014_grip_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm1014_grip_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm1014_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm1014_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm1014_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm1014_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm1014_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm1014_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm1014_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm1014_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm1014_eotech_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: m1014_mp
+CoDOL native weapon lookup: m1014_mp
+^2precacheItem: weapon 'aa12_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aa12_eotech_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aa12_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aa12_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aa12_fmj_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aa12_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aa12_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aa12_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aa12_grip_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aa12_grip_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aa12_grip_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aa12_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aa12_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aa12_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aa12_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aa12_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aa12_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aa12_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aa12_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'aa12_eotech_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: aa12_mp
+CoDOL native weapon lookup: aa12_mp
+^2precacheItem: weapon 'striker_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'striker_eotech_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'striker_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'striker_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'striker_fmj_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'striker_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'striker_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'striker_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'striker_grip_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'striker_grip_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'striker_grip_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'striker_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'striker_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'striker_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'striker_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'striker_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'striker_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'striker_grip_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'striker_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'striker_eotech_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: striker_mp
+CoDOL native weapon lookup: striker_mp
+^2precacheItem: weapon 'model1887_akimbo_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'model1887_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'model1887_akimbo_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: model1887_mp
+CoDOL native weapon lookup: model1887_mp
+^2precacheItem: weapon 'ranger_akimbo_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ranger_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ranger_akimbo_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: ranger_mp
+CoDOL native weapon lookup: ranger_mp
+^2precacheItem: weapon 'cheytac_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'cheytac_acog_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'cheytac_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'cheytac_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'cheytac_fmj_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'cheytac_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'cheytac_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'cheytac_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'cheytac_heartbeat_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'cheytac_heartbeat_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'cheytac_heartbeat_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'cheytac_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'cheytac_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'cheytac_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'cheytac_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'cheytac_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'cheytac_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'cheytac_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'cheytac_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'cheytac_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: cheytac_mp
+CoDOL native weapon lookup: cheytac_mp
+^2precacheItem: weapon 'm21_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm21_acog_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm21_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm21_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm21_fmj_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm21_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm21_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm21_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm21_heartbeat_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm21_heartbeat_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm21_heartbeat_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm21_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm21_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm21_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm21_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm21_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm21_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm21_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm21_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm21_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: m21_mp
+CoDOL native weapon lookup: m21_mp
+^2precacheItem: weapon 'wa2000_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'wa2000_acog_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'wa2000_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'wa2000_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'wa2000_fmj_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'wa2000_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'wa2000_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'wa2000_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'wa2000_heartbeat_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'wa2000_heartbeat_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'wa2000_heartbeat_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'wa2000_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'wa2000_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'wa2000_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'wa2000_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'wa2000_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'wa2000_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'wa2000_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'wa2000_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'wa2000_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: wa2000_mp
+CoDOL native weapon lookup: wa2000_mp
+^2precacheItem: weapon 'barrett_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'barrett_acog_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'barrett_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'barrett_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'barrett_fmj_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'barrett_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'barrett_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'barrett_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'barrett_heartbeat_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'barrett_heartbeat_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'barrett_heartbeat_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'barrett_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'barrett_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'barrett_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'barrett_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'barrett_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'barrett_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'barrett_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'barrett_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'barrett_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: barrett_mp
+CoDOL native weapon lookup: barrett_mp
+CoDOL native weapon lookup: javelin_mp
+CoDOL native weapon lookup: javelin_mp
+CoDOL native weapon lookup: stinger_mp
+CoDOL native weapon lookup: stinger_mp
+CoDOL native weapon lookup: at4_mp
+CoDOL native weapon lookup: at4_mp
+CoDOL native weapon lookup: rpg_mp
+CoDOL native weapon lookup: rpg_mp
+CoDOL native weapon lookup: m79_mp
+CoDOL native weapon lookup: m79_mp
+CoDOL native weapon lookup: gl_mp
+CoDOL native weapon lookup: gl_mp
+^2precacheItem: weapon 'tavor_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_acog_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_acog_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_acog_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_eotech_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_eotech_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_eotech_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_fmj_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_fmj_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_fmj_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_gl_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_gl_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_gl_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_gl_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_gl_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_heartbeat_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_heartbeat_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_heartbeat_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_heartbeat_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_heartbeat_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_reflex_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_shotgun_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_shotgun_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_shotgun_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tavor_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: tavor_mp
+CoDOL native weapon lookup: tavor_mp
+^2precacheItem: weapon 'scar_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_acog_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_acog_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_acog_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_eotech_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_eotech_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_eotech_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_fmj_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_fmj_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_fmj_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_gl_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_gl_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_gl_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_gl_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_gl_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_heartbeat_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_heartbeat_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_heartbeat_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_heartbeat_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_heartbeat_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_reflex_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_shotgun_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_shotgun_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_shotgun_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'scar_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: scar_mp
+CoDOL native weapon lookup: scar_mp
+^2precacheItem: weapon 'fal_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_acog_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_acog_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_acog_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_eotech_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_eotech_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_eotech_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_fmj_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_fmj_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_fmj_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_gl_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_gl_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_gl_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_gl_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_gl_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_heartbeat_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_heartbeat_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_heartbeat_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_heartbeat_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_heartbeat_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_reflex_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_shotgun_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_shotgun_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_shotgun_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fal_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: fal_mp
+CoDOL native weapon lookup: fal_mp
+^2precacheItem: weapon 'famas_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_acog_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_acog_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_acog_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_eotech_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_eotech_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_eotech_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_fmj_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_fmj_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_fmj_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_gl_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_gl_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_gl_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_gl_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_gl_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_heartbeat_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_heartbeat_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_heartbeat_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_heartbeat_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_heartbeat_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_reflex_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_shotgun_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_shotgun_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_shotgun_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'famas_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: famas_mp
+CoDOL native weapon lookup: famas_mp
+^2precacheItem: weapon 'masada_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_acog_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_acog_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_acog_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_eotech_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_eotech_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_eotech_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_fmj_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_fmj_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_fmj_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_gl_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_gl_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_gl_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_gl_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_gl_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_heartbeat_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_heartbeat_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_heartbeat_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_heartbeat_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_heartbeat_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_reflex_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_shotgun_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_shotgun_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_shotgun_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'masada_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: masada_mp
+CoDOL native weapon lookup: masada_mp
+^2precacheItem: weapon 'fn2000_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_acog_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_acog_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_acog_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_eotech_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_eotech_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_eotech_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_fmj_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_fmj_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_fmj_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_gl_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_gl_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_gl_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_gl_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_gl_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_heartbeat_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_heartbeat_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_heartbeat_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_heartbeat_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_heartbeat_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_reflex_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_shotgun_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_shotgun_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_shotgun_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'fn2000_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: fn2000_mp
+CoDOL native weapon lookup: fn2000_mp
+^2precacheItem: weapon 'm4_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_acog_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_acog_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_acog_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_eotech_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_eotech_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_eotech_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_fmj_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_fmj_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_fmj_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_gl_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_gl_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_gl_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_gl_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_gl_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_heartbeat_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_heartbeat_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_heartbeat_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_heartbeat_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_heartbeat_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_reflex_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_shotgun_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_shotgun_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_shotgun_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm4_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: m4_mp
+CoDOL native weapon lookup: m4_mp
+^2precacheItem: weapon 'm16_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_acog_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_acog_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_acog_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_eotech_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_eotech_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_eotech_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_fmj_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_fmj_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_fmj_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_gl_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_gl_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_gl_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_gl_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_gl_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_heartbeat_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_heartbeat_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_heartbeat_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_heartbeat_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_heartbeat_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_reflex_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_shotgun_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_shotgun_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_shotgun_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'm16_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: m16_mp
+CoDOL native weapon lookup: m16_mp
+^2precacheItem: weapon 'ak47_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_acog_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_acog_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_acog_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_eotech_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_eotech_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_eotech_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_fmj_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_fmj_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_fmj_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_gl_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_gl_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_gl_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_gl_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_gl_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_heartbeat_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_heartbeat_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_heartbeat_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_heartbeat_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_heartbeat_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_reflex_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_shotgun_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_shotgun_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_shotgun_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_shotgun_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_heartbeat_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_gl_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ak47_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: ak47_mp
+CoDOL native weapon lookup: ak47_mp
+^2precacheItem: weapon 'ump45_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_acog_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_akimbo_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_akimbo_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_akimbo_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_akimbo_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_eotech_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_fmj_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_reflex_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_rof_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_rof_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_rof_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_akimbo_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'ump45_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: ump45_mp
+CoDOL native weapon lookup: ump45_mp
+^2precacheItem: weapon 'kriss_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_acog_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_akimbo_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_akimbo_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_akimbo_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_akimbo_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_eotech_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_fmj_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_reflex_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_rof_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_rof_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_rof_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_akimbo_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_acog_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'kriss_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_acog_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_akimbo_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_akimbo_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_akimbo_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_akimbo_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_eotech_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_fmj_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_reflex_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_rof_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_rof_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_rof_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_akimbo_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'p90_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: p90_mp
+CoDOL native weapon lookup: p90_mp
+^2precacheItem: weapon 'uzi_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_acog_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_akimbo_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_akimbo_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_akimbo_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_akimbo_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_eotech_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_fmj_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_reflex_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_rof_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_rof_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_rof_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_akimbo_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'uzi_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: uzi_mp
+CoDOL native weapon lookup: uzi_mp
+^2precacheItem: weapon 'mp5k_acog_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_acog_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_acog_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_acog_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_akimbo_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_akimbo_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_akimbo_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_akimbo_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_eotech_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_fmj_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_fmj_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_reflex_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_rof_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_rof_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_rof_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_silencer_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_thermal_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_thermal_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_rof_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_akimbo_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'mp5k_acog_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: mp5k_mp
+CoDOL native weapon lookup: mp5k_mp
+^2precacheItem: weapon 'tmp_akimbo_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tmp_akimbo_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tmp_akimbo_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tmp_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tmp_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tmp_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tmp_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tmp_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tmp_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tmp_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tmp_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tmp_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tmp_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tmp_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tmp_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tmp_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tmp_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'tmp_akimbo_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: tmp_mp
+CoDOL native weapon lookup: tmp_mp
+^2precacheItem: weapon 'pp2000_akimbo_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'pp2000_akimbo_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'pp2000_akimbo_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'pp2000_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'pp2000_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'pp2000_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'pp2000_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'pp2000_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'pp2000_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'pp2000_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'pp2000_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'pp2000_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'pp2000_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'pp2000_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'pp2000_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'pp2000_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'pp2000_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'pp2000_akimbo_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: pp2000_mp
+CoDOL native weapon lookup: pp2000_mp
+^2precacheItem: weapon 'beretta393_akimbo_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta393_akimbo_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta393_akimbo_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta393_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta393_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta393_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta393_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta393_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta393_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta393_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta393_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta393_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta393_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta393_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta393_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta393_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta393_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta393_akimbo_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: beretta393_mp
+CoDOL native weapon lookup: beretta393_mp
+^2precacheItem: weapon 'glock_akimbo_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'glock_akimbo_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'glock_akimbo_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'glock_eotech_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'glock_eotech_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'glock_eotech_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'glock_fmj_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'glock_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'glock_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'glock_reflex_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'glock_reflex_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'glock_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'glock_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'glock_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'glock_reflex_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'glock_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'glock_eotech_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'glock_akimbo_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: glock_mp
+CoDOL native weapon lookup: glock_mp
+CoDOL native weapon lookup: deserteaglegold_mp
+CoDOL native weapon lookup: deserteaglegold_mp
+^2precacheItem: weapon 'coltanaconda_akimbo_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'coltanaconda_fmj_tactical_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'coltanaconda_tactical_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'coltanaconda_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'coltanaconda_akimbo_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: coltanaconda_mp
+CoDOL native weapon lookup: coltanaconda_mp
+^2precacheItem: weapon 'deserteagle_akimbo_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'deserteagle_fmj_tactical_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'deserteagle_tactical_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'deserteagle_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'deserteagle_akimbo_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: deserteagle_mp
+CoDOL native weapon lookup: deserteagle_mp
+^2precacheItem: weapon 'usp_akimbo_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'usp_akimbo_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'usp_akimbo_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'usp_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'usp_fmj_tactical_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'usp_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'usp_silencer_tactical_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'usp_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'usp_tactical_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'usp_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'usp_tactical_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'usp_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'usp_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'usp_akimbo_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: usp_mp
+CoDOL native weapon lookup: usp_mp
+^2precacheItem: weapon 'beretta_akimbo_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta_akimbo_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta_akimbo_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta_fmj_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta_fmj_tactical_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta_fmj_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta_silencer_tactical_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta_silencer_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta_tactical_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta_xmags_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta_tactical_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta_silencer_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta_fmj_mp' is not in any mounted zone; skipped
+^2precacheItem: weapon 'beretta_akimbo_mp' is not in any mounted zone; skipped
+CoDOL native weapon lookup: beretta_mp
+CoDOL native weapon lookup: beretta_mp
+CoDOL native weapon lookup: riotshield_mp
+CoDOL native weapon lookup: riotshield_mp
+CoDOL native weapon lookup: flare_mp
+CoDOL native weapon lookup: flare_mp
+^2flare_mp: WEAPON_FRAGGRENADE
+CoDOL native weapon lookup: scavenger_bag_mp
+CoDOL native weapon lookup: scavenger_bag_mp
+CoDOL native weapon lookup: frag_grenade_short_mp
+CoDOL native weapon lookup: frag_grenade_short_mp
+^2frag_grenade_short_mp: WEAPON_FRAGGRENADE
+CoDOL native weapon lookup: destructible_car
+CoDOL native weapon lookup: destructible_car
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_physics' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambdist1' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambdist2' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto2' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_autodog' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_bulletimpact' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_bulletwhizby' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_explosiveimpact' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_element' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto2d' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_vehicle' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_vehiclelimited' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_menu' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_body' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_body2d' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_reload' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_reload2d' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_item' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_effects1' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_effects2' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_weapon' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_weapon2d' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_nonshock' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_voice' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local2' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local3' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambient' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_hurt' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_player1' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_player2' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_music' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_musicnopause' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_mission' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_announcer' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_shellshock' in file 'shock/default.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_physics' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambdist1' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambdist2' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto2' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_autodog' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_bulletimpact' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_bulletwhizby' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_explosiveimpact' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_element' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto2d' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_vehicle' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_vehiclelimited' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_menu' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_body' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_body2d' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_reload' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_reload2d' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_item' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_effects1' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_effects2' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_weapon' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_weapon2d' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_nonshock' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_voice' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local2' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local3' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambient' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_hurt' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_player1' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_player2' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_music' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_musicnopause' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_mission' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_announcer' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_shellshock' in file 'shock/concussion_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_physics' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambdist1' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambdist2' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto2' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_autodog' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_bulletimpact' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_bulletwhizby' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_explosiveimpact' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_element' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto2d' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_vehicle' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_vehiclelimited' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_menu' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_body' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_body2d' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_reload' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_reload2d' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_item' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_effects1' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_effects2' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_weapon' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_weapon2d' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_nonshock' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_voice' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local2' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local3' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambient' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_hurt' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_player1' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_player2' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_music' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_musicnopause' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_mission' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_announcer' in file 'shock/flashbang_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_shellshock' in file 'shock/flashbang_mp.shock'
+^3Warning: CoDOL xmodel 'weapon_rpg7_stow' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'weapon_at4_stow' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'weapon_stinger_stow' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'weapon_javelin_stow' is not in any mounted zone; using void (reported once)
+^2tableLookup miss: mp/statsTable.csv column 0 value '58' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '58' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '95' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '95' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '96' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '96' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '97' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '97' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '98' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '98' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '99' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '99' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '100' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '100' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '101' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '101' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '102' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '102' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '103' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '103' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '104' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '104' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '105' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '105' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '106' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '106' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '107' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '107' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '108' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '108' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '109' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '109' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '110' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '110' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '111' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '111' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '112' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '112' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '113' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '113' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '114' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '114' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '115' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '115' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '116' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '116' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '117' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '117' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '118' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '118' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '119' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '119' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '120' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '120' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '121' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '121' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '122' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '122' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '123' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '123' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '124' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '124' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '125' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '125' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '126' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '126' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '127' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '127' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '128' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '128' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '129' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '129' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '130' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '130' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '131' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '131' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '132' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '132' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '133' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '133' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '134' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '134' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '135' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '135' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '136' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '136' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '137' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '137' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '138' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '138' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '139' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '139' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '140' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '140' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '141' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '141' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '142' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '142' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '143' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '143' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '144' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '144' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '145' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '145' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '146' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '146' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '147' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '147' return column 9 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '148' return column 4 (95x27)
+^2tableLookup miss: mp/statsTable.csv column 0 value '148' return column 9 (95x27)
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_physics' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambdist1' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambdist2' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto2' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_autodog' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_bulletimpact' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_bulletwhizby' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_explosiveimpact' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_element' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto2d' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_vehicle' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_vehiclelimited' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_menu' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_body' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_body2d' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_reload' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_reload2d' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_item' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_effects1' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_effects2' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_weapon' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_weapon2d' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_nonshock' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_voice' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local2' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local3' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambient' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_hurt' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_player1' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_player2' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_music' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_musicnopause' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_mission' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_announcer' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_shellshock' in file 'shock/frag_grenade_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_physics' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambdist1' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambdist2' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto2' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_autodog' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_bulletimpact' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_bulletwhizby' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_explosiveimpact' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_element' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto2d' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_vehicle' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_vehiclelimited' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_menu' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_body' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_body2d' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_reload' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_reload2d' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_item' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_effects1' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_effects2' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_weapon' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_weapon2d' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_nonshock' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_voice' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local2' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local3' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambient' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_hurt' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_player1' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_player2' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_music' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_musicnopause' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_mission' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_announcer' in file 'shock/damage_mp.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_shellshock' in file 'shock/damage_mp.shock'
+CoDOL native weapon lookup: briefcase_bomb_mp
+CoDOL native weapon lookup: briefcase_bomb_mp
+^2briefcase_bomb_mp: WEAPON_BRIEFCASE_BOMB_PLANT
+CoDOL native weapon lookup: briefcase_bomb_defuse_mp
+CoDOL native weapon lookup: briefcase_bomb_defuse_mp
+^2briefcase_bomb_defuse_mp: WEAPON_BRIEFCASE_BOMB_DEFUSE
+^3Warning: CoDOL xmodel 'vehicle_ac130_coop' is not in any mounted zone; using void (reported once)
+CoDOL native weapon lookup: ac130_25mm_mp
+CoDOL native weapon lookup: ac130_25mm_mp
+CoDOL native weapon lookup: ac130_40mm_mp
+CoDOL native weapon lookup: ac130_40mm_mp
+CoDOL native weapon lookup: ac130_105mm_mp
+CoDOL native weapon lookup: ac130_105mm_mp
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_physics' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambdist1' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambdist2' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto2' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_autodog' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_bulletimpact' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_bulletwhizby' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_explosiveimpact' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_element' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_auto2d' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_vehicle' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_vehiclelimited' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_menu' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_body' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_body2d' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_reload' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_reload2d' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_item' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_effects1' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_effects2' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_weapon' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_weapon2d' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_nonshock' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_voice' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local2' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_local3' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_ambient' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_hurt' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_player1' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_player2' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_music' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_musicnopause' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_mission' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_announcer' in file 'shock/ac130.shock'
+^3Warning: WARNING: unknown cvar 'bg_shock_volume_shellshock' in file 'shock/ac130.shock'
+CoDOL native weapon lookup: remotemissile_projectile_mp
+CoDOL native weapon lookup: remotemissile_projectile_mp
+CoDOL native weapon lookup: stealth_bomb_mp
+CoDOL native weapon lookup: stealth_bomb_mp
+CoDOL native weapon lookup: artillery_mp
+CoDOL native weapon lookup: artillery_mp
+CoDOL native weapon lookup: harrier_missile_mp
+CoDOL native weapon lookup: harrier_missile_mp
+CoDOL native weapon lookup: harrier_20mm_mp
+CoDOL native weapon lookup: harrier_20mm_mp
+CoDOL native weapon lookup: harrier_ffar_mp
+CoDOL native weapon lookup: harrier_ffar_mp
+CoDOL native weapon lookup: littlebird_20mm_mp
+CoDOL native weapon lookup: littlebird_20mm_mp
+^3Warning: CoDOL xmodel 'vehicle_cobra_helicopter_fly_low' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'vehicle_apache_mp' is not in any mounted zone; using void (reported once)
+^3Warning: CoDOL xmodel 'vehicle_pavelow_opfor' is not in any mounted zone; using void (reported once)
+CoDOL native weapon lookup: cobra_ffar_mp
+CoDOL native weapon lookup: cobra_ffar_mp
+CoDOL native weapon lookup: cobra_20mm_mp
+CoDOL native weapon lookup: cobra_20mm_mp
+CoDOL native weapon lookup: cobra_player_minigun_mp
+CoDOL native weapon lookup: cobra_player_minigun_mp
+CoDOL native weapon lookup: heli_remote_mp
+CoDOL native weapon lookup: heli_remote_mp
+CoDOL native weapon lookup: pavelow_minigun_mp
+CoDOL native weapon lookup: pavelow_minigun_mp
+CoDOL native weapon lookup: sentry_minigun_mp
+CoDOL native weapon lookup: sentry_minigun_mp
+CoDOL native weapon lookup: nuke_mp
+CoDOL native weapon lookup: nuke_mp
+^2nuke_mp: WEAPON_HARDPOINT
+CoDOL native weapon lookup: mortar_mp
+CoDOL native weapon lookup: mortar_mp
+CoDOL native weapon lookup: killstreak_uav_mp
+CoDOL native weapon lookup: killstreak_uav_mp
+CoDOL native weapon lookup: killstreak_counter_uav_mp
+CoDOL native weapon lookup: killstreak_counter_uav_mp
+CoDOL native weapon lookup: airdrop_sentry_marker_mp
+CoDOL native weapon lookup: airdrop_sentry_marker_mp
+CoDOL native weapon lookup: killstreak_predator_missile_mp
+CoDOL native weapon lookup: killstreak_predator_missile_mp
+CoDOL native weapon lookup: killstreak_precision_airstrike_mp
+CoDOL native weapon lookup: killstreak_precision_airstrike_mp
+CoDOL native weapon lookup: killstreak_harrier_airstrike_mp
+CoDOL native weapon lookup: killstreak_harrier_airstrike_mp
+CoDOL native weapon lookup: killstreak_helicopter_mp
+CoDOL native weapon lookup: killstreak_helicopter_mp
+CoDOL native weapon lookup: airdrop_mega_marker_mp
+CoDOL native weapon lookup: airdrop_mega_marker_mp
+CoDOL native weapon lookup: killstreak_helicopter_flares_mp
+CoDOL native weapon lookup: killstreak_helicopter_flares_mp
+CoDOL native weapon lookup: killstreak_stealth_airstrike_mp
+CoDOL native weapon lookup: killstreak_stealth_airstrike_mp
+CoDOL native weapon lookup: killstreak_helicopter_minigun_mp
+CoDOL native weapon lookup: killstreak_helicopter_minigun_mp
+CoDOL native weapon lookup: killstreak_ac130_mp
+CoDOL native weapon lookup: killstreak_ac130_mp
+CoDOL native weapon lookup: killstreak_emp_mp
+CoDOL native weapon lookup: killstreak_emp_mp
+CoDOL native weapon lookup: killstreak_nuke_mp
+CoDOL native weapon lookup: killstreak_nuke_mp
+CoDOL native weapon lookup: killstreak_sentry_mp
+CoDOL native weapon lookup: killstreak_sentry_mp
+CoDOL native weapon lookup: radardirection_mp
+CoDOL native weapon lookup: radardirection_mp
+Going from CS_FREE to CS_CONNECTED for Training 1 num 0
+^2Going from CS_PRIMED to CS_ACTIVE for Training 1
+^2CoDOL precached menu slot 27: splash
+^2CoDOL precached menu slot 28: defcon
+^2CoDOL precached menu slot 29: quickcommands
+^2CoDOL precached menu slot 30: quickstatements
+^2CoDOL precached menu slot 31: quickresponses
+^2CoDOL reliable letter 'C' (0x43) first use: C 0
+^2CoDOL reliable -> Training 1: C 0
+^2CoDOL reliable letter 'D' (0x44) first use: D 0
+^2CoDOL reliable -> Training 1: D 0
+^2CoDOL reliable letter 'f' (0x66) first use: f "MP_CONNECTEDTraining 1^7"
+^2CoDOL reliable -> Training 1: f "MP_CONNECTEDTraining 1^7"
+^2CoDOL reliable letter 's' (0x73) first use: s cg_drawSpectatorMessages "1" g_compassShowEnemies "" cg_scoreboardPingGraph "1
+^2CoDOL reliable -> Training 1: s cg_drawSpectatorMessages "1" g_compassShowEnemies "" cg_scoreboardPingGraph "1"
+^2CoDOL reliable -> Training 1: s cg_hudGrenadeIconHeight "25" cg_hudGrenadeIconWidth "25" cg_hudGrenadeIconOffset "50" cg_hudGrenadePointerHeight "12" cg_hudGrenadePointerWidth "25" cg_hudGrenadePointerPivot "12 27" cg_fovscale "1"
+^2CoDOL reliable -> Training 1: s cg_deadChatWithDead "0" cg_deadChatWithTeam "1" cg_deadHearTeamLiving "1" cg_deadHearAllLiving "0"
+^2CoDOL reliable -> Training 1: s cg_everyonehearseveryone "0"
+^2CoDOL reliable -> Training 1: s ui_altscene "0"
+^2CoDOL reliable -> Training 1: s ui_adrenaline "0"
+^2CoDOL reliable letter 'P' (0x50) first use: P "thermal_mp" 1000
+^2CoDOL reliable -> Training 1: P "thermal_mp" 1000
+^2CoDOL reliable -> Training 1: s ui_promotion "0"
+^2CoDOL reliable -> Training 1: s player_summary_xp "0"
+^2CoDOL reliable -> Training 1: s player_summary_score "0"
+^2CoDOL reliable -> Training 1: s player_summary_challenge "0"
+^2CoDOL reliable -> Training 1: s player_summary_match "0"
+^2CoDOL reliable -> Training 1: s player_summary_misc "0"
+^2CoDOL reliable -> Training 1: s ui_opensummary "0"
+^2CoDOL reliable -> Training 1: D 0
+^2CoDOL reliable -> Training 1: C 0
+^2CoDOL reliable letter 'v' (0x76) first use: v
+^2CoDOL reliable -> Training 1: v
+^2CoDOL reliable letter 'H' (0x48) first use: H
+^2CoDOL reliable -> Training 1: H
+^2CoDOL reliable -> Training 1: s cg_objectiveText ""
+^2CoDOL reliable -> Training 1: s g_scriptMainMenu "team_marinesopfor"
+
+^1******* script runtime error *******
+RC spawn influencer team must be axis, allies or none: (file 'maps/mp/gametypes/_spawnlogic.gsc', line 260)
+   artilleryWeight = codol_artillerySpawnWeight( spawnpoints[i].origin ) + codol_rcSpawnWeight( spawnpoints[i].origin, self.team );
+                                                                                                                            *
+^1called from:
+(file 'maps/mp/gametypes/_spawnlogic.gsc', line 554)
+ return getSpawnpoint_Final(spawnpoints, false);
+        *
+^1called from:
+(file 'maps/mp/gametypes/_playerlogic.gsc', line 808)
+ spawnpoint = maps\mp\gametypes\_spawnlogic::getSpawnpoint_Random(spawnpoints);
+              *
+^1called from:
+(file 'maps/mp/gametypes/_playerlogic.gsc', line 773)
+ onSpawnSpectator( origin, angles );
+ *
+^1called from:
+(file 'maps/mp/gametypes/_playerlogic.gsc', line 743)
+ in_spawnSpectator( origin, angles );
+ *
+^1called from:
+(file 'maps/mp/gametypes/_menus.gsc', line 437)
+ self thread maps\mp\gametypes\_playerlogic::spawnSpectator();
+             *
+^1called from:
+(file 'maps/mp/gametypes/_playerlogic.gsc', line 1240)
+  self [[level.spectator]]();
+               *
+^1called from:
+(file 'maps/mp/gametypes/_callbacksetup.gsc', line 45)
+ [[level.callbackPlayerConnect]]();
+         *
+^1started from:
+(file 'maps/mp/gametypes/_playerlogic.gsc', line 1183)
+ waittillframeend;
+ *
+^1************************************
+----- Server Shutdown -----
+
+With the reason: Server fatal crashed: script runtime error
+(see console for details)
+RC spawn influencer team must be axis, allies or none
+^2CoDOL reliable letter 't' (0x74) first use: t "Training 1^7 Server fatal crashed: script runtime error
+(see console for deta
+^2CoDOL reliable -> Training 1: t "Training 1^7 Server fatal crashed: script runtime error
+(see console for details)
+RC spawn influencer team must be axis, allies or none" PB
+^3Warning: WARNING: msg overflowed for Training 1, trying to recover (no native frame for sequence 1 (ready 0, ready sequence 0, builder: none); cursize 5 of 131072)
+-- Unacknowledged Server Commands for client 0:Training 1 --
+-----------------------------------------------------
+^2CoDOL reliable -> Training 1: t "Training 1^7 Server fatal crashed: script runtime error
+(see console for details)
+RC spawn influencer team must be axis, allies or none" PB
+^3Warning: WARNING: msg overflowed for Training 1, trying to recover (no native frame for sequence 1 (ready 0, ready sequence 0, builder: none); cursize 5 of 131072)
+-- Unacknowledged Server Commands for client 0:Training 1 --
+-----------------------------------------------------
+==== ShutdownGame (1) ====
+Player Training 1^7, 0 dropped: EXE_DISCONNECTED
+^2SV_FreeClientScriptId: 0, 643 -> 0
+^2CoDOL reliable letter 'e' (0x65) first use: e "Training 1^7 EXE_LEFTGAME"
+^2CoDOL reliable -> : e "Training 1^7 EXE_LEFTGAME"
+^2CoDOL reliable letter 'K' (0x4b) first use: K 0
+^2CoDOL reliable -> : K 0
+^2CoDOL reliable -> : t "EXE_LEFTGAME" PB
+^2Going to CS_FREE for Bot Training 1
+---------------------------
+---- Network shutdown ----
+Closing IPv4 UDP socket: 908
+Closing IPv6 UDP socket: 900
+Closing IPv4 TCP socket: 912
+Closing IPv6 TCP socket: 904
+--------------------------

@@ -1,0 +1,22 @@
+name: Native source profile materialization
+on:
+  pull_request:
+    branches: [main]
+    paths: ["native_profiles/**", ".github/workflows/native-profile-materialization.yml"]
+  push:
+    branches: [main]
+    paths: ["native_profiles/**", ".github/workflows/native-profile-materialization.yml"]
+permissions:
+  contents: read
+jobs:
+  materialize:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python native_profiles/test_materialize.py -v

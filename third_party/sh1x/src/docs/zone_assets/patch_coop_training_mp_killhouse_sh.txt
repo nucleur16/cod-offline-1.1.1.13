@@ -1,0 +1,8 @@
+localize	KILLHOUSE_HINT_FRAG
+rawfile	animlists/coop_training_mp_killhouse_sh.animlist
+xmodel	body_complete_tf_tan
+xmodel	weapon_m67_grenade_obj
+xmodelsurfs	fja_tan_tf_m_lod020
+xmodelsurfs	fja_tan_tf_m_lod120
+xmodelsurfs	fja_tan_tf_m_lod220
+xmodelsurfs	fja_tan_tf_m_lod320

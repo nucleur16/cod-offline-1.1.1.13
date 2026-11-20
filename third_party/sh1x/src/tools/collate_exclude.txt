@@ -1,0 +1,31 @@
+# Script paths tools/collate_gsc.py must never collate, and that
+# tools/verify_gsc_collation.py must not treat as regressions when the
+# pre-collation three-root configuration still resolves them.
+#
+# Syntax: one pattern per line, '#' starts a comment, paths are the loader's
+# relative module paths with '/' separators and are matched case-insensitively.
+# "<dir>/**" excludes everything under <dir>; otherwise fnmatch applies.
+#
+# ---------------------------------------------------------------------------
+# IW4 player-character model chain.  CoDOL composes player appearance from the
+# player's own playerdata character record (maps/mp/gametypes/_teams.gsc
+# playerModelForWeapon -> codol_applyProfileCharacter / codol_applyBotCharacter,
+# resolved natively in src/online/assets/character_composition.c against
+# mp/coMarketplaceItems.csv, mp/coCharacterDefTable.csv and
+# mp/coCharItems/<part>.csv).  The IW4 team-character path is therefore not a
+# model source: mptype\mptype_*::precache -> character\*::precache ->
+# xmodelalias\alias_*::main only precached IW4 xmodels that no CoDOL zone
+# contains, which is where the "xmodel not in any mounted zone; using void"
+# warnings came from.  _teams.gsc no longer references any of them, and nothing
+# else in the MP/coop/zm chain does either: the only other referrers are
+# aitype/*.gsc, which no reachable script loads.
+character/**
+# ...except the attack-dogs AI character. aitype/enemy_dog_mp.gsc is loaded by
+# NATIVE code now (src/online/player/actor_scripts.cpp resolves the aitype
+# main/precache/spawner during the map script-load phase), so the note above
+# that "the only other referrers are aitype/*.gsc, which no reachable script
+# loads" no longer holds for this one file. It precaches german_sheperd_dog,
+# which C1 does ship (common_gametype_mp.zone xmodel #10079).
+!character/character_mp_german_shepherd.gsc
+mptype/**
+xmodelalias/**

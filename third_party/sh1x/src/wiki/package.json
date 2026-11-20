@@ -1,0 +1,22 @@
+{
+  "name": "sh1x-server-wiki",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "content": "node scripts/sync-content.mjs",
+    "predev": "npm run content",
+    "dev": "vite --host 127.0.0.1",
+    "prebuild": "npm run content",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "react-markdown": "10.1.0",
+    "remark-gfm": "4.0.1"
+  },
+  "devDependencies": { "vite": "7.1.3" },
+  "engines": { "node": ">=22.12.0" }
+}

@@ -1,0 +1,3 @@
+rawfile	mp_playlists
+rawfile	mp_playlists.info
+rawfile	playlists_allmaps.info

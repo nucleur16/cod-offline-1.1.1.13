@@ -1,0 +1,216 @@
+{
+  "schema": "codol-ee5e-reproducer-qualification-v2",
+  "recipe_sha256": "7f39783ae3c81efab8b5ff35753f233e979df8a11a2dee1d1eec4584f963a752",
+  "member_manifest_sha256": "524bf6c0df3e13392c994ac7e459a59ac23077437e8ed0e9cbd2f629753dd4c3",
+  "proof_boundary_sha256": "936ef1b8ca86dd266228249c29c8e619b0c6dad5ac50982eedb72c039e4c035d",
+  "canonical_clean_LF_reproduction": {
+    "schema": "codol-exact-ee5e-reproduction-v2",
+    "manifest_sha256": "524bf6c0df3e13392c994ac7e459a59ac23077437e8ed0e9cbd2f629753dd4c3",
+    "reproducer_sha256": "7f39783ae3c81efab8b5ff35753f233e979df8a11a2dee1d1eec4584f963a752",
+    "packager_sha256": "8e1efb3d692b36d40ad95d7f96a62452d4b00d80e4e1e3ef408ea4898becc65a",
+    "raw_head": "c7da25a75f517969463479cbf621450480dd1ce0",
+    "canonical_git_blob_pins_verified": 1680,
+    "raw_input_representations": {
+      "canonical": 1562,
+      "reviewed_archive": 0,
+      "identity": 118
+    },
+    "explicit_crlf_archive_policies": 1562,
+    "raw_merge_head": null,
+    "raw_clean": true,
+    "reviewed_working_tree_explicitly_allowed": false,
+    "native_head": "ab21a3699496eb2af6df622c85cada6174b4460d",
+    "native_profile_manifest_sha256_at_reproduction": "25e7f9bb05e7dd2e3dd34fe171c8537efcf071fb1650eede73eb50a28716885f",
+    "members": 1718,
+    "raw_members": 1680,
+    "support_members": 38,
+    "iwd_bytes": 5410990,
+    "iwd_sha256": "ee5e4102ffa70d5be1566116aacd5121ea435c9890b940ea0e13286dfe642dc3",
+    "all_member_source_hashes_verified": true,
+    "native_build_or_C1_test_performed_by_this_recipe": false,
+    "publication_or_runtime_changed": false
+  },
+  "reviewed_CRLF_checkout_reproduction": {
+    "schema": "codol-exact-ee5e-reproduction-v2",
+    "manifest_sha256": "524bf6c0df3e13392c994ac7e459a59ac23077437e8ed0e9cbd2f629753dd4c3",
+    "reproducer_sha256": "7f39783ae3c81efab8b5ff35753f233e979df8a11a2dee1d1eec4584f963a752",
+    "packager_sha256": "8e1efb3d692b36d40ad95d7f96a62452d4b00d80e4e1e3ef408ea4898becc65a",
+    "raw_head": "c7da25a75f517969463479cbf621450480dd1ce0",
+    "canonical_git_blob_pins_verified": 1680,
+    "raw_input_representations": {
+      "canonical": 0,
+      "reviewed_archive": 1562,
+      "identity": 118
+    },
+    "explicit_crlf_archive_policies": 1562,
+    "raw_merge_head": null,
+    "raw_clean": true,
+    "reviewed_working_tree_explicitly_allowed": false,
+    "native_head": "ab21a3699496eb2af6df622c85cada6174b4460d",
+    "native_profile_manifest_sha256_at_reproduction": "25e7f9bb05e7dd2e3dd34fe171c8537efcf071fb1650eede73eb50a28716885f",
+    "members": 1718,
+    "raw_members": 1680,
+    "support_members": 38,
+    "iwd_bytes": 5410990,
+    "iwd_sha256": "ee5e4102ffa70d5be1566116aacd5121ea435c9890b940ea0e13286dfe642dc3",
+    "all_member_source_hashes_verified": true,
+    "native_build_or_C1_test_performed_by_this_recipe": false,
+    "publication_or_runtime_changed": false
+  },
+  "both_clean_no_working_tree_escape": true,
+  "canonical_and_reviewed_input_archives_byte_identical": true,
+  "guard_cases": [
+    {
+      "case": "existing-output",
+      "exit_code": 2,
+      "expected_rejection": "REJECT: Output must be fresh and outside both source roots",
+      "fresh_output_not_created": false
+    },
+    {
+      "case": "dirty-source-default",
+      "exit_code": 2,
+      "expected_rejection": "REJECT: Raw source is uncommitted; use the explicit reviewed-working-tree flag only for pre-closure QA",
+      "fresh_output_not_created": true
+    },
+    {
+      "case": "actual-source-byte-mutation",
+      "exit_code": 2,
+      "expected_rejection": "REJECT: Source drift: bin/home/codol_rawfiles/maps/_zombiemode.gsc",
+      "fresh_output_not_created": true
+    },
+    {
+      "case": "policy-count-mismatch",
+      "exit_code": 2,
+      "expected_rejection": "REJECT: Mismatched line-ending policy",
+      "fresh_output_not_created": true
+    },
+    {
+      "case": "unsupported-policy",
+      "exit_code": 2,
+      "expected_rejection": "REJECT: Unsupported line-ending policy",
+      "fresh_output_not_created": true
+    },
+    {
+      "case": "identity-policy-on-CRLF-member",
+      "exit_code": 2,
+      "expected_rejection": "REJECT: Archive member/policy mismatch: bin/home/codol_rawfiles/.gitignore",
+      "fresh_output_not_created": true
+    },
+    {
+      "case": "canonical-blob-pin-mutation",
+      "exit_code": 2,
+      "expected_rejection": "REJECT: Canonical Git blob drift: .gitignore",
+      "fresh_output_not_created": true
+    },
+    {
+      "case": "archive-member-pin-mutation",
+      "exit_code": 2,
+      "expected_rejection": "REJECT: Archive member/policy mismatch: bin/home/codol_rawfiles/.gitignore",
+      "fresh_output_not_created": true
+    }
+  ],
+  "canonical_policy_generation": {
+    "canonical_commit": "c7da25a75f517969463479cbf621450480dd1ce0",
+    "clean_LF_checkout": true,
+    "canonical_all_checkout_file_bytes_match_git": true,
+    "raw_identity_members": 118,
+    "raw_explicit_LF_to_CRLF_members": 1562,
+    "support_identity_members": 38,
+    "manifest_sha256": "524bf6c0df3e13392c994ac7e459a59ac23077437e8ed0e9cbd2f629753dd4c3",
+    "postcommit_evidence_sha256": "01eb3ec45516dcec24f73b9b17c5508137aa05df7cdad5e06203d6b3b63d90ca",
+    "no_original_source_or_index_changed": true
+  },
+  "historical_precommit_qualification": {
+    "sha256": "45065797dae4a5adf1ee218850ca6bf8bc4d7b1f00d0e5b6b9f24c4d7a7c619c",
+    "role": "Historical v1 working-byte/order reproductions only; not proof of canonical Git-byte equality.",
+    "old_manifest_sha256": "3d1d1ac443f4bb2b06fd0ec5422f8619300a1bacb2b20e81dbe87de949678bf7"
+  },
+  "superseded_claim": "1562 of 1680 canonical LF raw blobs differ from historical reviewed CRLF archive bytes. Exact per-file canonical and archive pins plus policies replace prior blanket equality.",
+  "native_original_raw_and_clean_LF_indices_unchanged": true,
+  "original_raw_and_clean_LF_still_clean": true,
+  "existing_packager_native_raw_source_runtime_unchanged": true,
+  "C1_or_native_build_tests_run": false,
+  "published_raw_commit_bound": "c7da25a75f517969463479cbf621450480dd1ce0",
+  "final_native_and_application_commits_bound": false,
+  "remaining_source_closure": "Parent stages prepared c7da raw gitlink and commits native merge/release metadata, then advances application pins; no submodule initialization remains.",
+  "release_file_hashes": {
+    "member-order.json": "524bf6c0df3e13392c994ac7e459a59ac23077437e8ed0e9cbd2f629753dd4c3",
+    "proof-boundary.json": "936ef1b8ca86dd266228249c29c8e619b0c6dad5ac50982eedb72c039e4c035d",
+    "README.md": "33c9bb18025caef7ccffd1a25dd875480ea6db8405ce19bb240ac177d00c1584",
+    "reproduce.py": "7f39783ae3c81efab8b5ff35753f233e979df8a11a2dee1d1eec4584f963a752"
+  },
+  "prepared_native_submodule": {
+    "old_head": "e37a77d2ed0aa99d4310da5a7cc7c7f8e74bdc6f",
+    "prepared_head": "c7da25a75f517969463479cbf621450480dd1ce0",
+    "prepared_clean": true,
+    "ancestry": {
+      "old_is_ancestor_of_new": false,
+      "merge_base": {
+        "returncode": 0,
+        "stdout": "cfb0c56cf006d754dc69bc8f1a6d8929f0f6323c",
+        "stderr": ""
+      },
+      "old_new_unique_commit_counts": {
+        "returncode": 0,
+        "stdout": "3\t54",
+        "stderr": ""
+      }
+    },
+    "checkout": {
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "Previous HEAD position was e37a77d Require combat spawn before podium selection\nHEAD is now at c7da25a Preserve current gameplay scripts and repair Zombies spawn placement"
+    },
+    "core_autocrlf": "false",
+    "core_eol": "lf",
+    "native_index_gitlink": "160000 e37a77d2ed0aa99d4310da5a7cc7c7f8e74bdc6f 0\tbin/home/codol_rawfiles",
+    "native_index_sha256_before": "a2ac5850f5d08f0824227e5c0bb6d045821d1867a98dce87f4914b96689ee55d",
+    "native_index_sha256_after": "a2ac5850f5d08f0824227e5c0bb6d045821d1867a98dce87f4914b96689ee55d",
+    "new_commit_parents": [
+      "c67753856df1011fb7caada14101bacfdcfacc60",
+      "3f91e86c49b3a892cf7657351ee72cc7490518b2"
+    ],
+    "upstream_heads_unchanged": {
+      "native": "8458d68306f3d2c3b768f6d50836b55625c2a6fd",
+      "raw": "3f91e86c49b3a892cf7657351ee72cc7490518b2"
+    },
+    "staged_committed_pushed_or_runtime_changed": false
+  },
+  "native_submodule_default_reproduction": {
+    "schema": "codol-exact-ee5e-reproduction-v2",
+    "manifest_sha256": "524bf6c0df3e13392c994ac7e459a59ac23077437e8ed0e9cbd2f629753dd4c3",
+    "reproducer_sha256": "7f39783ae3c81efab8b5ff35753f233e979df8a11a2dee1d1eec4584f963a752",
+    "packager_sha256": "8e1efb3d692b36d40ad95d7f96a62452d4b00d80e4e1e3ef408ea4898becc65a",
+    "raw_head": "c7da25a75f517969463479cbf621450480dd1ce0",
+    "canonical_git_blob_pins_verified": 1680,
+    "raw_input_representations": {
+      "canonical": 1562,
+      "reviewed_archive": 0,
+      "identity": 118
+    },
+    "explicit_crlf_archive_policies": 1562,
+    "raw_merge_head": null,
+    "raw_clean": true,
+    "reviewed_working_tree_explicitly_allowed": false,
+    "native_head": "ab21a3699496eb2af6df622c85cada6174b4460d",
+    "native_profile_manifest_sha256_at_reproduction": "25e7f9bb05e7dd2e3dd34fe171c8537efcf071fb1650eede73eb50a28716885f",
+    "members": 1718,
+    "raw_members": 1680,
+    "support_members": 38,
+    "iwd_bytes": 5410990,
+    "iwd_sha256": "ee5e4102ffa70d5be1566116aacd5121ea435c9890b940ea0e13286dfe642dc3",
+    "all_member_source_hashes_verified": true,
+    "native_build_or_C1_test_performed_by_this_recipe": false,
+    "publication_or_runtime_changed": false
+  },
+  "default_recipe_without_raw_override_or_escape_passed": true,
+  "prepared_legacy_guard_presence": {
+    "queued_postgame_class_reply": true,
+    "podium_requires_combat_spawn": true,
+    "scope": "Read-only presence checks; full source/archive equality is separately enforced by the exact recipe."
+  },
+  "parent_observed_C1_receipt_bindings": {
+    "qa12-zombies-four-C1-return-proof.json": "74636250ca1b0c94ea684ca5dc3a5a697383936528317fb8d30670eed397fc74",
+    "qa12-zombies-four-C1-repeat-proof.json": "17f5a1e08b1a355cd952bc0a007a7eff1139409bfe80b44a7a5edb17ea7153f7"
+  }
+}

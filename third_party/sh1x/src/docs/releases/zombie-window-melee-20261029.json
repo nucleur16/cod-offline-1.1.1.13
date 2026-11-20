@@ -1,0 +1,39 @@
+{
+  "scope": "Real authored Zombies barrier attack strike, native damage and range rejection; no live C1 visual claim",
+  "date": "2026-10-29",
+  "native_source_base": "789e5779dafbf3118a2498dd0597b861aee72a03",
+  "native_pending_change": "Sibling real player-use filter change included in this frozen build; barrier fix changes GSC only",
+  "raw_source_base": "f05ed0ccb1261d9334cdd52738f5816f02e668ee",
+  "raw_modified_file": "maps/_zombiemode_spawner.gsc",
+  "raw_modified_sha256": "fe6332af7d983c95ca5f16fb6449df8765aae172c5d5822fc770ac8d4335ab0c",
+  "exe_sha256": "448ba91deba7623110973ecc54abb48d2492fdd7ea54ed471eb3115e40e1a98c",
+  "exe_sha256_after_probe": "448ba91deba7623110973ecc54abb48d2492fdd7ea54ed471eb3115e40e1a98c",
+  "host_dll_sha256": "6bf65c76117b0dd1e881057c538e4a4c53cf60cab19ec82ffbb350d570084c3e",
+  "probe_fixture": "tests/fixtures/zombie_window_melee_probe.gsc",
+  "probe": {
+    "pid": 62896,
+    "port": 17762,
+    "category": "zm",
+    "map": "zm_prototype_sh",
+    "gametype": "zm",
+    "ready": true,
+    "elapsed_seconds": 47.75,
+    "errors": [],
+    "spawn_evidence": [
+      "WINDOWPROBE BEFORE hp 100 alive 1 session playing actor 129 range 33.7009 floor 22.9791 anchor 0",
+      "WINDOWPROBE AFTER played 1 hp 40 damage 60 laststand 0 contact 1",
+      "WINDOWPROBE OUTOFRANGE played 0 hp 40 damage 0"
+    ]
+  },
+  "probe_shutdown": "Owned PID exited; UDP17762 released. User client/backend/host untouched.",
+  "first_probe_note": "PID121300 succeeded but concurrent sibling build made its executable identity ambiguous. Superseded by exact frozen-binary PID62896 receipt.",
+  "checks": [
+    "node tests/zombie_window_melee_test.js PASS",
+    "ZM source/built-EXE registration resolver for Prototype, Factory and Theater PASS (1070 builtins, 98 scripts)",
+    "raw spawner diff --check PASS"
+  ],
+  "limits": [
+    "Owned native dedicated testclient; no real C1 visual observation",
+    "One authored Prototype barrier exercised natively; other map shapes covered only by shared guards/body tests"
+  ]
+}

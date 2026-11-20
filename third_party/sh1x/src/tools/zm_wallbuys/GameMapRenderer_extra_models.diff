@@ -1,0 +1,49 @@
+--- "D:/CoD/CODOL Builds/zm_wallbuy_staging/tool_build/src/Codol.Rendering/GameMapRenderer.cs"	2026-10-14 00:11:36.000000000 -0400
++++ Codol.Rendering/GameMapRenderer.cs	2026-10-26 23:56:18.096564800 -0400
+@@ -432,6 +432,46 @@
+             });
+             EntityModelCount++;
+         }
++        // CODOL_RENDER_EXTRA_MODELS=<file>: models a level script spawns (one per line: model x y z pitch yaw roll), drawn
++        // as script_model entities (zm_perkclip_staging: the wall-buy weapons and their codo_weapon_box cases)
++        if (Environment.GetEnvironmentVariable("CODOL_RENDER_EXTRA_MODELS") is { Length: > 0 } extraPath)
++        {
++            foreach (string line in File.ReadAllLines(extraPath))
++            {
++                var f = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
++                if (f.Length < 7) continue;
++                float P(int i) => float.Parse(f[i], System.Globalization.CultureInfo.InvariantCulture);
++                GameMemory? modelMemory = null;
++                if (!models.TryGetValue(f[0], out uint model))
++                {
++                    if (ResolveModel(f[0]) is not { } resolved) { Warnings.Add($"extra model {f[0]} is not in the map, level or shared zones"); continue; }
++                    (modelMemory, model) = resolved;
++                }
++                if (GetModel(modelMemory, model) is not { Surfaces.Count: > 0 } draw) continue;
++                var origin = new Vector3(P(1), P(2), P(3));
++                var (forward, left, up) = new GameCamera(origin, P(4), P(5), P(6)).Axes();
++                var placement = new Matrix4x4(forward.X, forward.Y, forward.Z, 0, left.X, left.Y, left.Z, 0, up.X, up.Y, up.Z, 0,
++                    origin.X, origin.Y, origin.Z, 1);
++                var center = Vector3.Transform((draw.Min + draw.Max) * 0.5f, placement);
++                var boxMin = new Vector3(float.MaxValue);
++                var boxMax = new Vector3(float.MinValue);
++                for (int corner = 0; corner < 8; corner++)
++                {
++                    var p = Vector3.Transform(new Vector3((corner & 1) != 0 ? draw.Max.X : draw.Min.X, (corner & 2) != 0 ? draw.Max.Y : draw.Min.Y,
++                        (corner & 4) != 0 ? draw.Max.Z : draw.Min.Z), placement);
++                    boxMin = Vector3.Min(boxMin, p);
++                    boxMax = Vector3.Max(boxMax, p);
++                }
++                _staticModels.Add(new StaticModelInstance
++                {
++                    Model = model, ModelMemory = modelMemory, Placement = placement, Center = center,
++                    Radius = (draw.Max - draw.Min).Length() * 0.5f, Half = (boxMax - boxMin) * 0.5f, LightingOrigin = center,
++                    CullDistance = 0, ReflectionProbe = NearestReflectionProbe(center), PrimaryLight = GroundLightingLight(null),
++                    Flags = 0, GroundLighting = 0, IsEntity = true, HiddenSurfaces = null,
++                });
++                EntityModelCount++;
++            }
++        }
+     }
+ 
+     public int EntityModelCount { get; private set; }

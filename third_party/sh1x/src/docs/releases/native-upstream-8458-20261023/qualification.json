@@ -1,0 +1,102 @@
+{
+  "actual_game_or_clients_launched": false,
+  "committed_or_pushed": false,
+  "created_utc": "2026-10-23T21:03:21.137580+00:00",
+  "feature_parent": "ab21a3699496eb2af6df622c85cada6174b4460d",
+  "merged_main": "8458d68306f3d2c3b768f6d50836b55625c2a6fd",
+  "profiles": {
+    "normal": {
+      "bytes": 7063760,
+      "code_manifest_sha256": "e6d49174cd5da2e3acf237a8ede88b5af0460dd72c868fb708a01710182c2ec6",
+      "compiler_input_archive_sha256": "84bfaa819cc40a923a688edff880e4aba290bf519e0c23c90cff412cb61ee15f",
+      "compiler_input_files": 1717,
+      "compiler_input_manifest_sha256": "232ee08ce82cdf5632d5ffdd3ee5214f918039651e25d2652fa5f2d0f6e5c9e6",
+      "container_exit_code": 0,
+      "finished_utc": "2026-10-23T20:59:41.510239009Z",
+      "focused_fixture_results": [
+        "pending-normal PASS",
+        "pending-asan PASS",
+        "party-normal PASS",
+        "party-asan PASS",
+        "quick-normal PASS",
+        "quick-asan PASS",
+        "startup-normal PASS",
+        "startup-asan PASS",
+        "hide-normal PASS",
+        "hide-asan PASS",
+        "route-normal PASS",
+        "route-asan PASS",
+        "PINNED_COMPONENTS_COMPLETE profile=normal"
+      ],
+      "native_sha256": "4d4dd3205bd5c252857f9d20f4cc64da1162e2a6bb384bf69134dc7e7a319909",
+      "real_C1_acceptance": false,
+      "required_linked_symbols": [
+        "CODOL_ScrCmd_UseWeaponHideTags",
+        "SV_CodolConnectIdentityPolicy",
+        "CODOL_ServerRecoveryLevelLoaded",
+        "CODOL_ServerRecoveryIdleFrame",
+        "CODOL_ServerRecoveryOperatorStop",
+        "CODOL_QuickPlayMapReady"
+      ],
+      "source_and_library_hashes_verified": true,
+      "started_utc": "2026-10-23T20:58:23.237053619Z"
+    },
+    "zombies": {
+      "bytes": 7041548,
+      "code_manifest_sha256": "6ff97148a9956be92b55f7ec47756f99e7a13da0799f770cd50b5500d6b204f2",
+      "compiler_input_archive_sha256": "ab38db31efa6730da8a6a9439e7fc5669f41f6b982b919779b5a74f97991b2c9",
+      "compiler_input_files": 1729,
+      "compiler_input_manifest_sha256": "c48c25ae560275c0d3e82444a72b0a78e6a201545db540b1f75571596bbb995b",
+      "container_exit_code": 0,
+      "finished_utc": "2026-10-23T21:01:50.420193799Z",
+      "focused_fixture_results": [
+        "pending-normal PASS",
+        "pending-asan PASS",
+        "hide-normal PASS",
+        "hide-asan PASS",
+        "route-normal PASS",
+        "route-asan PASS",
+        "session-candidate expected-status PASS exit=0",
+        "session-candidate-asan expected-status PASS exit=0",
+        "session-baseline-report expected-status PASS exit=1",
+        "session-baseline-drop-order expected-status PASS exit=1",
+        "PINNED_COMPONENTS_COMPLETE profile=zombies"
+      ],
+      "native_sha256": "e43bcfa4dffc6b7e6c43e1160ca78ecd76666ea9f297b5dbe85d3f72018a2bf1",
+      "real_C1_acceptance": false,
+      "required_linked_symbols": [
+        "CODOL_ScrCmd_UseWeaponHideTags",
+        "SV_CodolConnectIdentityPolicy",
+        "CODOL_ServerRecoveryLevelLoaded",
+        "CODOL_ServerRecoveryIdleFrame",
+        "CODOL_ServerRecoveryOperatorStop",
+        "CODOL_BotNavTopologyRevision",
+        "CODOL_BotNavReachableNodes"
+      ],
+      "source_and_library_hashes_verified": true,
+      "started_utc": "2026-10-23T21:00:31.631402002Z"
+    }
+  },
+  "rawfiles_pin_preserved": "e37a77d2ed0aa99d4310da5a7cc7c7f8e74bdc6f",
+  "recovery_fixture": {
+    "asan_ubsan_checks": 89,
+    "explicit_doubles": [
+      "dvar lookup/registration",
+      "clock",
+      "packet wait",
+      "logging",
+      "command buffer"
+    ],
+    "normal_checks": 89,
+    "real_RCON_or_loader_executed": false
+  },
+  "remaining": [
+    "Parent source review and Git commit/push",
+    "Rawfiles 3f91 integration into reviewed private branch",
+    "Real EN/ZH C1 acceptance on both new native hashes",
+    "Full dependent release and maintenance gates"
+  ],
+  "schema": "codol-native-upstream-integration-20261023-v1",
+  "services_packages_or_selectors_modified": false,
+  "source_profile_manifest_sha256": "cb7e7b300d26f95dd319919ee7ea26c7e905fcede54cd0308979b2f3bc5227c6"
+}

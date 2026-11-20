@@ -1,0 +1,4 @@
+material	$defeatbackdrop
+material	$levelbriefing
+rawfile	coop_prolog_mp_crash_intro_load
+techset	2d

@@ -1,0 +1,74 @@
+{
+  "schema": "codol-training-native-source-review-v1",
+  "base_commit": "e718b433d01ecc466f72c004c1403986dfdc6f08",
+  "latest_main": "149bd3e96b1f5c37a671eca176ac39ad136ce463",
+  "raw_commit": "c7da25a75f517969463479cbf621450480dd1ce0",
+  "normal_changed_compiler_inputs": {
+    "src/codol/net/codol_quickplay.c": {
+      "before": "51ba4b1575e5d6aa97e89a9b8b55d66a86094fd73c21058907cd9cb910e8aa28",
+      "after": "c4bed5c28aaf80d1e9e1fec20bb0d9ea7e0d418c7df5b2616e38ef8c21941fa0"
+    },
+    "src/codol/net/codol_quickplay.h": {
+      "before": "7f1adca5d55b511247be9f94df485f31987978b0c79024767c07d4f8f5dfc715",
+      "after": "922f0359a825fa7b3bc99f727ec02ef1be3a202c6ffc754a483253e1bae4ebcd"
+    },
+    "src/sv_client.c": {
+      "before": "3e5eb2654d2c6f95db41d92715af5c9911297abeef811e3cd7026f3407d27e53",
+      "after": "1a9869fe4d6ca90f022147fa1ae20b34c57d2b1dacda1b08c6f7d3e65e83084d"
+    }
+  },
+  "all_other_normal_inputs_exact": true,
+  "all_zombies_compiler_inputs_exact": true,
+  "normal_files": 1715,
+  "zombies_files": 1727,
+  "profile_pins": {
+    "manifest.json": "7ad6234fc74b3e6803109854bdb734ac4aeabee3a46c9942f03fe98e230caf1a",
+    "normal-code-files.json": "011a148eb82b0382458095812247ddbffc98a8d76c3062ac443cc75107d402cd",
+    "zombies-code-files.json": "a06929248bb706c7b5dc1e9ac7d3170747b52a917b48722ef60f3e0a5cd3063e",
+    "zombies.patch": "f62e7652843ac3af78f54a924e10788438083a27793b86266cb7ae4ebfa21d8e",
+    "zombies-review-only.patch": "612930d4754b683a308d421c51f9f1ea84d28107f85e76b4c4e64721f6467feb"
+  },
+  "fixture_pins": {
+    "native_profiles/prepare_focused_tests.py": "4265382d89a5b4f5f32549fa5a786f0c76204bffd78dca2f82bee620740d97a6",
+    "native_profiles/run-focused.sh": "0c86b02f3d634584b36b85c8f9034c62c116a263208b83831f699c58d1a23664",
+    "tests/native_profiles/test_training_bot_seat.c": "ee799b22346a72d3f9408ed0207fe24c983f89052785e4e4ee45c9f0b4f74c61"
+  },
+  "real_C1": false,
+  "source_and_fixture_pins": {
+    "src/codol/net/codol_quickplay.c": "c4bed5c28aaf80d1e9e1fec20bb0d9ea7e0d418c7df5b2616e38ef8c21941fa0",
+    "src/codol/net/codol_quickplay.h": "922f0359a825fa7b3bc99f727ec02ef1be3a202c6ffc754a483253e1bae4ebcd",
+    "src/sv_client.c": "1a9869fe4d6ca90f022147fa1ae20b34c57d2b1dacda1b08c6f7d3e65e83084d",
+    "native_profiles/prepare_focused_tests.py": "4265382d89a5b4f5f32549fa5a786f0c76204bffd78dca2f82bee620740d97a6",
+    "native_profiles/run-focused.sh": "0c86b02f3d634584b36b85c8f9034c62c116a263208b83831f699c58d1a23664",
+    "tests/native_profiles/test_training_bot_seat.c": "ee799b22346a72d3f9408ed0207fe24c983f89052785e4e4ee45c9f0b4f74c61"
+  },
+  "independent_review": "E:\\codol-task-evidence\\training-bot-seat-20261024\\independent-source-review.json",
+  "positive_native_checks": 69,
+  "positive_sanitizer_checks": 69,
+  "counterexamples": "E:\\codol-task-evidence\\training-bot-seat-20261024\\negative-controls\\result.json",
+  "all_four_builds_complete": true,
+  "real_C1_acceptance": false,
+  "build_summary": {
+    "normal": {
+      "linux": {
+        "size": 7072620,
+        "sha256": "1bfc0d632c14dc7d058ccd6f6602724f9bdd6afcaf71f2b8280c0cb3ba4c127e"
+      },
+      "windows": {
+        "size": 7451237,
+        "sha256": "4c1c58ba55ffaba18fd5ab47611eecd1bac7a887ab38b11e672edcb91505ff10"
+      }
+    },
+    "zombies": {
+      "linux": {
+        "size": 7046168,
+        "sha256": "6e1151eb0f162be09e1688ea4eef695c64dae65e402cec6330ae453cd6b23666"
+      },
+      "windows": {
+        "size": 7428876,
+        "sha256": "41008dad645b8af447babfb8c5c55e0c0eb5a86bbc8427f4c8a2ac248c80e2d5"
+      }
+    }
+  },
+  "focused_suites_passed": true
+}

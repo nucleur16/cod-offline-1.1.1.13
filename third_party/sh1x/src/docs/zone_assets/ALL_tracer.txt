@@ -1,0 +1,4 @@
+defaulttracer	code_post_gfx_default_mp
+pistol	patch_common_gametype_coop
+ps_3_0	common_gametype_mp	~
+sniper	patch_common_gametype_zm

@@ -1,0 +1,194 @@
+{
+  "scope": "Owned isolated native Survival bot exercise; no C1 gameplay claim",
+  "runs": [
+    {
+      "map": "mp_fav_tropical",
+      "pid": 114212,
+      "port": 17761,
+      "ready": true,
+      "elapsed_seconds": 55.97,
+      "start_wave": 2,
+      "exercise_seconds": 35.0,
+      "exit_code": null,
+      "exercise_evidence": [
+        "CoDOL survivaltest:   player 0 spectator hp 100 at (1174, -223.643, 250) credits 175 kills 1"
+      ],
+      "status": "\u00ff\u00ff\u00ff\u00ffprint\nsh1x_status map=mp_fav_tropical session_map=mp_fav_tropical gametype=survival type=survival running=1 ended=0 humans=0 bots=1 maxclients=16 parked=0 quick=0 quick_session=- epoch=0 joinable=0 quick_parties=0 uids=-",
+      "log": "D:\\CoD\\CoD4x_Server\\.claude\\worktrees\\iw4-asset-layout\\obj\\survival_progression_probe\\wave2_retry\\mp_fav_tropical\\home\\main\\qconsole.log",
+      "waves": [
+        "CoDOL survival: 20 waves from mp/survival_waves_fav_tropical.csv, 4 repeat after them"
+      ],
+      "missing_table_fatal": false,
+      "runtime_error": false,
+      "ai_refs": [
+        "dog_reg",
+        "easy"
+      ],
+      "wave_status": [
+        "survivaltest: wave 2 alive 0 spawned 0 killed 0 failures 0",
+        "survivaltest: wave 2 alive 6 spawned 6 killed 0 failures 0",
+        "survivaltest: wave 2 alive 5 spawned 6 killed 1 failures 0"
+      ],
+      "owned_shutdown": true
+    },
+    {
+      "map": "mp_fav_tropical",
+      "pid": 113116,
+      "port": 17761,
+      "ready": true,
+      "elapsed_seconds": 54.33,
+      "start_wave": 7,
+      "exercise_seconds": 35.0,
+      "exit_code": null,
+      "exercise_evidence": [
+        "CoDOL survivaltest:   player 0 playing hp 100 at (424, -1160, 19.9112) credits 0 kills 0"
+      ],
+      "status": "\u00ff\u00ff\u00ff\u00ffprint\nsh1x_status map=mp_fav_tropical session_map=mp_fav_tropical gametype=survival type=survival running=1 ended=0 humans=0 bots=0 maxclients=16 parked=0 quick=0 quick_session=- epoch=0 joinable=0 quick_parties=0 uids=-",
+      "log": "D:\\CoD\\CoD4x_Server\\.claude\\worktrees\\iw4-asset-layout\\obj\\survival_progression_probe\\wave7\\mp_fav_tropical\\home\\main\\qconsole.log",
+      "waves": [
+        "CoDOL survival: 20 waves from mp/survival_waves_fav_tropical.csv, 4 repeat after them",
+        "CoDOL survival: 20 waves from mp/survival_waves_fav_tropical.csv, 4 repeat after them"
+      ],
+      "missing_table_fatal": false,
+      "runtime_error": true,
+      "ai_refs": [],
+      "wave_status": [
+        "survivaltest: wave 7 alive 0 spawned 0 killed 0 failures 0"
+      ],
+      "owned_shutdown": true
+    },
+    {
+      "map": "mp_fav_tropical",
+      "pid": 17492,
+      "port": 17761,
+      "ready": true,
+      "elapsed_seconds": 54.53,
+      "start_wave": 8,
+      "exercise_seconds": 35.0,
+      "exit_code": null,
+      "exercise_evidence": [
+        "CoDOL survivaltest:   player 0 spectator hp 100 at (1174, -223.643, 250) credits 175 kills 1"
+      ],
+      "status": "\u00ff\u00ff\u00ff\u00ffprint\nsh1x_status map=mp_fav_tropical session_map=mp_fav_tropical gametype=survival type=survival running=1 ended=0 humans=0 bots=1 maxclients=16 parked=0 quick=0 quick_session=- epoch=0 joinable=0 quick_parties=0 uids=-",
+      "log": "D:\\CoD\\CoD4x_Server\\.claude\\worktrees\\iw4-asset-layout\\obj\\survival_progression_probe\\wave8\\mp_fav_tropical\\home\\main\\qconsole.log",
+      "waves": [
+        "CoDOL survival: 20 waves from mp/survival_waves_fav_tropical.csv, 4 repeat after them"
+      ],
+      "runtime_error": false,
+      "missing_table_fatal": false,
+      "ai_refs": [
+        "dog_reg",
+        "martyrdom",
+        "regular"
+      ],
+      "wave_status": [
+        "survivaltest: wave 8 alive 0 spawned 0 killed 0 failures 0",
+        "survivaltest: wave 8 alive 8 spawned 8 killed 0 failures 0",
+        "survivaltest: wave 8 alive 7 spawned 8 killed 1 failures 0"
+      ],
+      "owned_shutdown": true
+    },
+    {
+      "map": "mp_fav_tropical",
+      "pid": 98452,
+      "port": 17761,
+      "ready": true,
+      "elapsed_seconds": 62.66,
+      "start_wave": 7,
+      "exercise_seconds": 25.0,
+      "death_exercise": true,
+      "exit_code": null,
+      "exercise_evidence": [
+        "CoDOL survivaltest:   player 0 playing hp 100 at (540.86, -895.026, 142.663) credits 1867 kills 6"
+      ],
+      "status": "\u00ff\u00ff\u00ff\u00ffprint\nsh1x_status map=mp_fav_tropical session_map=mp_fav_tropical gametype=survival type=survival running=1 ended=0 humans=0 bots=1 maxclients=16 parked=0 quick=0 quick_session=- epoch=0 joinable=0 quick_parties=0 uids=-",
+      "log": "D:\\CoD\\CoD4x_Server\\.claude\\worktrees\\iw4-asset-layout\\obj\\survival_progression_probe\\wave7_death_retry\\mp_fav_tropical\\home\\main\\qconsole.log",
+      "waves": [
+        "CoDOL survival: 20 waves from mp/survival_waves_fav_tropical.csv, 4 repeat after them"
+      ],
+      "runtime_error": false,
+      "missing_table_fatal": false,
+      "ai_refs": [
+        "chemical",
+        "hardened"
+      ],
+      "wave_status": [
+        "survivaltest: wave 7 alive 0 spawned 0 killed 0 failures 0",
+        "survivaltest: wave 7 alive 6 spawned 6 killed 0 failures 0",
+        "survivaltest: wave 7 alive 0 spawned 6 killed 6 failures 0"
+      ],
+      "owned_shutdown": true,
+      "death_exercise_completed": true
+    },
+    {
+      "binary_sha256": "820d98bf5a0364ff650176100a21eb3a1a69ea830ab04713fbd2fece40a4b61f",
+      "map": "mp_fav_tropical",
+      "pid": 68404,
+      "port": 17761,
+      "ready": true,
+      "elapsed_seconds": 57.17,
+      "start_wave": 8,
+      "exercise_seconds": 25.0,
+      "death_exercise": true,
+      "exit_code": null,
+      "exercise_evidence": [
+        "CoDOL survivaltest:   player 0 intermission hp 100 at (-872, -112, 72) credits 775 kills 2"
+      ],
+      "status": "\u00ff\u00ff\u00ff\u00ffprint\nsh1x_status map=mp_fav_tropical session_map=mp_fav_tropical gametype=survival type=survival running=1 ended=0 humans=0 bots=1 maxclients=16 parked=0 quick=0 quick_session=- epoch=0 joinable=0 quick_parties=0 uids=-",
+      "log": "D:\\CoD\\CoD4x_Server\\.claude\\worktrees\\iw4-asset-layout\\obj\\survival_progression_probe\\wave8_death_invulnerable\\mp_fav_tropical\\home\\main\\qconsole.log",
+      "waves": [
+        "CoDOL survival: 20 waves from mp/survival_waves_fav_tropical.csv, 4 repeat after them"
+      ],
+      "runtime_error": false,
+      "missing_table_fatal": false,
+      "ai_refs": [
+        "dog_reg",
+        "martyrdom",
+        "regular"
+      ],
+      "wave_status": [
+        "survivaltest: wave 8 alive 0 spawned 0 killed 0 failures 0",
+        "survivaltest: wave 8 alive 8 spawned 8 killed 0 failures 0",
+        "survivaltest: wave 8 alive 7 spawned 8 killed 1 failures 0"
+      ],
+      "owned_shutdown": true,
+      "death_exercise_completed": false,
+      "limitation": "Bot died despite setCanDamage(false); ineffective test verb removed. This run proves observed 100-to-65 HP dog-contact damage, not completed death hazard test."
+    },
+    {
+      "binary_sha256": "820d98bf5a0364ff650176100a21eb3a1a69ea830ab04713fbd2fece40a4b61f",
+      "map": "mp_fav_tropical",
+      "pid": 66740,
+      "port": 17761,
+      "ready": true,
+      "elapsed_seconds": 43.19,
+      "start_wave": 8,
+      "exercise_seconds": 12.0,
+      "death_exercise": true,
+      "exit_code": null,
+      "exercise_evidence": [
+        "CoDOL survivaltest:   player 0 playing hp 100 at (330.42, -250.522, 6.06786) credits 1248 kills 8"
+      ],
+      "status": "\u00ff\u00ff\u00ff\u00ffprint\nsh1x_status map=mp_fav_tropical session_map=mp_fav_tropical gametype=survival type=survival running=1 ended=0 humans=0 bots=1 maxclients=16 parked=0 quick=0 quick_session=- epoch=0 joinable=0 quick_parties=0 uids=-",
+      "log": "D:\\CoD\\CoD4x_Server\\.claude\\worktrees\\iw4-asset-layout\\obj\\survival_progression_probe\\wave8_early_death\\mp_fav_tropical\\home\\main\\qconsole.log",
+      "waves": [
+        "CoDOL survival: 20 waves from mp/survival_waves_fav_tropical.csv, 4 repeat after them"
+      ],
+      "runtime_error": false,
+      "death_exercise_completed": true,
+      "missing_table_fatal": false,
+      "ai_refs": [
+        "dog_reg",
+        "martyrdom",
+        "regular"
+      ],
+      "wave_status": [
+        "survivaltest: wave 8 alive 0 spawned 0 killed 0 failures 0",
+        "survivaltest: wave 8 alive 8 spawned 8 killed 0 failures 0",
+        "survivaltest: wave 8 alive 0 spawned 8 killed 8 failures 0"
+      ],
+      "owned_shutdown": true
+    }
+  ],
+  "binary_hash_note": "Per-run hash where captured at launch; original startup records predate automatic hash capture."
+}

@@ -1,0 +1,51 @@
+# mp maps whose bots route over the level's own node graph instead of
+# <map>_wp.csv (codol_preferMapGraph 1, codol_bot_nav.c).  One map per line.
+# Remove a line to put that map back on its CSV.  The CSV is still loaded
+# first and is the automatic fallback when the level graph is fragmented
+# (main component < 80%) or misses spawn points (< 95% within 256 of the
+# main component); its claymore/grenade/javelin spots and ladder nodes are
+# grafted onto the level graph.
+#
+# Stock maps marked [3.3.3.3] use CoDOL 3.3.3.3's node set,
+# waypoints/<map>_nodes.map (tools/codol_map_nodes_333.py).
+#
+# MEASURED 2026-10-22: 12 regular bots, 3-minute war, probe server.
+# kills / stuck reports / wedged, CSV -> level graph; graph nodes, components,
+# main-component share, spawns covered.
+#
+# usermaps (their own node_* records)
+mp_abandon_sh        # 34/114/1 -> 41/41/1;  1731 nodes, 2 comp, 99.9%, 242/242
+mp_abandon_sh_mk     # 30/89/0  -> 46/47/1;  1819 nodes, 8 comp, 99.4%, 242/242
+mp_ambush_sh         # 41/65/0  -> 54/43/0;  1369 nodes, 4 comp, 97.3%, 265/265
+mp_cha_quad          # 47/134/6 -> 56/53/3;   447 nodes, 1 comp, 100%,  30/30 (16 ctf/dd/sab/sd spawns parked off the level); 220/220 with maps/mp/mp_cha_quad.d3dbsp.ents
+mp_firingrange       # 52/52/1  -> 56/56/1;   876 nodes, 8 comp, 92.5%, 232/232
+mp_mideast           # 51/59/2  -> 55/42/1;   581 nodes, 1 comp, 100%,  97/97; 220/220 with maps/mp/mp_mideast.d3dbsp.ents
+mp_rust_long         # 70/60/1  -> 77/57/0;   700 nodes, 4 comp, 99.0%, 281/284
+mp_seatown           # 25/131/2 -> 46/32/0;  1113 nodes, 14 comp, 98.7%, 238/238 (dom 44/75 -> 49/67)
+mp_shipment_long     # 70/42/0  -> 82/37/0;   360 nodes, 1 comp, 100%,  234/234
+mp_subbase_sh        # 31/97/4  -> 45/51/1;  1053 nodes, 6 comp, 98.7%, 263/263
+mp_terminal_cls      # 40/126/2 -> 51/58/0;  1131 nodes, 12 comp, 98.2%, 217/217
+#
+# stock maps
+mp_afghan            # [3.3.3.3] 40/56/2   -> 40/29/0;  1870 nodes, 54 comp, 96.7%, 217/223
+mp_bog_sh            # [3.3.3.3] 79/53/3   -> 81/56/0;  1287 nodes, 10 comp, 99.3%, 189/189 (dom 67/63 -> 59/71)
+mp_cross_fire        # [3.3.3.3] 49/64/0   -> 55/40/0;  1563 nodes, 36 comp, 97.6%, 282/282
+mp_estate_tropical   # [3.3.3.3] 43/97/12  -> 44/21/0;  2829 nodes, 14 comp, 99.2%, 235/235
+mp_fav_tropical      # [3.3.3.3] 35/128/4  -> 42/67/0;  1147 nodes, 4 comp, 99.6%, 223/223
+mp_killhouse_sh      # [3.3.3.3] 95/67/0   -> 91/51/0;   176 nodes, 2 comp, 97.7%, 301/301
+mp_nuked             # [3.3.3.3] 77/51/1   -> 88/44/0;   306 nodes, 1 comp, 100%,  266/266
+mp_overgrown         # [3.3.3.3] 41/134/15 -> 43/54/3;  1933 nodes, 14 comp, 97.0%, 218/221
+#
+# not switched (stay on the CSV; no node file shipped):
+#   mp_crash_tropical  [3.3.3.3] 50/85/0 -> 55/136/2: more stuck reports; 20 comp, main 90.5%
+#   mp_storm_spring    [3.3.3.3] 45/99/20 -> 38/96/2: fewer kills in all three runs (25, 32, 38)
+#   mp_cargoship_sh, mp_bloc_sh, mp_rust, mp_underpass, mp_crash_intro: no 3.3.3.3 node set
+#     (cargoship excluded on request; the others are not in the 3.3.3.3 packages)
+#
+# CoDOL 3.5.6.2 ports.  They ship no CSV, so their level graph is built
+# either way (with the actor hull: the player-hull walk applies only when a
+# CSV is replaced); the lines record the measurement.  MEASURED 2026-10-22,
+# 10 regular bots, probe server:
+mp_hunger            # 2728 nodes, 7 comp, 98.8%; spawns and objectives from maps/mp/mp_hunger.d3dbsp.ents (the town)
+mp_vacant            #  740 nodes, 2 comp, 88.2%
+mp_brl_derail        # 3357 nodes, 1 comp, 100%

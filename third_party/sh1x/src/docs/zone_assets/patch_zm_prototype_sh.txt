@@ -1,0 +1,2 @@
+material	wc/_default_water
+rawfile	animlists/zm_prototype_sh.animlist

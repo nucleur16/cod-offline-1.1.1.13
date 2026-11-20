@@ -73,7 +73,11 @@ tests/offline/dwtest.exe
 /dist/
 # the match server built in place (scripts/build.sh): objects, archives, the library
 third_party/sh1x/src/obj/
-third_party/sh1x/src/bin/
+third_party/sh1x/src/bin/*.a
+third_party/sh1x/src/bin/*.exe
 third_party/sh1x/src/lib/*.a
 third_party/sh1x/src/**/*.o
-third_party/sh1x/src/**/*.d
+third_party/sh1x/src/src/**/*.d
+
+# the old server/sh1x submodule checkout (the source is in third_party/sh1x/src now)
+/server/

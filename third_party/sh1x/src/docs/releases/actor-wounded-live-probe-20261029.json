@@ -1,0 +1,101 @@
+{
+  "status": "implemented, production-body tested and owned native wounded/finishing-shot/death cleanup observed; not deployed",
+  "native_base_commit": "855fffbc78f0fc05dbc579b3d93d13355fd09e89",
+  "rawfiles_base_commit": "21e928e335761ecd33e75db226856201ba3ea1b0",
+  "binaries": {
+    "codol_dedrun.exe": {
+      "sha256": "35e4910ff4bb677e82771134afe01f34b21c25d75368e35a1347da3ec40d5a11",
+      "bytes": 7547145
+    },
+    "sh1x_host.dll": {
+      "sha256": "c3850864c5e650ccad113ff4cdb330150a9698ad79eb0988612cb80fecfed32b",
+      "bytes": 7526198
+    }
+  },
+  "source_delta": "native actual live wounded state + held AI frame + retained damage bleedout, soldier pain/death choreography and root behavior death cancellation; shared build also includes separately owned helicopter compass changes",
+  "tested_source_sha256": {
+    "src/codol/player/codol_actor_lifecycle.cpp": "ef0b70e85b137109b198b4759f478aa4b115fcf508164cf2565430e2997ff3d5",
+    "bin/home/codol_rawfiles/animscripts/soldier_death.gsc": "5e5cf6cde1f0d046829743e32273d32d62e5a8cf1e1d9fdc5f16c83809657596",
+    "bin/home/codol_rawfiles/animscripts/soldier_pain.gsc": "2ca9f78e7345b53c5942135ed9becc2ecf87c158ce0086bd24d5b56ba05f3b60",
+    "bin/home/codol_rawfiles/animscripts/soldier_move.gsc": "ee3aecfe8d7ad167fe232068d0cb7acab5e2fa32d441d5a0e7fed8de95ad3364",
+    "bin/home/codol_rawfiles/animscripts/soldier_combat.gsc": "8e085bf7493aa018782347377579ad290a57900f54eb1e0528878f64ad9a40aa",
+    "bin/home/codol_rawfiles/animscripts/soldier_stop.gsc": "06f7ecce096d32691ff59a5c228cc426e96437da323a0695dc4bd19b6028ebd8"
+  },
+  "references": {
+    "IW4": "D:/CoD/COD-GSC-Source/IW4-GSC/animscripts/pain.gsc crawlingPain620: live positive health <=100; low health/pose/location/cooldown constraints; crawlingPistol727 and killWrapper1281 use real Kill with last_dmg_player",
+    "T5": "D:/CoD/OpenBLOPS/Game/Server/game_mp/g_combat_mp.cpp591 G_DamageActor only applies damage while takedamage and actor Physics.bIsAlive",
+    "retained_native": "src/asmsource/_g_combat_mp.asm G_Damage_230 subtracts real health, notifies damage, branches health<=0 to G_Damage_140 death notify and native die handler"
+  },
+  "tests": {
+    "native": "make test-codol-actor-wounded codol-run-test_codol_actor_drop codol-run-test_codol_actor_team passed; actual extracted lifecycle C++ compiled ASan/UBSan",
+    "GSC": "node tests/soldier_wounded_lifecycle_test.js passed crawl/back, finishing-shot interruption, actual living_enemies and death_watch single counters/rewards",
+    "cancellation": "node tests/soldier_grenade_cancellation_test.js passed original owning move/combat/stop caller statement; prior missing root death endon reproduces undefined boolean cast; fixed root cancels before evaluation/continuation",
+    "animation": "codol_coop_anim_check.py --category coop --map mp_fav_tropical: server/client generic_human identical1058entries; no added client animation nodes",
+    "resolvers": "final built EXE Survival195, Coop170, MP128, Prototype+Theater96 scripts resolved;1070accepted builtins; existing createprintchannel leadingNUL false-negative is unrelated"
+  },
+  "owned_probe": {
+    "pid": 41060,
+    "port": 17761,
+    "map": "mp_fav_tropical",
+    "wave": 7,
+    "duration_seconds": 88.25,
+    "ready": true,
+    "runtime_error": false,
+    "death_exercise_completed": true,
+    "observations": [
+      "CoDOL survivaltest: WOUND_PROBE_STARTED",
+      "CoDOL coop anim: ent 818 wounded (crawl)",
+      "CoDOL survivaltest: WOUND_LIVE ent 818 hp 10 alive 1 kind crawl living 6 wavekilled 0 playerkills 0",
+      "CoDOL survivaltest: WOUND_FINAL hp 0 alive 0 living 5 wavekilldelta 1 playerkilldelta 1",
+      "CoDOL survivaltest: killed 5 and 0 choppers",
+      "CoDOL survivaltest: wave 7 alive 0 spawned 6 killed 6 failures 0",
+      "CoDOL survivaltest: wave 7 alive 0 spawned 6 killed 6 failures 0",
+      "CoDOL survivaltest: wave 7 alive 0 spawned 6 killed 6 failures 0",
+      "CoDOL survivaltest: wave 7 alive 0 spawned 6 killed 6 failures 0",
+      "CoDOL survivaltest: wave 7 alive 0 spawned 6 killed 6 failures 0"
+    ],
+    "shutdown": "owned PID41060 received quit and exited; UDP17761 released explicitly to helicopter agent",
+    "log": "D:\\CoD\\CoD4x_Server\\.claude\\worktrees\\iw4-asset-layout\\obj\\wounded-probe-fixed-20261029\\mp_fav_tropical\\home\\main\\qconsole.log",
+    "diagnostic_policy": "Staged ONLY _survival_test.gsc command invokes real finishActorDamage on existing infantry and prints actual health/isAlive/list/counters; real25% selection, room check and native low-positive-health eligibility unchanged. Bot fire button held off; own testbot godmode only. No actor health write, forced phase, fake death/reward or client input."
+  },
+  "owned_probe_diagnostic_GSC": "\n// OWNED PROBE ONLY: invoke real native damage on existing wave infantry.\n// No production policy, health restoration, animation or lifecycle is replaced.\nwounded_probe()\n{\n    players = getPlayers();\n    if ( !players.size )\n        return;\n    players[ 0 ] codol_botPressButtons( 0, 60 );\n    for ( spin = 0; spin < 30; spin++ )\n    {\n        waiting = maps\\mp\\gametypes\\_survival_ai::living_enemies();\n        if ( waiting.size )\n            break;\n        wait( 0.5 );\n    }\n    codolprintln( \"CoDOL survivaltest: WOUND_PROBE_STARTED\" );\n    enemies = maps\\mp\\gametypes\\_survival_ai::living_enemies();\n    for ( i = 0; i < enemies.size; i++ )\n    {\n        e = enemies[ i ];\n        if ( !isDefined( e ) || !isAlive( e ) || ( isDefined( e.isdog ) && e.isdog ) )\n            continue;\n        remaining = int( e.maxhealth * 0.3 );\n        if ( remaining > 30 )\n            remaining = 30;\n        if ( remaining < 2 )\n            remaining = 2;\n        amount = e.health - remaining;\n        if ( amount < 1 )\n            amount = 1;\n        for ( shot = 0; shot < 16 && isDefined( e ) && isAlive( e ) && e.health > 1; shot++ )\n        {\n            e finishActorDamage( undefined, players[ 0 ], amount, 0, \"MOD_RIFLE_BULLET\", \"none\", e.origin, ( 1, 0, 0 ), \"torso_lower\", 0 );\n            amount = 1;\n            wait( 1.6 );\n            if ( isDefined( e ) && isAlive( e ) && isDefined( e.coop_wounded_kind ) )\n            {\n                beforeKills = players[ 0 ].kills;\n                beforeWaveKills = level.survival_killed;\n                living = maps\\mp\\gametypes\\_survival_ai::living_enemies();\n                codolprintln( \"CoDOL survivaltest: WOUND_LIVE ent \" + e getEntityNumber() + \" hp \" + e.health + \" alive \" + isAlive( e ) + \" kind \" + e.coop_wounded_kind + \" living \" + living.size + \" wavekilled \" + beforeWaveKills + \" playerkills \" + beforeKills );\n                wait( 0.3 );\n                if ( !isDefined( e ) || !isAlive( e ) )\n                    return;\n                e finishActorDamage( undefined, players[ 0 ], e.health, 0, \"MOD_RIFLE_BULLET\", \"none\", e.origin, ( 1, 0, 0 ), \"torso_lower\", 0 );\n                wait( 0.5 );\n                living = maps\\mp\\gametypes\\_survival_ai::living_enemies();\n                codolprintln( \"CoDOL survivaltest: WOUND_FINAL hp \" + e.health + \" alive \" + isAlive( e ) + \" living \" + living.size + \" wavekilldelta \" + ( level.survival_killed - beforeWaveKills ) + \" playerkilldelta \" + ( players[ 0 ].kills - beforeKills ) );\n                return;\n            }\n        }\n    }\n    codolprintln( \"CoDOL survivaltest: WOUND_NOT_OBSERVED\" );\n}\n",
+  "initial_probe_failure": {
+    "pid": 17404,
+    "binary_sha256": "5e41304e5ba02049f48183c3b9c3394f2420662580de4c069b9f35a77e021fe3",
+    "log": "obj/wounded-probe-20261029/mp_fav_tropical/home/main/qconsole.log",
+    "failure": "Actual grenade-reaction death cancellation returnedundefined into soldier_move.gsc92 boolean cast during killenemies. Fixed root ownership death endons; same wave7 kill-all retest clean. Initial diagnostic command was overwritten before0.5s polling, corrected by waiting aftercommand beforestatus."
+  },
+  "limits": [
+    "Native owned probe only; no C1 visual or live crosshair acceptance for this new wounded sequence.",
+    "Crosshair native production regression confirms hostile live actor at1HP; wound methods retain team/type/solid/contents and no dead flags are introduced.",
+    "No deployment, commit, restart or user input; only owned17761 probe PIDs launched/quit."
+  ],
+  "final_rawfiles_commit": "f05ed0ccb1261d9334cdd52738f5816f02e668ee",
+  "shared_pending_native_source_sha256": {
+    "src/codol/player/codol_actor_lifecycle.cpp": "ef0b70e85b137109b198b4759f478aa4b115fcf508164cf2565430e2997ff3d5",
+    "src/codol/script/codol_script_minimap.c": "28b38ffc176dc052e184a75f2eb09d2ddb896a990ff8527daec74b902c4411dc",
+    "src/codol/script/codol_script_minimap.h": "80fa2e361dd9c476f1c33f58ff7f9a9bdbcd9d200a97dd2dcc96a5325ebe27f9",
+    "src/codol/snapshot/codol_engine_state.c": "70906521510630242709e3af535c35a8fed153369f50ae9e3ad74c8eaa254845",
+    "src/codol/snapshot/codol_engine_state.h": "b7d713a34f128bad1eea9cb8d12f55914874e589e5ab5bb08337f528980b1f54",
+    "src/codol/snapshot/codol_entitystate_ext.c": "c0be00c2a96784eb16704c58076c0d227e45af8b010459a7cb989edacd1ef1c8",
+    "src/codol/snapshot/codol_entitystate_ext.h": "280e6672f01adb04b769d6cc01dba52baf36e19302c9406da998a6bdc3cb4bf7",
+    "src/codol/snapshot/codol_sv_gameframe.c": "fb9998dd8c25f5f6d0c9888c6343bd6af591de837652bde7810da00e69383a37",
+    "src/scr_vm_main.c": "03c33c71161fb6a04da0c54e654d76f81bd3e6a3fec8e75021be14d482f96cf8",
+    "src/codol/vehicle/codol_vehicle_compass.cpp": "44d60815294559edb8942fb28084e76f86268f25ba8b146d733ed613943a0375",
+    "src/codol/vehicle/codol_vehicle_compass.h": "f5d5bbb983f0aa39d4474398e7c94603511a658468c7221ee59bb7b749baf83a"
+  },
+  "shared_class_selection": {
+    "client_source": "5fb04c1",
+    "zone": "codol_common built by parent, SHA prefix893123B",
+    "original_C1_router_proof": "parent original-C1 three tests distinguish generic changeclass (activates legacy menu) from team variant cpp_openChooseClassMenu; GSC now uses team route",
+    "actual_GSC_regression": "survival_kiosk_class_choice_test.js passed opening/cancel free, valid custom selection exactly once and1000 debit; actual _menus callback applies purchased loadout immediately outside normal grace period",
+    "escape": "observer active only during pending class purchase",
+    "limits": "No live C1 visual acceptance for these new class changes."
+  },
+  "shared_helicopter": {
+    "source": "native captured/archived4-bit selector1..15 in real C1 mini-map bank6085..6099, GSC mounted VehicleDef hostile material producer; original rotor helper invoked by Survival factory",
+    "test_status": "Separately owned native/GSC/archive/wire tests passed. Owned Favela PID104508 ran44.42s, all3 real rotor helpers/tree2 bound; passive correct entity-extension read showed native axis1, controller0 unchanged, selector11/CS6095 hostile Cobra and12/CS6096 Pavelow red. Process exited,17761free.",
+    "limits": "Do not infer live C1 helicopter visual acceptance from native build or owned wounded probe.",
+    "receipt": "docs/CODOL_SURVIVAL_HELICOPTER_ROTORS_COMPASS_20261029.md; tests/fixtures/survival_helicopter_evidence.json"
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "status": "PASS",
+  "manifest_sha256": "bc039c61885831a5ad519a9fcc0e8221f4b03edbf3747d275c5b29f6658bd918",
+  "cases": [
+    {
+      "case": "all-integrity",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "stdout": "PASS integrity/profile only; parent review and real C1 acceptance still required\n",
+      "stderr": ""
+    },
+    {
+      "case": "mp-normal",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "stdout": "PASS integrity/profile only; parent review and real C1 acceptance still required\n",
+      "stderr": ""
+    },
+    {
+      "case": "coop-normal",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "stdout": "PASS integrity/profile only; parent review and real C1 acceptance still required\n",
+      "stderr": ""
+    },
+    {
+      "case": "zm-zombies",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "stdout": "PASS integrity/profile only; parent review and real C1 acceptance still required\n",
+      "stderr": ""
+    },
+    {
+      "case": "reject-normal-zm",
+      "exit_code": 2,
+      "expected_exit_code": 2,
+      "stdout": "REJECT ('profile/category mismatch', 'normal', 'zm')\n",
+      "stderr": ""
+    },
+    {
+      "case": "reject-zombies-coop",
+      "exit_code": 2,
+      "expected_exit_code": 2,
+      "stdout": "REJECT ('profile/category mismatch', 'zombies', 'coop')\n",
+      "stderr": ""
+    },
+    {
+      "case": "reject-zombies-mp",
+      "exit_code": 2,
+      "expected_exit_code": 2,
+      "stdout": "REJECT ('profile/category mismatch', 'zombies', 'mp')\n",
+      "stderr": ""
+    },
+    {
+      "case": "reject-unknown-category",
+      "exit_code": 2,
+      "expected_exit_code": 2,
+      "stdout": "REJECT unsupported category\n",
+      "stderr": ""
+    },
+    {
+      "case": "reject-profile-without-category",
+      "exit_code": 2,
+      "expected_exit_code": 2,
+      "stdout": "REJECT category required for a selected profile/native\n",
+      "stderr": ""
+    },
+    {
+      "case": "reject-wrong-binary",
+      "exit_code": 2,
+      "expected_exit_code": 2,
+      "stdout": "REJECT wrong native for reviewed profile\n",
+      "stderr": ""
+    }
+  ],
+  "source_archives": {
+    "normal": {
+      "files": 1715,
+      "sha256": "e1ed013ae878542e18ac9a519521b44584757246ff4039cd790f9ba1ce456e69",
+      "every_member_matches_compiled_manifest": true
+    },
+    "zombies": {
+      "files": 1727,
+      "sha256": "d8c8a5047cca3a9c0a618da22e84a53311d8369d841c111dd4d9d7ac78334440",
+      "every_member_matches_compiled_manifest": true
+    }
+  },
+  "finished_utc": "2026-10-23T17:19:13.349406+00:00",
+  "runtime_or_publication": false
+}

@@ -1,0 +1,367 @@
+{
+  "sha256": "d990610732258b1d00dd6fe63d6691f294312a2e0562955a01ce16216115390d",
+  "dispatcher": "0x004c8ed0",
+  "date": "2026-09-07",
+  "corpus": "Startup and ui_viewer_mp using existing local lobby service",
+  "names_source": "alpha0022 zone_assets.py ASSET_TYPES",
+  "limitations": [
+    "ID to loader routes and header resolution only; not complete asset field layouts.",
+    "Clean trace shared epilogue consumed clipmap POST on no-op type 29. Earlier ui_viewer_mp trace independently verifies the type 15 PRE/ROUTE/POST pair.",
+    "IDs 14,17,19,42 have static loader routes but were not observed.",
+    "IDs 23,29,32,33,34,35 have no load call in this dispatcher."
+  ],
+  "types": [
+    {
+      "id": 0,
+      "name": "physpreset",
+      "callsite": 5017320,
+      "loader": 4961488,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 1,
+      "name": "phys_collmap",
+      "callsite": 5017344,
+      "loader": 4962064,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 2,
+      "name": "xanim",
+      "callsite": 5017366,
+      "loader": 4947168,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 3,
+      "name": "xmodelsurfs",
+      "callsite": 5017390,
+      "loader": 4962640,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 4,
+      "name": "xmodel",
+      "callsite": 5017414,
+      "loader": 4964080,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 5,
+      "name": "material",
+      "callsite": 5017436,
+      "loader": 4957216,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 6,
+      "name": "pixelshader",
+      "callsite": 5017460,
+      "loader": 4954672,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 7,
+      "name": "vertexshader",
+      "callsite": 5017484,
+      "loader": 4954272,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 8,
+      "name": "vertexdecl",
+      "callsite": 5017506,
+      "loader": 4955056,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 9,
+      "name": "techset",
+      "callsite": 5017530,
+      "loader": 4956656,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 10,
+      "name": "image",
+      "callsite": 5017554,
+      "loader": 4952992,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 11,
+      "name": "sound",
+      "callsite": 5017576,
+      "loader": 4950064,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 12,
+      "name": "sndcurve",
+      "callsite": 5017600,
+      "loader": 4948816,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 13,
+      "name": "loaded_sound",
+      "callsite": 5017624,
+      "loader": 4948336,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 14,
+      "name": "col_map_sp",
+      "callsite": 5018173,
+      "loader": 4979536,
+      "runtime_route_verified": false,
+      "paired_resolved_header_verified": false
+    },
+    {
+      "id": 15,
+      "name": "col_map_mp",
+      "callsite": 5018173,
+      "loader": 4979536,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 16,
+      "name": "com_map",
+      "callsite": 5017664,
+      "loader": 4980608,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 17,
+      "name": "game_map_sp",
+      "callsite": 5017688,
+      "loader": 4967216,
+      "runtime_route_verified": false,
+      "paired_resolved_header_verified": false
+    },
+    {
+      "id": 18,
+      "name": "game_map_mp",
+      "callsite": 5017712,
+      "loader": 4967456,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 19,
+      "name": "map_ents",
+      "callsite": 5017734,
+      "loader": 4975088,
+      "runtime_route_verified": false,
+      "paired_resolved_header_verified": false
+    },
+    {
+      "id": 20,
+      "name": "fx_map",
+      "callsite": 5017758,
+      "loader": 4973280,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 21,
+      "name": "gfx_map",
+      "callsite": 5017782,
+      "loader": 5015344,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 22,
+      "name": "lightdef",
+      "callsite": 5017804,
+      "loader": 4959216,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 23,
+      "name": "ui_map",
+      "callsite": null,
+      "loader": null,
+      "runtime_route_verified": false,
+      "paired_resolved_header_verified": false
+    },
+    {
+      "id": 24,
+      "name": "font",
+      "callsite": 5017828,
+      "loader": 5016848,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 25,
+      "name": "menufile",
+      "callsite": 5017852,
+      "loader": 4987264,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 26,
+      "name": "menu",
+      "callsite": 5017874,
+      "loader": 4986800,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 27,
+      "name": "localize",
+      "callsite": 5017898,
+      "loader": 4988800,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 28,
+      "name": "weapon",
+      "callsite": 5017922,
+      "loader": 4996112,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 29,
+      "name": "snddriverglobals",
+      "callsite": null,
+      "loader": null,
+      "runtime_route_verified": false,
+      "paired_resolved_header_verified": false
+    },
+    {
+      "id": 30,
+      "name": "fx",
+      "callsite": 5017944,
+      "loader": 4967920,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 31,
+      "name": "impactfx",
+      "callsite": 5017968,
+      "loader": 4989488,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 32,
+      "name": "aitype",
+      "callsite": null,
+      "loader": null,
+      "runtime_route_verified": false,
+      "paired_resolved_header_verified": false
+    },
+    {
+      "id": 33,
+      "name": "mptype",
+      "callsite": null,
+      "loader": null,
+      "runtime_route_verified": false,
+      "paired_resolved_header_verified": false
+    },
+    {
+      "id": 34,
+      "name": "character",
+      "callsite": null,
+      "loader": null,
+      "runtime_route_verified": false,
+      "paired_resolved_header_verified": false
+    },
+    {
+      "id": 35,
+      "name": "xmodelalias",
+      "callsite": null,
+      "loader": null,
+      "runtime_route_verified": false,
+      "paired_resolved_header_verified": false
+    },
+    {
+      "id": 36,
+      "name": "rawfile",
+      "callsite": 5017992,
+      "loader": 5003696,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 37,
+      "name": "stringtable",
+      "callsite": 5018014,
+      "loader": 5004368,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 38,
+      "name": "leaderboarddef",
+      "callsite": 5018038,
+      "loader": 5006752,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 39,
+      "name": "structureddatadef",
+      "callsite": 5018062,
+      "loader": 5005952,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 40,
+      "name": "tracer",
+      "callsite": 5018084,
+      "loader": 4990096,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 41,
+      "name": "vehicle",
+      "callsite": 5018108,
+      "loader": 5002400,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    },
+    {
+      "id": 42,
+      "name": "addon_map_ents",
+      "callsite": 5018132,
+      "loader": 4975600,
+      "runtime_route_verified": false,
+      "paired_resolved_header_verified": false
+    },
+    {
+      "id": 43,
+      "name": "weaponattach",
+      "callsite": 5018154,
+      "loader": 4996752,
+      "runtime_route_verified": true,
+      "paired_resolved_header_verified": true
+    }
+  ]
+}

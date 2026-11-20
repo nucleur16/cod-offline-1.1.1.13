@@ -1,0 +1,44 @@
+# sh1x server -- Call of Duty Online Closed Alpha Server, match server.
+#
+#     cp .env.example .env      # set LOBBY_STATE_DIR at least
+#     docker compose up -d --build
+#
+# The lobby (Demonware emulator) runs independently, ON THIS SAME HOST: it hands
+# the server each player's session key and admission through files in its state
+# directory, and starts matches over RCON, which the server accepts from
+# loopback only. Host networking gives both of those; mount the lobby's state
+# directory (its CODOL_STATE_DIR -- ./data in the lobby's own compose file) at
+# /data.
+
+services:
+  gameserver:
+    build:
+      context: ./gameserver
+      dockerfile: Dockerfile
+    image: sh1x-gameserver:latest
+    container_name: sh1x-gameserver
+    network_mode: host
+    volumes:
+      - ./game:/game:ro
+      - ${LOBBY_STATE_DIR:?set LOBBY_STATE_DIR in .env}:/data
+      - gameserver-home:/home/codol
+    environment:
+      CODOL_GAME_PORT: ${GAME_PORT:-17733}
+      CODOL_MAP: ${START_MAP:-mp_rust}
+      CODOL_GAMETYPE: ${START_GAMETYPE:-dm}
+      CODOL_ZONE_TYPE: ${START_ZONE_TYPE:-mp}
+      CODOL_BOTFILL: ${BOTFILL:-12}
+      CODOL_BOTMAX: ${BOTMAX:-11}
+      CODOL_BOTS: ${BOTS:-0}
+      OL_MAXCLIENTS: ${MAXCLIENTS:-18}
+      # 1 = only clients the lobby admitted may join (their own session key is on
+      # game_admissions.txt in the lobby's state directory).
+      CODOL_ADMISSION_REQUIRED: ${GAME_ADMISSION_REQUIRED:-1}
+      CODOL_DEVELOPER: ${DEVELOPER:-0}
+      CODOL_EXTRA_ARGS: ${EXTRA_ARGS:-}
+    restart: unless-stopped
+    stop_grace_period: 15s
+    init: true
+
+volumes:
+  gameserver-home:

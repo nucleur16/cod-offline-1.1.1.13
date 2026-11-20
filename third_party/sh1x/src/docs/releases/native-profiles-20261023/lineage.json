@@ -1,0 +1,16 @@
+{
+  "upstream_main": "b316bd45c81ebaa8600273e5090e85207573b7fc",
+  "private_parent": "885b7d699a9c69ad7f24d64c8be7773ec0c013ab",
+  "common_ancestor": "b9fba4c87a6e00c01d92846f8871bd95d151a0c1",
+  "rawfiles_gitlink_preserved": "e37a77d2ed0aa99d4310da5a7cc7c7f8e74bdc6f",
+  "raw_pr1_dependency": "a1cc3c241764c189ca142745f5c05bb8d58a55ac source-only merge uses useWeaponHideTags; separate GSC/client qualification required",
+  "normal_primary_source_exact_compiled_archive": "e1ed013ae878542e18ac9a519521b44584757246ff4039cd790f9ba1ce456e69",
+  "zombies_source_exact_compiled_archive": "d8c8a5047cca3a9c0a618da22e84a53311d8369d841c111dd4d9d7ac78334440",
+  "normal_source_and_zombies_delta_from": "isolated audited three-way integration; all inherited copyrights/attribution retained",
+  "release_manifest_sha256": "bc039c61885831a5ad519a9fcc0e8221f4b03edbf3747d275c5b29f6658bd918",
+  "frozen_review_bundle": "E:\\CoDOL-Task-Clients\\unified-native-build-20261023\\release-review-r2",
+  "runtime_tests_on_these_new_binaries": "NONE; parent review/C1 required",
+  "publication": "NONE",
+  "source_snapshots_are_not_new_live_gameplay_proof": true,
+  "created_utc": "2026-10-23T17:32:13.724611+00:00"
+}

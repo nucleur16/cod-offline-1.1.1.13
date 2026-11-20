@@ -1,0 +1,4 @@
+localize	SUBTITLE_SCANCR_AB_1MC_USE_AIRSTRIKE
+localize	SUBTITLE_TFANCR_UK_1MC_USE_AIRSTRIKE
+sound	ab_1mc_acheive_bomb
+sound	uk_1mc_acheive_bomb

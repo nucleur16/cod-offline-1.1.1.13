@@ -1,0 +1,2915 @@
+{
+ "maps": [
+  {
+   "map": "zm_theater_sh",
+   "buys": [
+    {
+     "id": "theater1",
+     "wall_shift": 0.0,
+     "t5_weapon": "ithaca_zm",
+     "weapon": "spas12_zm",
+     "t5_trigger": [
+      782.0,
+      83.0,
+      223.0
+     ],
+     "t5_chalk": "wc/chalk_weapon_ithaca",
+     "t5_chalk_path": "zombie_theater / BSP World / wc/chalk_weapon_ithaca / surface 7083",
+     "chalk": {
+      "image": "glow_weapon_ithaca_c",
+      "half": [
+       22.5,
+       8.0
+      ],
+      "atlas": false,
+      "origin": [
+       781.5,
+       78.25,
+       221.5
+      ],
+      "angles": [
+       -0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_spas12_world",
+      "origin": [
+       781.5,
+       77.75,
+       226.0
+      ],
+      "angles": [
+       0,
+       270.0,
+       0
+      ]
+     },
+     "use_origin": [
+      783.0,
+      78.25,
+      221.5
+     ],
+     "glow": {
+      "origin": [
+       782.0,
+       78.25,
+       221.5
+      ],
+      "angles": [
+       -0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       784.3,
+       76.05,
+       204.2
+      ],
+      "angles": [
+       0,
+       270.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "theater2",
+     "wall_shift": 0.0,
+     "t5_weapon": "mp5k_zm",
+     "weapon": "mp5k_zm",
+     "t5_trigger": [
+      1040.0,
+      1104.0,
+      38.0
+     ],
+     "t5_chalk": "wc/chalk_weapon_mp5",
+     "t5_chalk_path": "zombie_theater / BSP World / wc/chalk_weapon_mp5 / surface 7087",
+     "chalk": {
+      "image": "glow_weapon_mp5_c",
+      "half": [
+       17.5,
+       8.5
+      ],
+      "atlas": false,
+      "origin": [
+       1039.5,
+       1104.5,
+       38.0
+      ],
+      "angles": [
+       -0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_mp5k_world",
+      "origin": [
+       1039.0,
+       1094.0,
+       40.0
+      ],
+      "angles": [
+       0,
+       270.0,
+       0
+      ]
+     },
+     "use_origin": [
+      1041.0,
+      1104.5,
+      38.0
+     ],
+     "glow": {
+      "origin": [
+       1040.0,
+       1104.5,
+       38.0
+      ],
+      "angles": [
+       -0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       1042.3,
+       1102.3,
+       20.7
+      ],
+      "angles": [
+       0,
+       270.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "theater3",
+     "wall_shift": 0.0,
+     "t5_weapon": "m14_zm",
+     "weapon": "m14ebr_zm",
+     "t5_trigger": [
+      301.0,
+      -521.0,
+      303.0
+     ],
+     "t5_chalk": "wc/chalk_weapon_m14",
+     "t5_chalk_path": "zombie_theater / BSP World / wc/chalk_weapon_m14 / surface 7084",
+     "chalk": {
+      "image": "glow_weapon_m14_c",
+      "half": [
+       22.75,
+       11.5
+      ],
+      "atlas": false,
+      "origin": [
+       297.75,
+       -521.5,
+       304.5
+      ],
+      "angles": [
+       -0.0,
+       270.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_m14ebr_world",
+      "origin": [
+       296.95,
+       -521.0,
+       307.0
+      ],
+      "angles": [
+       0,
+       180.0,
+       0
+      ]
+     },
+     "use_origin": [
+      297.75,
+      -523.0,
+      304.5
+     ],
+     "glow": {
+      "origin": [
+       297.75,
+       -522.0,
+       304.5
+      ],
+      "angles": [
+       -0.0,
+       270.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       295.55,
+       -524.3,
+       287.2
+      ],
+      "angles": [
+       0,
+       180.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "theater4",
+     "wall_shift": 0.0,
+     "t5_weapon": "mp40_zm",
+     "weapon": "uzi_zm",
+     "t5_trigger": [
+      1887.0,
+      423.0,
+      39.0
+     ],
+     "t5_chalk": "wc/chalk_weapon_mp40",
+     "t5_chalk_path": "zombie_theater / BSP World / wc/chalk_weapon_mp40 / surface 7086",
+     "chalk": {
+      "image": "glow_weapon_mp40_c",
+      "half": [
+       18.125,
+       9.625
+      ],
+      "atlas": false,
+      "origin": [
+       1886.5,
+       419.875,
+       36.875
+      ],
+      "angles": [
+       -0.0,
+       180.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_miniuzi_world",
+      "origin": [
+       1885.5,
+       431.48,
+       40.98
+      ],
+      "angles": [
+       0,
+       90.0,
+       0
+      ]
+     },
+     "use_origin": [
+      1885.0,
+      419.88,
+      36.88
+     ],
+     "glow": {
+      "origin": [
+       1886.0,
+       419.875,
+       36.875
+      ],
+      "angles": [
+       -0.0,
+       180.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       1883.7,
+       422.07,
+       19.57
+      ],
+      "angles": [
+       0,
+       90.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "theater5",
+     "wall_shift": 0.5,
+     "t5_weapon": "m16_zm",
+     "weapon": "m16_zm",
+     "t5_trigger": [
+      -630.0,
+      1225.0,
+      39.0
+     ],
+     "t5_chalk": "wc/chalk_weapon_m16",
+     "t5_chalk_path": "zombie_theater / BSP World / wc/chalk_weapon_m16 / surface 7085",
+     "chalk": {
+      "image": "glow_weapon_m16_c",
+      "half": [
+       21.0,
+       10.25
+      ],
+      "atlas": false,
+      "origin": [
+       -633.5,
+       1225.5,
+       38.75
+      ],
+      "angles": [
+       -0.0,
+       90.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_m16_world",
+      "origin": [
+       -630.0,
+       1225.0,
+       40.95
+      ],
+      "angles": [
+       0,
+       0.0,
+       0
+      ]
+     },
+     "use_origin": [
+      -633.5,
+      1227.0,
+      38.75
+     ],
+     "glow": {
+      "origin": [
+       -633.5,
+       1226.0,
+       38.75
+      ],
+      "angles": [
+       -0.0,
+       90.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       -631.3,
+       1228.3,
+       21.45
+      ],
+      "angles": [
+       0,
+       360.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "theater6",
+     "wall_shift": 0.8,
+     "t5_weapon": "frag_grenade_zm",
+     "weapon": "frag_grenade_zm",
+     "t5_trigger": [
+      -182.0,
+      -211.0,
+      380.0
+     ],
+     "t5_chalk": "wc/chalk_weapon_explosives",
+     "t5_chalk_path": "zombie_theater / BSP World / wc/chalk_weapon_explosives / surface 7082",
+     "chalk": {
+      "image": "chalk_weapon_explosives_c",
+      "half": [
+       11.688,
+       11.08
+      ],
+      "atlas": true,
+      "origin": [
+       -182.5,
+       -211.466,
+       381.758
+      ],
+      "angles": [
+       -0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "grenade_bag",
+      "origin": [
+       -178.5,
+       -210.5,
+       380.5
+      ],
+      "angles": [
+       0,
+       90.0,
+       0
+      ]
+     },
+     "use_origin": [
+      -181.0,
+      -210.5,
+      381.0
+     ],
+     "glow": {
+      "origin": [
+       -182.0,
+       -210.5,
+       381.0
+      ],
+      "angles": [
+       -0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       -179.7,
+       -213.67,
+       364.46
+      ],
+      "angles": [
+       0,
+       270.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "theater7",
+     "wall_shift": 0.0,
+     "t5_weapon": "rottweil72_zm",
+     "weapon": "ranger_zm",
+     "t5_trigger": [
+      -390.0,
+      -1265.0,
+      136.0
+     ],
+     "t5_chalk": "wc/chalk_weapon_rottweil72",
+     "t5_chalk_path": "zombie_theater / BSP World / wc/chalk_weapon_rottweil72 / surface 7090",
+     "chalk": {
+      "image": "glow_weapon_rottweil72_c",
+      "half": [
+       27.0,
+       14.5
+      ],
+      "atlas": false,
+      "origin": [
+       -390.5,
+       -1272.0,
+       133.5
+      ],
+      "angles": [
+       -0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_ranger_world",
+      "origin": [
+       -391.0,
+       -1272.6,
+       137.0
+      ],
+      "angles": [
+       0,
+       270.0,
+       0
+      ]
+     },
+     "use_origin": [
+      -389.0,
+      -1272.0,
+      133.5
+     ],
+     "glow": {
+      "origin": [
+       -390.0,
+       -1272.0,
+       133.5
+      ],
+      "angles": [
+       -0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       -387.7,
+       -1274.2,
+       116.2
+      ],
+      "angles": [
+       0,
+       270.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "theater8",
+     "wall_shift": 0.0,
+     "t5_weapon": "pm63_zm",
+     "weapon": "tmp_zm",
+     "t5_trigger": [
+      813.0,
+      -321.0,
+      372.0
+     ],
+     "t5_chalk": "wc/chalk_weapon_pm63",
+     "t5_chalk_path": "zombie_theater / BSP World / wc/chalk_weapon_pm63 / surface 7089",
+     "chalk": {
+      "image": "glow_weapon_pm63_c",
+      "half": [
+       11.25,
+       6.5
+      ],
+      "atlas": false,
+      "origin": [
+       812.75,
+       -321.5,
+       372.25
+      ],
+      "angles": [
+       -0.0,
+       270.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_tmp_world",
+      "origin": [
+       803.95,
+       -321.5,
+       377.75
+      ],
+      "angles": [
+       0,
+       180.0,
+       0
+      ]
+     },
+     "use_origin": [
+      812.75,
+      -323.0,
+      372.25
+     ],
+     "glow": {
+      "origin": [
+       812.75,
+       -322.0,
+       372.25
+      ],
+      "angles": [
+       -0.0,
+       270.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       810.55,
+       -324.3,
+       354.95
+      ],
+      "angles": [
+       0,
+       180.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "theater9",
+     "wall_shift": 1.0,
+     "t5_weapon": "ak74u_zm",
+     "weapon": "ump45_zm",
+     "t5_trigger": [
+      -1128.0,
+      303.0,
+      57.0
+     ],
+     "t5_chalk": "*14n_140_21(wc/zombie_concrete_cracked:wc/chalk_weapon_ak74u:wc/decal_burntstain_01)",
+     "t5_chalk_path": "zombie_theater / BSP World / *14n_140_21(wc/zombie_concrete_cracked:wc/chalk_weapon_ak74u:wc/decal_burntstain_01) / surface 426",
+     "chalk": {
+      "image": "glow_weapon_ak74u_c",
+      "half": [
+       18.0,
+       9.0
+      ],
+      "atlas": false,
+      "origin": [
+       -1129.5,
+       307.25,
+       56.0
+      ],
+      "angles": [
+       -0.0,
+       180.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_ump45_world",
+      "origin": [
+       -1129.0,
+       317.25,
+       59.0
+      ],
+      "angles": [
+       0,
+       90.0,
+       0
+      ]
+     },
+     "use_origin": [
+      -1131.0,
+      307.25,
+      56.0
+     ],
+     "glow": {
+      "origin": [
+       -1130.0,
+       307.25,
+       56.0
+      ],
+      "angles": [
+       -0.0,
+       180.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       -1132.3,
+       309.45,
+       38.7
+      ],
+      "angles": [
+       0,
+       90.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "theater10",
+     "wall_shift": 0.69,
+     "t5_weapon": "mpl_zm",
+     "weapon": "pp2000_zm",
+     "t5_trigger": [
+      -842.0,
+      -325.0,
+      135.0
+     ],
+     "t5_chalk": "wc/chalk_weapon_mpl",
+     "t5_chalk_path": "zombie_theater / BSP World / wc/chalk_weapon_mpl / surface 7088",
+     "chalk": {
+      "image": "glow_weapon_mpl_c",
+      "half": [
+       14.25,
+       7.0
+      ],
+      "atlas": false,
+      "origin": [
+       -845.25,
+       -325.492,
+       132.0
+      ],
+      "angles": [
+       -0.0,
+       270.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_pp2000_world",
+      "origin": [
+       -855.05,
+       -324.99,
+       136.0
+      ],
+      "angles": [
+       0,
+       180.0,
+       0
+      ]
+     },
+     "use_origin": [
+      -845.25,
+      -326.99,
+      132.0
+     ],
+     "glow": {
+      "origin": [
+       -845.25,
+       -325.992,
+       132.0
+      ],
+      "angles": [
+       -0.0,
+       270.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       -847.45,
+       -328.29,
+       114.7
+      ],
+      "angles": [
+       0,
+       180.0,
+       0
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "map": "zm_factory_sh",
+   "buys": [
+    {
+     "id": "factory1",
+     "wall_shift": -0.1,
+     "t5_weapon": "zombie_m1carbine",
+     "weapon": "ranger_zm",
+     "t5_trigger": [
+      480.0,
+      31.0,
+      129.0
+     ],
+     "t5_chalk": "wc/m1carbine_chalk",
+     "t5_chalk_path": "zombie_cod5_factory / Brush Entities / script_brushmodel (m1carbine_chalk) *159 / surface 10965",
+     "chalk": {
+      "image": "glow_weapon_rottweil72_c",
+      "half": [
+       27.0,
+       14.5
+      ],
+      "atlas": false,
+      "origin": [
+       480.0,
+       29.5,
+       129.0
+      ],
+      "angles": [
+       -0.0,
+       90.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_ranger_world",
+      "origin": [
+       480.6,
+       29.0,
+       132.5
+      ],
+      "angles": [
+       0,
+       0.0,
+       0
+      ]
+     },
+     "use_origin": [
+      480.0,
+      31.0,
+      129.0
+     ],
+     "glow": {
+      "origin": [
+       480.0,
+       30.0,
+       129.0
+      ],
+      "angles": [
+       -0.0,
+       90.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       482.2,
+       32.3,
+       111.7
+      ],
+      "angles": [
+       0,
+       360.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "factory2",
+     "wall_shift": 0.0,
+     "t5_weapon": "zombie_doublebarrel",
+     "weapon": "tmp_zm",
+     "t5_trigger": [
+      -945.0,
+      -181.0,
+      125.0
+     ],
+     "t5_chalk": "wc/db_shotgun_chalk",
+     "t5_chalk_path": "zombie_cod5_factory / Brush Entities / script_brushmodel (doublebarrel_chalk) *161 / surface 10966",
+     "chalk": {
+      "image": "glow_weapon_pm63_c",
+      "half": [
+       11.25,
+       6.5
+      ],
+      "atlas": false,
+      "origin": [
+       -946.5,
+       -181.1,
+       125.0
+      ],
+      "angles": [
+       -0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_tmp_world",
+      "origin": [
+       -946.5,
+       -189.9,
+       130.5
+      ],
+      "angles": [
+       0,
+       270.0,
+       0
+      ]
+     },
+     "use_origin": [
+      -945.0,
+      -181.1,
+      125.0
+     ],
+     "glow": {
+      "origin": [
+       -946.0,
+       -181.1,
+       125.0
+      ],
+      "angles": [
+       -0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       -943.7,
+       -183.3,
+       107.7
+      ],
+      "angles": [
+       0,
+       270.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "factory3",
+     "wall_shift": 0.0,
+     "t5_weapon": "zombie_gewehr43",
+     "weapon": "m14ebr_zm",
+     "t5_trigger": [
+      61.0,
+      521.0,
+      65.0
+     ],
+     "t5_chalk": "wc/g43_chalk",
+     "t5_chalk_path": "zombie_cod5_factory / Brush Entities / script_brushmodel (gewehr43_chalk) *197 / surface 11038",
+     "chalk": {
+      "image": "glow_weapon_m14_c",
+      "half": [
+       22.75,
+       11.5
+      ],
+      "atlas": false,
+      "origin": [
+       59.5,
+       521.1,
+       65.0
+      ],
+      "angles": [
+       -0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_m14ebr_world",
+      "origin": [
+       59.0,
+       520.3,
+       67.5
+      ],
+      "angles": [
+       0,
+       270.0,
+       0
+      ]
+     },
+     "use_origin": [
+      61.0,
+      521.1,
+      65.0
+     ],
+     "glow": {
+      "origin": [
+       60.0,
+       521.1,
+       65.0
+      ],
+      "angles": [
+       -0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       62.3,
+       518.9,
+       47.7
+      ],
+      "angles": [
+       0,
+       270.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "factory4",
+     "wall_shift": 0.06,
+     "t5_weapon": "zombie_stg44",
+     "weapon": "mp5k_zm",
+     "t5_trigger": [
+      598.0,
+      -3021.0,
+      210.0
+     ],
+     "t5_chalk": "wc/stg44_chalk",
+     "t5_chalk_path": "zombie_cod5_factory / Brush Entities / script_brushmodel (stg44_chalk) *251 / surface 11147",
+     "chalk": {
+      "image": "glow_weapon_mp5_c",
+      "half": [
+       17.5,
+       8.5
+      ],
+      "atlas": false,
+      "origin": [
+       599.347,
+       -3021.661,
+       209.5
+      ],
+      "angles": [
+       -0.0,
+       181.0994,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_mp5k_world",
+      "origin": [
+       599.65,
+       -3011.15,
+       211.5
+      ],
+      "angles": [
+       0,
+       91.099,
+       0
+      ]
+     },
+     "use_origin": [
+      597.85,
+      -3021.69,
+      209.5
+     ],
+     "glow": {
+      "origin": [
+       598.847,
+       -3021.671,
+       209.5
+      ],
+      "angles": [
+       -0.0,
+       181.0994,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       596.51,
+       -3019.52,
+       192.2
+      ],
+      "angles": [
+       0,
+       91.099,
+       0
+      ]
+     }
+    },
+    {
+     "id": "factory5",
+     "wall_shift": -0.12,
+     "t5_weapon": "zombie_fg42",
+     "weapon": "m16_zm",
+     "t5_trigger": [
+      -52.0,
+      -937.0,
+      122.0
+     ],
+     "t5_chalk": "wc/fg42_chalk",
+     "t5_chalk_path": "zombie_cod5_factory / Brush Entities / script_brushmodel (fg42_bipod_chalk) *253 / surface 11148",
+     "chalk": {
+      "image": "glow_weapon_m16_c",
+      "half": [
+       21.0,
+       10.25
+      ],
+      "atlas": false,
+      "origin": [
+       -51.713,
+       -938.277,
+       121.7
+      ],
+      "angles": [
+       -0.0,
+       91.6,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_m16_world",
+      "origin": [
+       -48.2,
+       -938.68,
+       123.9
+      ],
+      "angles": [
+       0,
+       1.6,
+       0
+      ]
+     },
+     "use_origin": [
+      -51.75,
+      -936.78,
+      121.7
+     ],
+     "glow": {
+      "origin": [
+       -51.727,
+       -937.777,
+       121.7
+      ],
+      "angles": [
+       -0.0,
+       91.6,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       -49.59,
+       -935.42,
+       104.4
+      ],
+      "angles": [
+       0,
+       1.6,
+       0
+      ]
+     }
+    },
+    {
+     "id": "factory6",
+     "wall_shift": 0.49,
+     "t5_weapon": "zombie_type100_smg",
+     "weapon": "ump45_zm",
+     "t5_trigger": [
+      -1467.0,
+      -754.0,
+      257.0
+     ],
+     "t5_chalk": "wc/type100_smg_chalk",
+     "t5_chalk_path": "zombie_cod5_factory / Brush Entities / script_brushmodel (type100_smg_chalk) *255 / surface 11149",
+     "chalk": {
+      "image": "glow_weapon_ak74u_c",
+      "half": [
+       18.0,
+       9.0
+      ],
+      "atlas": false,
+      "origin": [
+       -1467.435,
+       -753.799,
+       256.5
+      ],
+      "angles": [
+       -0.0,
+       267.8512,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_ump45_world",
+      "origin": [
+       -1477.41,
+       -752.92,
+       259.5
+      ],
+      "angles": [
+       0,
+       177.851,
+       0
+      ]
+     },
+     "use_origin": [
+      -1467.49,
+      -755.3,
+      256.5
+     ],
+     "glow": {
+      "origin": [
+       -1467.454,
+       -754.299,
+       256.5
+      ],
+      "angles": [
+       -0.0,
+       267.8512,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       -1469.74,
+       -756.51,
+       239.2
+      ],
+      "angles": [
+       0,
+       177.851,
+       0
+      ]
+     }
+    },
+    {
+     "id": "factory7",
+     "wall_shift": -0.4,
+     "t5_weapon": "stielhandgranate",
+     "weapon": "frag_grenade_zm",
+     "t5_trigger": [
+      1593.0,
+      984.0,
+      239.0
+     ],
+     "t5_chalk": "wc/grenade_bag_chalk",
+     "t5_chalk_path": "zombie_cod5_factory / Brush Entities / script_brushmodel (stielhandgranate_chalk2) *266 / surface 11175",
+     "chalk": {
+      "image": "grenade_bag_chalk_c",
+      "half": [
+       12.0,
+       12.0
+      ],
+      "atlas": false,
+      "origin": [
+       1594.5,
+       984.2,
+       238.5
+      ],
+      "angles": [
+       -0.0,
+       180.0,
+       28.0
+      ]
+     },
+     "model": {
+      "model": "grenade_bag",
+      "origin": [
+       1590.5,
+       984.2,
+       238.0
+      ],
+      "angles": [
+       0,
+       270.0,
+       0
+      ]
+     },
+     "use_origin": [
+      1593.0,
+      984.2,
+      238.5
+     ],
+     "glow": {
+      "origin": [
+       1594.0,
+       984.2,
+       238.5
+      ],
+      "angles": [
+       -0.0,
+       180.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       1591.7,
+       986.4,
+       221.2
+      ],
+      "angles": [
+       0,
+       90.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "factory8",
+     "wall_shift": -0.2,
+     "t5_weapon": "zombie_thompson",
+     "weapon": "pp2000_zm",
+     "t5_trigger": [
+      -771.0,
+      -1021.0,
+      131.0
+     ],
+     "t5_chalk": "wc/thompson_chalk",
+     "t5_chalk_path": "zombie_cod5_factory / Brush Entities / script_brushmodel (thompson_chalk) *285 / surface 11224",
+     "chalk": {
+      "image": "glow_weapon_mpl_c",
+      "half": [
+       14.25,
+       7.0
+      ],
+      "atlas": false,
+      "origin": [
+       -770.7,
+       -1022.5,
+       130.2
+      ],
+      "angles": [
+       -0.0,
+       90.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_pp2000_world",
+      "origin": [
+       -760.9,
+       -1023.0,
+       134.2
+      ],
+      "angles": [
+       0,
+       0.0,
+       0
+      ]
+     },
+     "use_origin": [
+      -770.7,
+      -1021.0,
+      130.2
+     ],
+     "glow": {
+      "origin": [
+       -770.7,
+       -1022.0,
+       130.2
+      ],
+      "angles": [
+       -0.0,
+       90.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       -768.5,
+       -1019.7,
+       112.9
+      ],
+      "angles": [
+       0,
+       360.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "factory9",
+     "wall_shift": -0.2,
+     "t5_weapon": "zombie_shotgun",
+     "weapon": "spas12_zm",
+     "t5_trigger": [
+      1075.0,
+      -176.0,
+      115.0
+     ],
+     "t5_chalk": "wc/trenchgun_chalk",
+     "t5_chalk_path": "zombie_cod5_factory / Brush Entities / script_brushmodel (pf544_auto2) *287 / surface 11225",
+     "chalk": {
+      "image": "glow_weapon_ithaca_c",
+      "half": [
+       22.5,
+       8.0
+      ],
+      "atlas": false,
+      "origin": [
+       1076.5,
+       -176.2,
+       115.2
+      ],
+      "angles": [
+       -0.0,
+       180.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_spas12_world",
+      "origin": [
+       1076.5,
+       -175.7,
+       119.7
+      ],
+      "angles": [
+       0,
+       90.0,
+       0
+      ]
+     },
+     "use_origin": [
+      1075.0,
+      -176.2,
+      115.2
+     ],
+     "glow": {
+      "origin": [
+       1076.0,
+       -176.2,
+       115.2
+      ],
+      "angles": [
+       -0.0,
+       180.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       1073.7,
+       -174.0,
+       97.9
+      ],
+      "angles": [
+       0,
+       90.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "factory10",
+     "wall_shift": 0.12,
+     "t5_weapon": "stielhandgranate",
+     "weapon": "frag_grenade_zm",
+     "t5_trigger": [
+      -35.0,
+      -2423.0,
+      109.0
+     ],
+     "t5_chalk": "wc/grenade_bag_chalk",
+     "t5_chalk_path": "zombie_cod5_factory / Brush Entities / script_brushmodel (stielhandgranate_chalk) *342 / surface 11375",
+     "chalk": {
+      "image": "grenade_bag_chalk_c",
+      "half": [
+       12.0,
+       12.0
+      ],
+      "atlas": false,
+      "origin": [
+       -33.653,
+       -2423.412,
+       108.5
+      ],
+      "angles": [
+       -0.0015,
+       181.1003,
+       28.0
+      ]
+     },
+     "model": {
+      "model": "grenade_bag",
+      "origin": [
+       -37.65,
+       -2423.49,
+       108.0
+      ],
+      "angles": [
+       0,
+       271.1,
+       0
+      ]
+     },
+     "use_origin": [
+      -35.15,
+      -2423.44,
+      108.5
+     ],
+     "glow": {
+      "origin": [
+       -34.153,
+       -2423.422,
+       108.5
+      ],
+      "angles": [
+       -0.0,
+       181.1003,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       -36.49,
+       -2421.27,
+       91.2
+      ],
+      "angles": [
+       0,
+       91.1,
+       0
+      ]
+     }
+    },
+    {
+     "id": "factory11",
+     "wall_shift": 1.0,
+     "t5_weapon": "stielhandgranate",
+     "weapon": "frag_grenade_zm",
+     "t5_trigger": [
+      -1389.0,
+      -474.0,
+      246.0
+     ],
+     "t5_chalk": "wc/grenade_bag_chalk",
+     "t5_chalk_path": "zombie_cod5_factory / Brush Entities / script_brushmodel (stielhandgranate_chalk3) *344 / surface 11377",
+     "chalk": {
+      "image": "grenade_bag_chalk_c",
+      "half": [
+       12.0,
+       12.0
+      ],
+      "atlas": false,
+      "origin": [
+       -1420.5,
+       -473.359,
+       245.5
+      ],
+      "angles": [
+       -0.0,
+       360.0,
+       28.0
+      ]
+     },
+     "model": {
+      "model": "grenade_bag",
+      "origin": [
+       -1416.5,
+       -473.36,
+       245.0
+      ],
+      "angles": [
+       0,
+       90.0,
+       0
+      ]
+     },
+     "use_origin": [
+      -1419.0,
+      -473.36,
+      245.5
+     ],
+     "glow": {
+      "origin": [
+       -1420.0,
+       -473.359,
+       245.5
+      ],
+      "angles": [
+       0.0,
+       360.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       -1417.7,
+       -475.56,
+       228.2
+      ],
+      "angles": [
+       0,
+       270.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "factory12",
+     "wall_shift": -8.69,
+     "t5_weapon": "mp40_zm",
+     "weapon": "uzi_zm",
+     "t5_trigger": [
+      726.0,
+      1041.0,
+      227.0
+     ],
+     "t5_chalk": "wc/chalk_weapon_mp40",
+     "t5_chalk_path": "zombie_cod5_factory / BSP World / wc/chalk_weapon_mp40 / surface 10191",
+     "chalk": {
+      "image": "glow_weapon_mp40_c",
+      "half": [
+       18.125,
+       9.625
+      ],
+      "atlas": false,
+      "origin": [
+       717.528,
+       1041.596,
+       224.875
+      ],
+      "angles": [
+       -0.0,
+       0.2007,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_miniuzi_world",
+      "origin": [
+       718.57,
+       1030.0,
+       228.97
+      ],
+      "angles": [
+       0,
+       270.201,
+       0
+      ]
+     },
+     "use_origin": [
+      719.03,
+      1041.6,
+      224.88
+     ],
+     "glow": {
+      "origin": [
+       718.028,
+       1041.598,
+       224.875
+      ],
+      "angles": [
+       -0.0,
+       0.2007,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       720.34,
+       1039.41,
+       207.57
+      ],
+      "angles": [
+       0,
+       270.201,
+       0
+      ]
+     }
+    },
+    {
+     "id": "factory13",
+     "wall_shift": -2.0,
+     "t5_weapon": "zombie_kar98k",
+     "weapon": "m14ebr_zm",
+     "t5_trigger": [
+      -104.0,
+      -531.0,
+      77.0
+     ],
+     "t5_chalk": "wc/k98_chalk",
+     "t5_chalk_path": "zombie_cod5_factory / Brush Entities / script_brushmodel (pf560_auto2) *403 / surface 11728",
+     "chalk": {
+      "image": "glow_weapon_m14_c",
+      "half": [
+       22.75,
+       11.5
+      ],
+      "atlas": false,
+      "origin": [
+       -107.5,
+       -534.4,
+       75.5
+      ],
+      "angles": [
+       -0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_m14ebr_world",
+      "origin": [
+       -108.0,
+       -535.2,
+       78.0
+      ],
+      "angles": [
+       0,
+       270.0,
+       0
+      ]
+     },
+     "use_origin": [
+      -106.0,
+      -534.4,
+      75.5
+     ],
+     "glow": {
+      "origin": [
+       -107.0,
+       -534.4,
+       75.5
+      ],
+      "angles": [
+       -0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       -104.7,
+       -536.6,
+       58.2
+      ],
+      "angles": [
+       0,
+       270.0,
+       0
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "map": "zm_sumpf_sh",
+   "buys": [
+    {
+     "id": "sumpf1",
+     "wall_shift": 0.5,
+     "t5_weapon": "zombie_m1garand",
+     "weapon": "m14ebr_zm",
+     "t5_trigger": [
+      10625.0,
+      856.0,
+      -607.0
+     ],
+     "t5_chalk": "wc/m1garand_chalk",
+     "t5_chalk_path": "zombie_cod5_sumpf / Brush Entities / script_brushmodel (m1garand_chalk) *226 / surface 5992",
+     "chalk": {
+      "image": "glow_weapon_m14_c",
+      "half": [
+       22.75,
+       11.5
+      ],
+      "atlas": false,
+      "origin": [
+       10625.0,
+       855.5,
+       -607.0
+      ],
+      "angles": [
+       -0.0,
+       90.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_m14ebr_world",
+      "origin": [
+       10625.8,
+       855.0,
+       -604.5
+      ],
+      "angles": [
+       0,
+       0.0,
+       0
+      ]
+     },
+     "use_origin": [
+      10625.0,
+      857.0,
+      -607.0
+     ],
+     "glow": {
+      "origin": [
+       10625.0,
+       856.0,
+       -607.0
+      ],
+      "angles": [
+       -0.0,
+       90.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       10627.2,
+       858.3,
+       -624.3
+      ],
+      "angles": [
+       0,
+       360.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "sumpf2",
+     "wall_shift": -0.6,
+     "t5_weapon": "zombie_type99_rifle",
+     "weapon": "m14ebr_zm",
+     "t5_trigger": [
+      10661.0,
+      395.0,
+      -477.0
+     ],
+     "t5_chalk": "wc/type99_rifle_chalk",
+     "t5_chalk_path": "zombie_cod5_sumpf / Brush Entities / script_brushmodel (type99_rifle_chalk) *230 / surface 5994",
+     "chalk": {
+      "image": "glow_weapon_m14_c",
+      "half": [
+       22.75,
+       11.5
+      ],
+      "atlas": false,
+      "origin": [
+       10662.5,
+       393.6,
+       -476.25
+      ],
+      "angles": [
+       -0.0,
+       180.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_m14ebr_world",
+      "origin": [
+       10663.0,
+       394.4,
+       -473.75
+      ],
+      "angles": [
+       0,
+       90.0,
+       0
+      ]
+     },
+     "use_origin": [
+      10661.0,
+      393.6,
+      -476.25
+     ],
+     "glow": {
+      "origin": [
+       10662.0,
+       393.6,
+       -476.25
+      ],
+      "angles": [
+       -0.0,
+       180.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       10659.7,
+       395.8,
+       -493.55
+      ],
+      "angles": [
+       0,
+       90.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "sumpf3",
+     "wall_shift": 0.6,
+     "t5_weapon": "zombie_gewehr43",
+     "weapon": "m16_zm",
+     "t5_trigger": [
+      9542.0,
+      697.0,
+      -475.0
+     ],
+     "t5_chalk": "wc/g43_chalk",
+     "t5_chalk_path": "zombie_cod5_sumpf / Brush Entities / script_brushmodel (gewehr43_chalk) *232 / surface 5995",
+     "chalk": {
+      "image": "glow_weapon_m16_c",
+      "half": [
+       21.0,
+       10.25
+      ],
+      "atlas": false,
+      "origin": [
+       9541.5,
+       697.6,
+       -475.0
+      ],
+      "angles": [
+       -0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_m16_world",
+      "origin": [
+       9541.0,
+       694.1,
+       -472.8
+      ],
+      "angles": [
+       0,
+       270.0,
+       0
+      ]
+     },
+     "use_origin": [
+      9543.0,
+      697.6,
+      -475.0
+     ],
+     "glow": {
+      "origin": [
+       9542.0,
+       697.6,
+       -475.0
+      ],
+      "angles": [
+       -0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       9544.3,
+       695.4,
+       -492.3
+      ],
+      "angles": [
+       0,
+       270.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "sumpf4",
+     "wall_shift": 0.5,
+     "t5_weapon": "stielhandgranate",
+     "weapon": "frag_grenade_zm",
+     "t5_trigger": [
+      10609.0,
+      1334.0,
+      -472.0
+     ],
+     "t5_chalk": "wc/grenade_bag_chalk",
+     "t5_chalk_path": "zombie_cod5_sumpf / Brush Entities / script_brushmodel (stielhandgranate_chalk) *234 / surface 5997",
+     "chalk": {
+      "image": "grenade_bag_chalk_c",
+      "half": [
+       12.0,
+       12.0
+      ],
+      "atlas": false,
+      "origin": [
+       10608.5,
+       1334.0,
+       -472.5
+      ],
+      "angles": [
+       -0.0,
+       270.0,
+       28.0
+      ]
+     },
+     "model": {
+      "model": "grenade_bag",
+      "origin": [
+       10608.5,
+       1330.0,
+       -473.0
+      ],
+      "angles": [
+       0,
+       0.0,
+       0
+      ]
+     },
+     "use_origin": [
+      10608.5,
+      1332.5,
+      -472.5
+     ],
+     "glow": {
+      "origin": [
+       10608.5,
+       1333.5,
+       -472.5
+      ],
+      "angles": [
+       -0.0,
+       270.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       10606.3,
+       1331.2,
+       -489.8
+      ],
+      "angles": [
+       0,
+       180.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "sumpf5",
+     "wall_shift": 0.5,
+     "t5_weapon": "zombie_m1carbine",
+     "weapon": "ranger_zm",
+     "t5_trigger": [
+      10202.0,
+      1334.0,
+      -477.0
+     ],
+     "t5_chalk": "wc/m1carbine_chalk",
+     "t5_chalk_path": "zombie_cod5_sumpf / Brush Entities / script_brushmodel (m1carbine_chalk) *236 / surface 5998",
+     "chalk": {
+      "image": "glow_weapon_rottweil72_c",
+      "half": [
+       27.0,
+       14.5
+      ],
+      "atlas": false,
+      "origin": [
+       10202.0,
+       1334.0,
+       -477.0
+      ],
+      "angles": [
+       -0.0,
+       270.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_ranger_world",
+      "origin": [
+       10201.4,
+       1334.5,
+       -473.5
+      ],
+      "angles": [
+       0,
+       180.0,
+       0
+      ]
+     },
+     "use_origin": [
+      10202.0,
+      1332.5,
+      -477.0
+     ],
+     "glow": {
+      "origin": [
+       10202.0,
+       1333.5,
+       -477.0
+      ],
+      "angles": [
+       -0.0,
+       270.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       10199.8,
+       1331.2,
+       -494.3
+      ],
+      "angles": [
+       0,
+       180.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "sumpf6",
+     "wall_shift": 0.5,
+     "t5_weapon": "zombie_shotgun",
+     "weapon": "spas12_zm",
+     "t5_trigger": [
+      10514.0,
+      200.0,
+      -608.0
+     ],
+     "t5_chalk": "wc/trenchgun_chalk",
+     "t5_chalk_path": "zombie_cod5_sumpf / Brush Entities / script_brushmodel (pf312_auto2) *238 / surface 5999",
+     "chalk": {
+      "image": "glow_weapon_ithaca_c",
+      "half": [
+       22.5,
+       8.0
+      ],
+      "atlas": false,
+      "origin": [
+       10514.0,
+       199.5,
+       -608.0
+      ],
+      "angles": [
+       -0.0,
+       90.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_spas12_world",
+      "origin": [
+       10514.5,
+       199.5,
+       -603.5
+      ],
+      "angles": [
+       0,
+       0.0,
+       0
+      ]
+     },
+     "use_origin": [
+      10514.0,
+      201.0,
+      -608.0
+     ],
+     "glow": {
+      "origin": [
+       10514.0,
+       200.0,
+       -608.0
+      ],
+      "angles": [
+       -0.0,
+       90.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       10516.2,
+       202.3,
+       -625.3
+      ],
+      "angles": [
+       0,
+       360.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "sumpf7",
+     "wall_shift": 0.5,
+     "t5_weapon": "zombie_thompson",
+     "weapon": "pp2000_zm",
+     "t5_trigger": [
+      10148.0,
+      486.0,
+      -608.0
+     ],
+     "t5_chalk": "wc/thompson_chalk",
+     "t5_chalk_path": "zombie_cod5_sumpf / Brush Entities / script_brushmodel (thompson_chalk) *240 / surface 6000",
+     "chalk": {
+      "image": "glow_weapon_mpl_c",
+      "half": [
+       14.25,
+       7.0
+      ],
+      "atlas": false,
+      "origin": [
+       10148.5,
+       486.0,
+       -609.0
+      ],
+      "angles": [
+       -0.0,
+       180.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_pp2000_world",
+      "origin": [
+       10149.0,
+       495.8,
+       -605.0
+      ],
+      "angles": [
+       0,
+       90.0,
+       0
+      ]
+     },
+     "use_origin": [
+      10147.0,
+      486.0,
+      -609.0
+     ],
+     "glow": {
+      "origin": [
+       10148.0,
+       486.0,
+       -609.0
+      ],
+      "angles": [
+       -0.0,
+       180.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       10145.7,
+       488.2,
+       -626.3
+      ],
+      "angles": [
+       0,
+       90.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "sumpf8",
+     "wall_shift": 0.18,
+     "t5_weapon": "mp40_zm",
+     "weapon": "uzi_zm",
+     "t5_trigger": [
+      8477.0,
+      3264.0,
+      -603.0
+     ],
+     "t5_chalk": "wc/chalk_weapon_mp40",
+     "t5_chalk_path": "zombie_cod5_sumpf / BSP World / wc/chalk_weapon_mp40 / surface 4731",
+     "chalk": {
+      "image": "glow_weapon_mp40_c",
+      "half": [
+       18.125,
+       9.625
+      ],
+      "atlas": false,
+      "origin": [
+       8477.708,
+       3263.306,
+       -605.125
+      ],
+      "angles": [
+       -0.0,
+       225.1997,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_miniuzi_world",
+      "origin": [
+       8468.77,
+       3270.77,
+       -601.02
+      ],
+      "angles": [
+       0,
+       135.2,
+       0
+      ]
+     },
+     "use_origin": [
+      8476.65,
+      3262.24,
+      -605.12
+     ],
+     "glow": {
+      "origin": [
+       8477.356,
+       3262.951,
+       -605.125
+      ],
+      "angles": [
+       -0.0,
+       225.1997,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       8474.17,
+       3262.87,
+       -622.42
+      ],
+      "angles": [
+       0,
+       135.2,
+       0
+      ]
+     }
+    },
+    {
+     "id": "sumpf9",
+     "wall_shift": -2.57,
+     "t5_weapon": "zombie_stg44",
+     "weapon": "mp5k_zm",
+     "t5_trigger": [
+      7719.0,
+      -1094.0,
+      -627.0
+     ],
+     "t5_chalk": "wc/stg44_chalk",
+     "t5_chalk_path": "zombie_cod5_sumpf / Brush Entities / script_brushmodel (stg44_chalk) *355 / surface 6002",
+     "chalk": {
+      "image": "glow_weapon_mp5_c",
+      "half": [
+       17.5,
+       8.5
+      ],
+      "atlas": false,
+      "origin": [
+       7716.331,
+       -1096.707,
+       -627.5
+      ],
+      "angles": [
+       -0.0,
+       45.4003,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_mp5k_world",
+      "origin": [
+       7723.46,
+       -1104.44,
+       -625.5
+      ],
+      "angles": [
+       0,
+       315.4,
+       0
+      ]
+     },
+     "use_origin": [
+      7717.38,
+      -1095.64,
+      -627.5
+     ],
+     "glow": {
+      "origin": [
+       7716.682,
+       -1096.351,
+       -627.5
+      ],
+      "angles": [
+       -0.0,
+       45.4003,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       7719.86,
+       -1096.26,
+       -644.8
+      ],
+      "angles": [
+       0,
+       315.4,
+       0
+      ]
+     }
+    },
+    {
+     "id": "sumpf10",
+     "wall_shift": 1.47,
+     "t5_weapon": "zombie_bar",
+     "weapon": "ump45_zm",
+     "t5_trigger": [
+      11531.0,
+      3788.0,
+      -607.0
+     ],
+     "t5_chalk": "wc/bar_chalk",
+     "t5_chalk_path": "zombie_cod5_sumpf / Brush Entities / script_brushmodel (bar_chalk) *357 / surface 6003",
+     "chalk": {
+      "image": "glow_weapon_ak74u_c",
+      "half": [
+       18.0,
+       9.0
+      ],
+      "atlas": false,
+      "origin": [
+       11530.254,
+       3787.829,
+       -607.0
+      ],
+      "angles": [
+       -0.0,
+       222.7997,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_ump45_world",
+      "origin": [
+       11523.83,
+       3795.51,
+       -604.0
+      ],
+      "angles": [
+       0,
+       132.8,
+       0
+      ]
+     },
+     "use_origin": [
+      11529.15,
+      3786.81,
+      -607.0
+     ],
+     "glow": {
+      "origin": [
+       11529.887,
+       3787.489,
+       -607.0
+      ],
+      "angles": [
+       -0.0,
+       222.7997,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       11526.7,
+       3787.54,
+       -624.3
+      ],
+      "angles": [
+       0,
+       132.8,
+       0
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "map": "zm_asylum_sh",
+   "buys": [
+    {
+     "id": "asylum1",
+     "wall_shift": 1.0,
+     "t5_weapon": "stielhandgranate",
+     "weapon": "frag_grenade_zm",
+     "t5_trigger": [
+      257.0,
+      -607.0,
+      284.0
+     ],
+     "t5_chalk": "*32n_205(wc/eb_art_wall_plaster_two_tone_paint03:wc/grenade_bag_chalk)",
+     "t5_chalk_path": "zombie_cod5_asylum / BSP World / *32n_205(wc/eb_art_wall_plaster_two_tone_paint03:wc/grenade_bag_chalk) / surface 210",
+     "chalk": {
+      "image": "grenade_bag_chalk_c",
+      "half": [
+       12.0,
+       12.0
+      ],
+      "atlas": false,
+      "origin": [
+       261.5,
+       -606.5,
+       285.0
+      ],
+      "angles": [
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "grenade_bag",
+      "origin": [
+       265.5,
+       -606.5,
+       284.5
+      ],
+      "angles": [
+       0,
+       90.0,
+       0
+      ]
+     },
+     "use_origin": [
+      263.0,
+      -606.5,
+      285.0
+     ],
+     "glow": {
+      "origin": [
+       262.0,
+       -606.5,
+       285.0
+      ],
+      "angles": [
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       264.3,
+       -608.7,
+       267.7
+      ],
+      "angles": [
+       0,
+       270.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "asylum2",
+     "wall_shift": 1.8,
+     "t5_weapon": "stielhandgranate",
+     "weapon": "frag_grenade_zm",
+     "t5_trigger": [
+      443.0,
+      696.0,
+      112.0
+     ],
+     "t5_chalk": "wc/grenade_bag_chalk",
+     "t5_chalk_path": "zombie_cod5_asylum / Brush Entities / script_brushmodel (stielhandgranate_chalk) *317 / surface 6073",
+     "chalk": {
+      "image": "grenade_bag_chalk_c",
+      "half": [
+       12.0,
+       12.0
+      ],
+      "atlas": false,
+      "origin": [
+       443.0,
+       695.5,
+       111.5
+      ],
+      "angles": [
+       -0.0,
+       270.0,
+       28.0
+      ]
+     },
+     "model": {
+      "model": "grenade_bag",
+      "origin": [
+       443.0,
+       691.5,
+       111.0
+      ],
+      "angles": [
+       0,
+       0.0,
+       0
+      ]
+     },
+     "use_origin": [
+      443.0,
+      694.0,
+      111.5
+     ],
+     "glow": {
+      "origin": [
+       443.0,
+       695.0,
+       111.5
+      ],
+      "angles": [
+       -0.0,
+       270.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       440.8,
+       692.7,
+       94.2
+      ],
+      "angles": [
+       0,
+       180.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "asylum3",
+     "wall_shift": 0.8,
+     "t5_weapon": "stielhandgranate",
+     "weapon": "frag_grenade_zm",
+     "t5_trigger": [
+      -825.0,
+      726.0,
+      278.0
+     ],
+     "t5_chalk": "wc/grenade_bag_chalk",
+     "t5_chalk_path": "zombie_cod5_asylum / Brush Entities / script_brushmodel (stielhandgranate_chalk3) *319 / surface 6078",
+     "chalk": {
+      "image": "grenade_bag_chalk_c",
+      "half": [
+       12.0,
+       12.0
+      ],
+      "atlas": false,
+      "origin": [
+       -825.0,
+       726.5,
+       277.5
+      ],
+      "angles": [
+       -0.0,
+       270.0,
+       28.0
+      ]
+     },
+     "model": {
+      "model": "grenade_bag",
+      "origin": [
+       -825.0,
+       722.5,
+       277.0
+      ],
+      "angles": [
+       0,
+       0.0,
+       0
+      ]
+     },
+     "use_origin": [
+      -825.0,
+      725.0,
+      277.5
+     ],
+     "glow": {
+      "origin": [
+       -825.0,
+       726.0,
+       277.5
+      ],
+      "angles": [
+       -0.0,
+       270.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       -827.2,
+       723.7,
+       260.2
+      ],
+      "angles": [
+       0,
+       180.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "asylum4",
+     "wall_shift": 0.8,
+     "t5_weapon": "stielhandgranate",
+     "weapon": "frag_grenade_zm",
+     "t5_trigger": [
+      917.0,
+      -634.0,
+      110.0
+     ],
+     "t5_chalk": "wc/grenade_bag_chalk",
+     "t5_chalk_path": "zombie_cod5_asylum / Brush Entities / script_brushmodel (stielhandgranate_chalk2) *324 / surface 6082",
+     "chalk": {
+      "image": "grenade_bag_chalk_c",
+      "half": [
+       12.0,
+       12.0
+      ],
+      "atlas": false,
+      "origin": [
+       917.0,
+       -634.5,
+       109.5
+      ],
+      "angles": [
+       -0.0,
+       90.0,
+       28.0
+      ]
+     },
+     "model": {
+      "model": "grenade_bag",
+      "origin": [
+       917.0,
+       -630.5,
+       109.0
+      ],
+      "angles": [
+       0,
+       180.0,
+       0
+      ]
+     },
+     "use_origin": [
+      917.0,
+      -633.0,
+      109.5
+     ],
+     "glow": {
+      "origin": [
+       917.0,
+       -634.0,
+       109.5
+      ],
+      "angles": [
+       -0.0,
+       90.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       919.2,
+       -631.7,
+       92.2
+      ],
+      "angles": [
+       0,
+       360.0,
+       0
+      ]
+     }
+    },
+    {
+     "id": "asylum5",
+     "wall_shift": 9.0,
+     "t5_weapon": "zombie_doublebarrel",
+     "weapon": "tmp_zm",
+     "t5_trigger": [
+      847.0,
+      -241.0,
+      281.0
+     ],
+     "t5_chalk": "*16n_156(wc/eb_art_wall_concrete_chunked:wc/db_shotgun_chalk)",
+     "t5_chalk_path": "zombie_cod5_asylum / BSP World / *16n_156(wc/eb_art_wall_concrete_chunked:wc/db_shotgun_chalk) / surface 206",
+     "chalk": {
+      "image": "glow_weapon_pm63_c",
+      "half": [
+       11.25,
+       6.5
+      ],
+      "atlas": false,
+      "origin": [
+       838.5,
+       -242.5,
+       281.25
+      ],
+      "angles": [
+       -0.0,
+       180.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_tmp_world",
+      "origin": [
+       838.5,
+       -233.7,
+       286.75
+      ],
+      "angles": [
+       0,
+       90.0,
+       0
+      ]
+     },
+     "use_origin": [
+      837.0,
+      -242.5,
+      281.25
+     ],
+     "glow": {
+      "origin": [
+       838.0,
+       -242.5,
+       281.25
+      ],
+      "angles": [
+       -0.0,
+       180.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       835.7,
+       -240.3,
+       263.95
+      ],
+      "angles": [
+       0,
+       90.0,
+       0
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "map": "zm_prototype_sh",
+   "buys": [
+    {
+     "id": "prototype1",
+     "wall_shift": 3.0,
+     "t5_weapon": "zombie_bar",
+     "weapon": "ump45_zm",
+     "t5_trigger": [
+      -223.0,
+      1045.0,
+      196.0
+     ],
+     "t5_chalk": "wc/bar_chalk",
+     "t5_chalk_path": "zombie_cod5_prototype / Brush Entities / script_brushmodel (bar_chalk) *152 / surface 1881",
+     "chalk": {
+      "image": "glow_weapon_ak74u_c",
+      "half": [
+       18.0,
+       9.0
+      ],
+      "atlas": false,
+      "origin": [
+       -221.5,
+       1044.5,
+       196.0
+      ],
+      "angles": [
+       -0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "model": {
+      "model": "codo_weapon_ump45_world",
+      "origin": [
+       -222.0,
+       1034.5,
+       199.0
+      ],
+      "angles": [
+       0,
+       270.0,
+       0
+      ]
+     },
+     "use_origin": [
+      -220.0,
+      1044.5,
+      196.0
+     ],
+     "glow": {
+      "origin": [
+       -221.0,
+       1044.5,
+       196.0
+      ],
+      "angles": [
+       -0.0,
+       0.0,
+       0.0
+      ]
+     },
+     "terminal": {
+      "model": "codo_weapon_box",
+      "origin": [
+       -218.7,
+       1042.3,
+       178.7
+      ],
+      "angles": [
+       0,
+       270.0,
+       0
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

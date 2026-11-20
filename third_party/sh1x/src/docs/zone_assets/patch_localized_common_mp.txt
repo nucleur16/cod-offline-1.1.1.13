@@ -1,0 +1,17 @@
+image	waypoint_targetneutral_a
+image	waypoint_targetneutral_b
+image	waypoint_targetneutral_c
+localize	SENTRY_PICKUP
+localize	SENTRY_PICKUP_SAM_TURRET
+localize	SENTRY_PICKUP_TURRET
+material	misc/mrk_breathing_better2_f.wav	~
+material	misc/mrk_breathing_better2_f.wav	~
+material	misc/mrk_breathing_better2_f.wav	~
+sound	ab_f1_mp_sprint
+sound	ab_f2_mp_sprint
+sound	ab_m1_mp_sprint
+sound	ab_m2_mp_sprint
+sound	uk_f1_mp_sprint
+sound	uk_f2_mp_sprint
+sound	uk_m1_mp_sprint
+sound	uk_m2_mp_sprint

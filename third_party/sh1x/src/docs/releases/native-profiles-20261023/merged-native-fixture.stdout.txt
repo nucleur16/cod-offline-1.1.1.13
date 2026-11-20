@@ -1,0 +1,2 @@
+PASS: native physics launch trajectories translate to CoDOL rigid-body mode and encode
+PASS: native netchan, loss handling, reassembly, bdDTLS DATA, usercmd, gamestate and movement bridges

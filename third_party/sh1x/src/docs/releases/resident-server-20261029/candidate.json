@@ -1,0 +1,32 @@
+{
+  "at": 1793236015.6950364,
+  "kind": "native source candidate, no publication",
+  "source_profile_revision": "r38",
+  "compiler_run": 40796741540,
+  "compiler_head": "3976df34243072aaa854a58af2f6cfddbcfe0aee",
+  "compiler_image": "sha256:d65b4588e7e57180e7b7aeea4459d14812accda50141f627c33b362cc8e1c3c4",
+  "compiler_image_archive": {
+    "at": 1793236011.3995283,
+    "passed": true,
+    "uri": "s3://codol-classic-private-225962644524-us-west-2/incidents/20261028/resident-native-build/compiler-images/1e71588bdb2f750ae512f34c0bd6ad3bbec5c814c4f08089a11aeabe8640d4e0/compiler-image.tar.gz",
+    "sha256": "1e71588bdb2f750ae512f34c0bd6ad3bbec5c814c4f08089a11aeabe8640d4e0",
+    "bytes": 224614019,
+    "version": ".ZhvAOcqvTa_luZ3Yu4YqP3cBpPw7TCN",
+    "encryption": "AES256",
+    "existing_object_overwritten": false,
+    "production_changed": false
+  },
+  "native": {
+    "normal": {
+      "binary_sha256": "0de9a7c8dd0e0e0d0b3c4faa7614c9b315f62516a7ba4de52233a9101076a39e",
+      "complete_source_manifest_sha256": "8d2c68b476538e6dca95a157143cae6b80c03d0fcd40b351fb77e4ceaf8429fa"
+    },
+    "zombies": {
+      "binary_sha256": "5ddf05d0ab3b093a9dffc299918f33ffb884f27f395823cbd4c181b1b8023d7f",
+      "complete_source_manifest_sha256": "16f68f7b3f8ed2f6424b5f82506eaf419db045fad0bd5306fb53f276dfcbec10"
+    }
+  },
+  "signed_C1_on_new_binaries": false,
+  "paired_release_qualified": false,
+  "production_changed": false
+}

@@ -1,0 +1,5992 @@
+{
+  "a1dbc86": [
+    {
+      "path": "animscripts/zombie_combat.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "strike_schedule",
+        "swing_hit"
+      ],
+      "old_functions": 9,
+      "current_functions": 11,
+      "same_normalized_body": 6,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/zombie_dog_combat.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "t5bitereaches",
+        "t5sq"
+      ],
+      "old_functions": 24,
+      "current_functions": 26,
+      "same_normalized_body": 15,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/zombie_dog_death.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 1,
+      "current_functions": 1,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/zombie_dog_init.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 4,
+      "current_functions": 4,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/zombie_dog_move.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "movement_sound_length_ms",
+        "movementsoundforplayer"
+      ],
+      "old_functions": 12,
+      "current_functions": 14,
+      "same_normalized_body": 5,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/zombie_dog_pain.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 1,
+      "current_functions": 1,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/zombie_init.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "character/character_zm_zombie_dog.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_compass.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 2,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_createfx.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 75,
+      "current_functions": 75,
+      "same_normalized_body": 73,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_destructible.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 101,
+      "current_functions": 101,
+      "same_normalized_body": 93,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_destructible_dlc.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 2,
+      "current_functions": 2,
+      "same_normalized_body": 1,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_destructible_dlc2.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 2,
+      "current_functions": 2,
+      "same_normalized_body": 1,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_destructible_types.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "toy_trashcan_animal"
+      ],
+      "old_functions": 81,
+      "current_functions": 82,
+      "same_normalized_body": 75,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_elevator.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 55,
+      "current_functions": 55,
+      "same_normalized_body": 53,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_fx.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 27,
+      "current_functions": 27,
+      "same_normalized_body": 24,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_heli_rotors.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "common_scripts/_laststand.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "revive_bar_fill_long"
+      ],
+      "old_functions": 46,
+      "current_functions": 47,
+      "same_normalized_body": 42,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_load_common.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 11,
+      "current_functions": 11,
+      "same_normalized_body": 9,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_painter.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 53,
+      "current_functions": 53,
+      "same_normalized_body": 52,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_pipes.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 12,
+      "current_functions": 12,
+      "same_normalized_body": 11,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_sentry.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 67,
+      "current_functions": 67,
+      "same_normalized_body": 66,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/utility.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 162,
+      "current_functions": 162,
+      "same_normalized_body": 159,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_codol_maintenance_banner.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 2,
+      "current_functions": 2,
+      "same_normalized_body": 2,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_coop_callbacksetup.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 13,
+      "current_functions": 13,
+      "same_normalized_body": 12,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_coopanim.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "anim_single_root",
+        "clip_pace",
+        "is_model",
+        "play_model_anim",
+        "play_root",
+        "root_path_clear",
+        "settle_scene",
+        "stop_scripted",
+        "waittill_model_scene"
+      ],
+      "old_functions": 28,
+      "current_functions": 37,
+      "same_normalized_body": 21,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_coopevents.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 32,
+      "current_functions": 32,
+      "same_normalized_body": 30,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_coopmission_defense_crash.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "peek_node"
+      ],
+      "old_functions": 109,
+      "current_functions": 110,
+      "same_normalized_body": 99,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_coopmission_estate.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 104,
+      "current_functions": 104,
+      "same_normalized_body": 103,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_coopscene_estate.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "breach_enter"
+      ],
+      "old_functions": 24,
+      "current_functions": 25,
+      "same_normalized_body": 22,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_coopscene_killhouse.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "play_scene"
+      ],
+      "old_functions": 14,
+      "current_functions": 15,
+      "same_normalized_body": 13,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_cooptest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "root_delta",
+        "root_play",
+        "stack_test",
+        "where"
+      ],
+      "old_functions": 41,
+      "current_functions": 45,
+      "same_normalized_body": 40,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_cooptraining.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 93,
+      "current_functions": 93,
+      "same_normalized_body": 92,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_coopvehicle.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 9,
+      "current_functions": 9,
+      "same_normalized_body": 8,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [
+        "end_game_text"
+      ],
+      "current_functions_new": [
+        "advance_round",
+        "array1",
+        "array2",
+        "report_round_number",
+        "reserve_spawn_point",
+        "spawn_point_available",
+        "zombie_melee_strike",
+        "zombie_melee_strike_times"
+      ],
+      "old_functions": 37,
+      "current_functions": 44,
+      "same_normalized_body": 17,
+      "missing_bodies": {
+        "end_game_text": "end_game_text()\n{\n\tself endon( \"disconnect\" );\n\n\ttitle = &\"ZOMBIE_GAME_OVER\";\n\tif ( isDefined( level.zm_extraction_result ) && level.zm_extraction_result == \"win\" )\n\t{\n\t\tif ( is_true( self.zm_extracted ) )\n\t\t\ttitle = &\"SCRIPT_MISSION_COMPLETE\";\n\t\telse\n\t\t\ttitle = &\"ZOMBIE_DID_NOT_SURVIVE\";\n\t}\n\n\tgame_over = newClientHudElem( self );\n\tgame_over.alignX = \"center\";\n\tgame_over.alignY = \"middle\";\n\tgame_over.horzAlign = \"center\";\n\tgame_over.vertAlign = \"middle\";\n\tgame_over.y = -130;\n\tgame_over.foreground = true;\n\tgame_over.font = \"objective\";\n\tgame_over.fontScale = 2.4;\n\tgame_over.alpha = 0;\n\tgame_over.color = ( 1, 1, 1 );\n\tgame_over setText( title );\n\tgame_over fadeOverTime( 1 );\n\tgame_over.alpha = 1;\n\n\tsurvived = newClientHudElem( self );\n\tsurvived.alignX = \"center\";\n\tsurvived.alignY = \"middle\";\n\tsurvived.horzAlign = \"center\";\n\tsurvived.vertAlign = \"middle\";\n\tsurvived.y = -100;\n\tsurvived.foreground = true;\n\tsurvived.font = \"objective\";\n\tsurvived.fontScale = 1.6;\n\tsurvived.alpha = 0;\n\tsurvived.color = ( 1, 1, 1 );\n\tif ( level.round_number < 2 )\n\t\tsurvived setText( &\"ZOMBIE_SURVIVED_ROUND\" );\n\telse\n\t{\n\t\tsurvived.label = &\"ZOMBIE_SURVIVED_ROUNDS\";\n\t\tsurvived setValue( level.round_number );\n\t}\n\tsurvived fadeOverTime( 1 );\n\tsurvived.alpha = 1;\n}"
+      }
+    },
+    {
+      "path": "maps/_zombiemode_ai_dogs.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "dog_explode_fx",
+        "dog_location_is_open",
+        "dog_thundergun_knockdown",
+        "final_round_dog_due",
+        "open_dog_locations",
+        "spawn_final_round_dog"
+      ],
+      "old_functions": 28,
+      "current_functions": 34,
+      "same_normalized_body": 12,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_audio.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [
+        "play_sound_2d_all"
+      ],
+      "current_functions_new": [
+        "fire_sale_music_allowed",
+        "fire_sale_music_start",
+        "fire_sale_music_stop",
+        "fire_sale_music_think",
+        "music_cue_length",
+        "play_music_cue",
+        "round_start_stinger",
+        "wait_terminal_music"
+      ],
+      "old_functions": 48,
+      "current_functions": 55,
+      "same_normalized_body": 39,
+      "missing_bodies": {
+        "play_sound_2d_all": "play_sound_2d_all( alias )\r\n{\r\n\tif ( !alias_exists( alias ) )\r\n\t\treturn;\r\n\tplayers = getPlayers();\r\n\tfor ( i = 0; i < players.size; i++ )\r\n\t\tplayers[ i ] playLocalSound( alias );\r\n}"
+      }
+    },
+    {
+      "path": "maps/_zombiemode_betty.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 7,
+      "current_functions": 7,
+      "same_normalized_body": 4,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_callbacksetup.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 13,
+      "current_functions": 13,
+      "same_normalized_body": 12,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_challenges.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 19,
+      "current_functions": 19,
+      "same_normalized_body": 16,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_extraction.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "map_routes",
+        "node_speed",
+        "node_ups",
+        "rescue_arrival_clear",
+        "rescue_arrival_end_game",
+        "rescue_arrival_event",
+        "rescue_arrival_hud",
+        "rescue_arrival_radio",
+        "rescue_boarding_animation",
+        "rescue_boardings_pending",
+        "rescue_countdown_beeps",
+        "rescue_entry_frame",
+        "rescue_free_seat",
+        "rescue_getin_anim",
+        "rescue_gun_fire",
+        "rescue_landing_waypoint",
+        "rescue_mount_gun",
+        "rescue_release_rider",
+        "rescue_remove_boarding_model",
+        "rescue_rider_lifecycle",
+        "rescue_riders_end_game",
+        "rescue_seat_controls",
+        "rescue_seat_offset",
+        "rescue_seat_tag",
+        "route_from_chain",
+        "route_point",
+        "route_priority",
+        "sumpf_routes"
+      ],
+      "old_functions": 39,
+      "current_functions": 67,
+      "same_normalized_body": 18,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_gib.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 23,
+      "current_functions": 23,
+      "same_normalized_body": 19,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_laststand.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "all_down_can_recover",
+        "all_down_countdown",
+        "all_down_recovered",
+        "clear_all_down_countdown",
+        "no_standing_retreat_eligible"
+      ],
+      "old_functions": 19,
+      "current_functions": 24,
+      "same_normalized_body": 10,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_pathtest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 19,
+      "current_functions": 19,
+      "same_normalized_body": 9,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_perks.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [
+        "quickrevive_hint_think"
+      ],
+      "current_functions_new": [
+        "knuckle_crack_hold",
+        "knuckle_crack_timer",
+        "perk_machine_power_definition",
+        "perk_machine_power_init",
+        "perk_machine_power_on",
+        "perk_machine_wait_for_power",
+        "release_knuckle_crack",
+        "wait_for_player_to_take",
+        "wait_for_timeout"
+      ],
+      "old_functions": 38,
+      "current_functions": 46,
+      "same_normalized_body": 21,
+      "missing_bodies": {
+        "quickrevive_hint_think": "quickrevive_hint_think()\n{\n\tfor ( ;; )\n\t{\n\t\tsolo = getPlayers().size == 1;\n\t\tcost = perk_cost( \"specialty_quickrevive\", solo );\n\t\tself.cost = cost;\n\t\tif ( solo && level.zm_solo_quickrevive_buys >= 3 )\n\t\t\tself setHintString( \"\" );\n\t\telse if ( !solo && !flag( \"power_on\" ) )\n\t\t\tself setHintString( &\"ZOMBIE_NEED_POWER\" );\n\t\telse\n\t\t\tself setHintString( perk_hint( \"specialty_quickrevive\", solo ), cost );\n\t\twait( 0.5 );\n\t}\n}"
+      }
+    },
+    {
+      "path": "maps/_zombiemode_power.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 9,
+      "current_functions": 9,
+      "same_normalized_body": 6,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_powerups.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [
+        "powerup_test_deathmachine",
+        "powerup_test_fire",
+        "powerup_test_gather",
+        "powerup_test_player",
+        "powerup_test_sample",
+        "powerup_test_watch"
+      ],
+      "current_functions_new": [
+        "weapon_pickup_health_trace"
+      ],
+      "old_functions": 83,
+      "current_functions": 78,
+      "same_normalized_body": 51,
+      "missing_bodies": {
+        "powerup_test_deathmachine": "powerup_test_deathmachine( phase, yaw )\n{\n\tself endon( \"disconnect\" );\n\tidle = 8192;\n\t\n\t\n\tif ( self getCurrentWeapon() != \"none\" )\n\t\tself switchToWeapon( self getCurrentWeapon() );\n\tself codol_botPressButtons( idle, 60 );\n\tif ( isDefined( yaw ) )\n\t\tself setPlayerAngles( ( 0, yaw, 0 ) );\n\twait( 0.5 );\n\n\tif ( phase == \"grab\" )\n\t{\n\t\tspecific_powerup_drop( \"minigun\", self.origin - ( 0, 0, 40 ) );\n\t\twait( 3.0 );\n\t}\n\tcodolPrintLn( \"CoDOL zm dmtest [\" + phase + \"]: \" + self.name + \" holds \" + self getCurrentWeapon() +\n\t\t\", has_powerup_weapon \" + is_true( self.has_powerup_weapon ) );\n\n\tstart = self.origin;\n\tself codol_botPressButtons( idle + 2, 1.5, 1 );\n\tself thread powerup_test_sample( \"dm sprint\", 1.4 );\n\twait( 1.5 );\n\tself codol_botPressButtons( idle, 60 );\n\tcodolPrintLn( \"CoDOL zm dmtest [\" + phase + \"]: sprint covered \" + int( distance( start, self.origin ) ) + \" units in 1.5 s\" );\n\tself setOrigin( start );\n\twait( 0.6 );\n\n\tself codol_botPressButtons( idle + 4, 0.4 );\n\tcodolPrintLn( \"CoDOL zm dmtest [\" + phase + \"]: melee pressed (see CoDOL melee: fire)\" );\n\twait( 1.0 );\n\tself codol_botPressButtons( idle, 60 );\n\twait( 0.5 );\n\n\tself codol_botPressButtons( idle + 2, 0.8, 1 );\n\twait( 0.7 );\n\tself codol_botPressButtons( idle + 8388608 + 256 + 2, 1.2, 1 );\n\tself thread powerup_test_sample( \"dm dive\", 1.0, 0.05 );\n\twait( 1.2 );\n\tself codol_botPressButtons( idle, 60 );\n\tcodolPrintLn( \"CoDOL zm dmtest [\" + phase + \"]: after the dive press, stance \" + self getStance() );\n\tself setStance( \"stand\" );\n\tself setOrigin( start );\n\twait( 1.0 );\n\n\tprimaries = self getWeaponsListPrimaries();\n\tother = \"none\";\n\tfor ( i = 0; i < primaries.size; i++ )\n\t{\n\t\tif ( primaries[ i ] != self getCurrentWeapon() )\n\t\t\tother = primaries[ i ];\n\t}\n\theld = self getCurrentWeapon();\n\tif ( other != \"none\" )\n\t{\n\t\tself switchToWeapon( other );\n\t\twait( 1.5 );\n\t}\n\tcodolPrintLn( \"CoDOL zm dmtest [\" + phase + \"]: switch \" + held + \" -> \" + other + \" asked; holds \" + self getCurrentWeapon() );\n\n\tall = getEntArray( \"weapon_upgrade\", \"targetname\" );\n\ttrigs = [];\n\tfor ( i = 0; i < all.size; i++ )\n\t{\n\t\tif ( isDefined( all[ i ].zombie_weapon_upgrade ) && !self hasWeapon( all[ i ].zombie_weapon_upgrade ) )\n\t\t\ttrigs[ trigs.size ] = all[ i ];\n\t}\n\tif ( trigs.size > 0 )\n\t{\n\t\tif ( self.score < 5000 )\n\t\t\tself maps\\_zombiemode_score::add_to_player_score( 5000 );\n\t\tself setOrigin( trigs[ 0 ].origin - ( 0, 0, 40 ) );\n\t\twait( 0.3 );\n\t\tbefore = self.score;\n\t\tself codol_botPressButtons( idle + 40, 1.0 );\n\t\twait( 2.0 );\n\t\tcodolPrintLn( \"CoDOL zm dmtest [\" + phase + \"]: native use on \" + trigs[ 0 ].zombie_weapon_upgrade +\n\t\t\t\" wall buy, score \" + before + \" -> \" + self.score + \", holds \" + self getCurrentWeapon() );\n\t\tself setOrigin( start );\n\t}\n\tself codol_botPressButtons( idle, 60 );\n}",
+        "powerup_test_fire": "powerup_test_fire( seconds )\n{\n\tself endon( \"disconnect\" );\n\n\tweapon = self getCurrentWeapon();\n\tcodolPrintLn( \"CoDOL zm powerup test: \" + self.name + \" fires \" + weapon + \" for \" + seconds + \" s\" );\n\tkilled_before = level.total_zombies_killed;\n\n\tend_time = getTime() + int( seconds * 1000 );\n\twhile ( getTime() < end_time )\n\t{\n\t\ttarget = get_closest( self.origin, maps\\_zombiemode_weap_tesla::tesla_sorted_zombies( self.origin ) );\n\t\tif ( isDefined( target ) )\n\t\t{\n\t\t\teye = self.origin + ( 0, 0, 60 );\n\t\t\tself setPlayerAngles( vectorToAngles( ( target.origin + ( 0, 0, 40 ) ) - eye ) );\n\t\t}\n\t\tself codol_botPressButtons( 1, 0.15 );\n\t\twait( 0.1 );\n\t}\n\n\tweapon = self getCurrentWeapon();\n\tammo = \"\";\n\tif ( weapon != \"none\" )\n\t\tammo = \" clip \" + self getWeaponAmmoClip( weapon ) + \" stock \" + self getWeaponAmmoStock( weapon );\n\tcodolPrintLn( \"CoDOL zm powerup test: \" + self.name + \" stopped firing, holding \" + weapon + ammo +\n\t\t\"; zombies killed meanwhile \" + ( level.total_zombies_killed - killed_before ) );\n}",
+        "powerup_test_gather": "powerup_test_gather( radius )\n{\n\teye = self.origin + ( 0, 0, 60 );\n\tmoved = 0;\n\tzombies = maps\\_zombiemode_weap_tesla::tesla_sorted_zombies( self.origin );\n\tfor ( i = 0; i < zombies.size; i++ )\n\t{\n\t\tfor ( tries = 0; tries < 12; tries++ )\n\t\t{\n\t\t\tyaw = ( ( i * 5 + tries ) * 30 ) % 360;\n\t\t\tspot = groundpos( self.origin + vector_scale( anglesToForward( ( 0, yaw, 0 ) ), radius ) + ( 0, 0, 30 ) );\n\t\t\tif ( abs( spot[ 2 ] - self.origin[ 2 ] ) > 40 )\n\t\t\t\tcontinue;\n\t\t\tif ( !bulletTracePassed( eye, spot + ( 0, 0, 40 ), false, self ) )\n\t\t\t\tcontinue;\n\t\t\tzombies[ i ] forceTeleport( spot, ( 0, yaw + 180, 0 ) );\n\t\t\tmoved++;\n\t\t\tbreak;\n\t\t}\n\t}\n\tcodolPrintLn( \"CoDOL zm powerup test: gathered \" + moved + \" of \" + zombies.size + \" zombies \" + radius + \" units from \" + self.name );\n}",
+        "powerup_test_player": "powerup_test_player( client_num )\n{\n\tplayers = getPlayers();\n\tfor ( i = 0; i < players.size; i++ )\n\t{\n\t\tif ( players[ i ] getEntityNumber() == client_num )\n\t\t\treturn players[ i ];\n\t}\n\treturn undefined;\n}",
+        "powerup_test_sample": "powerup_test_sample( mask, seconds, step )\n{\n\tself endon( \"disconnect\" );\n\tif ( !isDefined( step ) )\n\t\tstep = 0.2;\n\tend_time = getTime() + int( seconds * 1000 );\n\twhile ( getTime() < end_time )\n\t{\n\t\tv = self getVelocity();\n\t\tcodolPrintLn( \"CoDOL zm powerup test: press \" + mask + \" \" + self.name + \" holds \" + self getCurrentWeapon() +\n\t\t\t\" stance \" + self getStance() + \" speed \" + int( length( ( v[ 0 ], v[ 1 ], 0 ) ) ) + \" vz \" + int( v[ 2 ] ) +\n\t\t\t\" at \" + self.origin );\n\t\twait( step );\n\t}\n}",
+        "powerup_test_watch": "powerup_test_watch()\n{\n\tsetDvar( \"scr_zm_powerup_test\", \"\" );\n\n\tfor ( ;; )\n\t{\n\t\twait( 0.5 );\n\n\t\trequest = getDvar( \"scr_zm_powerup_test\" );\n\t\tif ( request == \"\" )\n\t\t\tcontinue;\n\t\tsetDvar( \"scr_zm_powerup_test\", \"\" );\n\n\t\ttokens = strTok( request, \" \" );\n\t\tif ( tokens.size < 3 )\n\t\t\tcontinue;\n\n\t\tplayer = powerup_test_player( int( tokens[ 1 ] ) );\n\t\tif ( !isDefined( player ) || !isAlive( player ) )\n\t\t{\n\t\t\tcodolPrintLn( \"CoDOL zm powerup test: no live client \" + tokens[ 1 ] );\n\t\t\tcontinue;\n\t\t}\n\n\t\tswitch ( tokens[ 0 ] )\n\t\t{\n\t\tcase \"drop\":\n\t\t\tif ( !isDefined( level.zombie_powerups[ tokens[ 2 ] ] ) )\n\t\t\t{\n\t\t\t\tcodolPrintLn( \"CoDOL zm powerup test: \" + tokens[ 2 ] + \" is not registered\" );\n\t\t\t\tbreak;\n\t\t\t}\n\t\t\t\n\t\t\t\n\t\t\toffset = ( 0, 0, 0 );\n\t\t\tif ( tokens.size > 3 )\n\t\t\t\toffset = ( float( tokens[ 3 ] ), 0, 0 );\n\t\t\tcodolPrintLn( \"CoDOL zm powerup test: dropping \" + tokens[ 2 ] + \" at \" + player.name + \" + \" + offset );\n\t\t\tspecific_powerup_drop( tokens[ 2 ], player.origin + offset - ( 0, 0, 40 ) );\n\t\t\tbreak;\n\t\tcase \"pandora\":\n\t\t\tif ( !isDefined( level.quantum_bomb_results[ tokens[ 2 ] ] ) )\n\t\t\t{\n\t\t\t\tcodolPrintLn( \"CoDOL zm powerup test: pandora result \" + tokens[ 2 ] + \" is not registered\" );\n\t\t\t\tbreak;\n\t\t\t}\n\t\t\tplayer thread pandora_powerup( player.origin, tokens[ 2 ] );\n\t\t\tbreak;\n\t\tcase \"fire\":\n\t\t\tif ( tokens.size > 3 && player hasWeapon( tokens[ 3 ] ) )\n\t\t\t\tplayer setSpawnWeapon( tokens[ 3 ] );\n\t\t\tplayer thread powerup_test_fire( float( tokens[ 2 ] ) );\n\t\t\tbreak;\n\t\tcase \"state\":\n\t\t\tw = player getCurrentWeapon();\n\t\t\tcodolPrintLn( \"CoDOL zm powerup test: \" + player.name + \" holds \" + w + \", primaries \" + player getWeaponsListPrimaries().size +\n\t\t\t\t\", remote \" + player isRemoteControlling() );\n\t\t\tbreak;\n\t\tcase \"zap\":\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\tz = get_closest( player.origin, maps\\_zombiemode_weap_tesla::tesla_sorted_zombies( player.origin ) );\n\t\t\tif ( !isDefined( z ) )\n\t\t\t{\n\t\t\t\tcodolPrintLn( \"CoDOL zm powerup test: no zombie to zap\" );\n\t\t\t\tbreak;\n\t\t\t}\n\t\t\tcodolPrintLn( \"CoDOL zm powerup test: tesla projectile hit on zombie \" + z getEntityNumber() + \" from \" + player.name );\n\t\t\tz doDamage( 1, player.origin, player, player, 0, \"MOD_PROJECTILE\", 0, \"tesla_gun_zm\" );\n\t\t\tbreak;\n\t\tcase \"sentrydiag\":\n\t\t\tif ( isDefined( level.zm_sentries ) )\n\t\t\t{\n\t\t\t\tfor ( k = 0; k < level.zm_sentries.size; k++ )\n\t\t\t\t\tlevel.zm_sentries[ k ] maps\\_zombiemode_auto_turret::auto_turret_diag( level.zm_sentries[ k ] getTurretTarget( false ) );\n\t\t\t}\n\t\t\tbreak;\n\t\tcase \"gather\":\n\t\t\tplayer powerup_test_gather( float( tokens[ 2 ] ) );\n\t\t\tbreak;\n\t\tcase \"press\":\n\t\t\tseconds = 1.0;\n\t\t\tdirection = 0;\n\t\t\tif ( tokens.size > 3 )\n\t\t\t\tseconds = float( tokens[ 3 ] );\n\t\t\tif ( tokens.size > 4 )\n\t\t\t\tdirection = int( tokens[ 4 ] );\n\t\t\tplayer codol_botPressButtons( int( tokens[ 2 ] ), seconds, direction );\n\t\t\tplayer thread powerup_test_sample( tokens[ 2 ], seconds );\n\t\t\tbreak;\n\t\tcase \"dive\":\n\t\t\tplayer codol_botPressButtons( 2, 1.3, 1 );\n\t\t\tplayer thread powerup_test_sample( \"2\", 1.2 );\n\t\t\twait( 1.2 );\n\t\t\tplayer codol_botPressButtons( 8388866, 1.0, 1 );\n\t\t\tplayer thread powerup_test_sample( \"8388866\", 1.2 );\n\t\t\tbreak;\n\t\tcase \"dmtest\":\n\t\t\tyaw = undefined;\n\t\t\tif ( tokens.size > 3 )\n\t\t\t\tyaw = float( tokens[ 3 ] );\n\t\t\tplayer thread powerup_test_deathmachine( tokens[ 2 ], yaw );\n\t\t\tbreak;\n\t\tcase \"switch\":\n\t\t\tcodolPrintLn( \"CoDOL zm powerup test: \" + player.name + \" asks for \" + tokens[ 2 ] + \" holding \" + player getCurrentWeapon() );\n\t\t\tplayer switchToWeapon( tokens[ 2 ] );\n\t\t\tbreak;\n\t\t}\n\t}\n}"
+      }
+    },
+    {
+      "path": "maps/_zombiemode_score.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 10,
+      "current_functions": 10,
+      "same_normalized_body": 8,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_spawner.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "ambient_zombie_vocals_tick",
+        "round_budget",
+        "select_spawn_point",
+        "spawn_entrance_key",
+        "spawning_closed",
+        "stop_spawning"
+      ],
+      "old_functions": 65,
+      "current_functions": 71,
+      "same_normalized_body": 39,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_traps.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "trap_burning_watch",
+        "trap_delete_fx",
+        "trap_player_damage",
+        "trap_spawn_fx"
+      ],
+      "old_functions": 20,
+      "current_functions": 24,
+      "same_normalized_body": 9,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_weap_black_hole_bomb.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 24,
+      "current_functions": 24,
+      "same_normalized_body": 17,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_weap_tesla.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "tesla_viewmodel_ammo",
+        "tesla_viewmodel_fx_grenade_watch",
+        "tesla_viewmodel_fx_rail",
+        "tesla_viewmodel_fx_tube",
+        "tesla_viewmodel_fx_tube_on_fire",
+        "tesla_viewmodel_fx_tube_on_raise",
+        "tesla_viewmodel_trace",
+        "tesla_viewmodel_trace_event",
+        "tesla_viewmodel_trace_events",
+        "tesla_viewmodel_tube_fx",
+        "tesla_viewmodel_tube_play",
+        "tesla_viewmodel_weapon"
+      ],
+      "old_functions": 17,
+      "current_functions": 29,
+      "same_normalized_body": 10,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_zone_manager.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "add_adjacent_zone",
+        "adjacency_enable_zones",
+        "adjacency_occupied_neighbour"
+      ],
+      "old_functions": 13,
+      "current_functions": 16,
+      "same_normalized_body": 8,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/createart/mp_subbase_sh_art.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 1,
+      "current_functions": 1,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_animatedmodels.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_art.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_awards.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 59,
+      "current_functions": 59,
+      "same_normalized_body": 58,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_compass.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 2,
+      "current_functions": 2,
+      "same_normalized_body": 1,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_crib.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 36,
+      "current_functions": 36,
+      "same_normalized_body": 36,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_dogs.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 84,
+      "current_functions": 84,
+      "same_normalized_body": 83,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_events.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 27,
+      "current_functions": 27,
+      "same_normalized_body": 27,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_fx.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 7,
+      "current_functions": 7,
+      "same_normalized_body": 7,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_javelin.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 17,
+      "current_functions": 17,
+      "same_normalized_body": 16,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_load.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 7,
+      "current_functions": 7,
+      "same_normalized_body": 6,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_loot.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 23,
+      "current_functions": 23,
+      "same_normalized_body": 23,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_matchdata.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 14,
+      "current_functions": 14,
+      "same_normalized_body": 13,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_scoreboard.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_train.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 14,
+      "current_functions": 14,
+      "same_normalized_body": 14,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_utility.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 202,
+      "current_functions": 202,
+      "same_normalized_body": 202,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/animscripts/dog_attack_log.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 15,
+      "current_functions": 15,
+      "same_normalized_body": 12,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/animscripts/dog_combat.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 24,
+      "current_functions": 24,
+      "same_normalized_body": 18,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/animscripts/dog_death.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 1,
+      "current_functions": 1,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/animscripts/dog_init.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 4,
+      "current_functions": 4,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/animscripts/dog_jump.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 1,
+      "current_functions": 1,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/animscripts/dog_move.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 12,
+      "current_functions": 12,
+      "same_normalized_body": 8,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/animscripts/dog_pain.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 1,
+      "current_functions": 1,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/animscripts/dog_shared.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "dogcap",
+        "t5damageyaw"
+      ],
+      "old_functions": 19,
+      "current_functions": 21,
+      "same_normalized_body": 19,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/animscripts/dog_stop.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 6,
+      "current_functions": 6,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/animscripts/dog_turn.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 10,
+      "current_functions": 10,
+      "same_normalized_body": 9,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/equipment/_pickup.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "pollcanreach",
+        "pollowneruse"
+      ],
+      "old_functions": 5,
+      "current_functions": 7,
+      "same_normalized_body": 4,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/equipment/_tabun.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 18,
+      "current_functions": 18,
+      "same_normalized_body": 17,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_callbacksetup.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 17,
+      "current_functions": 17,
+      "same_normalized_body": 17,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_class.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 59,
+      "current_functions": 59,
+      "same_normalized_body": 59,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_aar.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 17,
+      "current_functions": 17,
+      "same_normalized_body": 16,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_bot_equipment.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 5,
+      "current_functions": 5,
+      "same_normalized_body": 5,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_bot_killstreaks.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 20,
+      "current_functions": 20,
+      "same_normalized_body": 16,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_bot_objective.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "threatblocksuse"
+      ],
+      "old_functions": 30,
+      "current_functions": 31,
+      "same_normalized_body": 25,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_bots.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 41,
+      "current_functions": 41,
+      "same_normalized_body": 39,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_breathtest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 1,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_chtest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 15,
+      "current_functions": 15,
+      "same_normalized_body": 15,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_equiptest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 31,
+      "current_functions": 31,
+      "same_normalized_body": 31,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_perktest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 19,
+      "current_functions": 19,
+      "same_normalized_body": 19,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_ridetest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 7,
+      "current_functions": 7,
+      "same_normalized_body": 7,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_scavtest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 19,
+      "current_functions": 19,
+      "same_normalized_body": 19,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_top_players.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "tracewalkend",
+        "walktimeout"
+      ],
+      "old_functions": 20,
+      "current_functions": 22,
+      "same_normalized_body": 12,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_damage.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 69,
+      "current_functions": 69,
+      "same_normalized_body": 69,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_dev.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 27,
+      "current_functions": 27,
+      "same_normalized_body": 27,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_fieldorders.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 27,
+      "current_functions": 27,
+      "same_normalized_body": 26,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_gamelogic.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "quickinitialpopulationready",
+        "quickplaysession"
+      ],
+      "old_functions": 69,
+      "current_functions": 71,
+      "same_normalized_body": 67,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_gamescore.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 21,
+      "current_functions": 21,
+      "same_normalized_body": 21,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_globallogic.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 11,
+      "current_functions": 11,
+      "same_normalized_body": 11,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_hostmigration.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 9,
+      "current_functions": 9,
+      "same_normalized_body": 8,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_killcam.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 23,
+      "current_functions": 23,
+      "same_normalized_body": 21,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_menus.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "codolquickassignedteam"
+      ],
+      "old_functions": 16,
+      "current_functions": 17,
+      "same_normalized_body": 9,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_missions.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 81,
+      "current_functions": 81,
+      "same_normalized_body": 78,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_playercards.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 2,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_playerlogic.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 54,
+      "current_functions": 54,
+      "same_normalized_body": 53,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_rank.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 39,
+      "current_functions": 39,
+      "same_normalized_body": 39,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_shellshock.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 12,
+      "current_functions": 12,
+      "same_normalized_body": 11,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_spawnlogic.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 52,
+      "current_functions": 52,
+      "same_normalized_body": 51,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_teams.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "tryjointeam"
+      ],
+      "old_functions": 47,
+      "current_functions": 48,
+      "same_normalized_body": 44,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_weapons.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 106,
+      "current_functions": 106,
+      "same_normalized_body": 106,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/arena.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 25,
+      "current_functions": 25,
+      "same_normalized_body": 23,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/conf.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 20,
+      "current_functions": 20,
+      "same_normalized_body": 20,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/dd.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 28,
+      "current_functions": 28,
+      "same_normalized_body": 27,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/dom.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 31,
+      "current_functions": 31,
+      "same_normalized_body": 31,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/gun.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 15,
+      "current_functions": 15,
+      "same_normalized_body": 15,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/infect.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 15,
+      "current_functions": 15,
+      "same_normalized_body": 15,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/koth.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 25,
+      "current_functions": 25,
+      "same_normalized_body": 22,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/oic.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 6,
+      "current_functions": 6,
+      "same_normalized_body": 6,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/shrp.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 9,
+      "current_functions": 9,
+      "same_normalized_body": 9,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/vip.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 23,
+      "current_functions": 23,
+      "same_normalized_body": 23,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/killstreaks/_ac130.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 74,
+      "current_functions": 74,
+      "same_normalized_body": 74,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/killstreaks/_airdrop.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 66,
+      "current_functions": 66,
+      "same_normalized_body": 66,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/killstreaks/_airstrike.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 43,
+      "current_functions": 43,
+      "same_normalized_body": 43,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/killstreaks/_autosentry.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 50,
+      "current_functions": 50,
+      "same_normalized_body": 50,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/killstreaks/_helicopter.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 79,
+      "current_functions": 79,
+      "same_normalized_body": 79,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/killstreaks/_killstreaks.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "codolrewardallowed",
+        "codolsurvivalrules"
+      ],
+      "old_functions": 50,
+      "current_functions": 52,
+      "same_normalized_body": 44,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/killstreaks/_littlebird.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 23,
+      "current_functions": 23,
+      "same_normalized_body": 23,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/killstreaks/_remotemissile.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 13,
+      "current_functions": 13,
+      "same_normalized_body": 12,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/killstreaks/_tank.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 81,
+      "current_functions": 81,
+      "same_normalized_body": 81,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/mp_abandon_sh_mk.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 2,
+      "current_functions": 2,
+      "same_normalized_body": 1,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/perks/_codol_equipperks.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 18,
+      "current_functions": 18,
+      "same_normalized_body": 17,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/perks/_perkfunctions.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 90,
+      "current_functions": 90,
+      "same_normalized_body": 87,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/zm_asylum_sh.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "asylum_spawn_point"
+      ],
+      "old_functions": 1,
+      "current_functions": 2,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/zm_prototype_sh.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "prototype_fog",
+        "prototype_fog_dvar",
+        "prototype_fog_fx",
+        "prototype_fog_precache",
+        "prototype_fog_spot"
+      ],
+      "old_functions": 2,
+      "current_functions": 7,
+      "same_normalized_body": 1,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/zm_sumpf_sh.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/zm_sumpf_sh_logtrap.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "release-lineage/20261020-mp.json",
+      "data": true,
+      "old_file_missing": true,
+      "same": false
+    }
+  ],
+  "567d38a": [
+    {
+      "path": "aitype/ally_blackkit_smg_mp5sd_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/ally_codo_tf_mc_lwset_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/ally_codo_tf_ustshirt_clean_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/ally_hero_ghost_estate_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/ally_hero_ghost_forest_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/ally_hero_ghost_socom_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/ally_hero_harker_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/ally_hero_price_afghan_ar_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/ally_hero_price_blackkit_maskup_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/ally_hero_soap_socom_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/ally_sas_woodland_ar_m4grunt_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/ally_socom_shotgun_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/ally_tf_141_forest_shotgun_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/ally_tf_141_forest_smg_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/ally_us_army_mp5_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/ally_us_army_wounded_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/civilian_slum_male_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/enemy_coop_soldier.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "mp_role_weapons",
+        "scripted_character",
+        "soldier_setup"
+      ],
+      "old_functions": 5,
+      "current_functions": 8,
+      "same_normalized_body": 2,
+      "missing_bodies": {}
+    },
+    {
+      "path": "aitype/enemy_desert_elite_ar_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/enemy_desert_elite_lmg_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/enemy_desert_elite_rpg_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/enemy_desert_elite_shgn_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/enemy_desert_elite_smg_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/enemy_desert_elite_snpr_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/enemy_favela_ak47_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/enemy_favela_ar_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/enemy_favela_deserteagle_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/enemy_favela_lmg_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/enemy_favela_makarov_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/enemy_favela_rpg_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/enemy_favela_shgn_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/enemy_favela_smg_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/enemy_favela_snpr_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/enemy_juggernaut_russian_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/enemy_vazquez_civilian_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/enemy_vazquez_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/enemy_villian_ortiz_crash_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "aitype/enemy_villian_ortiz_so.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "animscripts/animmode.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 2,
+      "current_functions": 2,
+      "same_normalized_body": 1,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/animset.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 37,
+      "current_functions": 37,
+      "same_normalized_body": 36,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/battlechatter.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 152,
+      "current_functions": 152,
+      "same_normalized_body": 143,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/battlechatter_ai.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 55,
+      "current_functions": 55,
+      "same_normalized_body": 54,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/combat.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 63,
+      "current_functions": 63,
+      "same_normalized_body": 61,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/combat_utility.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 91,
+      "current_functions": 91,
+      "same_normalized_body": 84,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/corner.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 55,
+      "current_functions": 55,
+      "same_normalized_body": 50,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/cover_arrival.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 51,
+      "current_functions": 51,
+      "same_normalized_body": 36,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/cqb.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 7,
+      "current_functions": 7,
+      "same_normalized_body": 5,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/death.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 31,
+      "current_functions": 31,
+      "same_normalized_body": 28,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/dog/dog_combat.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 62,
+      "current_functions": 62,
+      "same_normalized_body": 60,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/dog/dog_move.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 14,
+      "current_functions": 14,
+      "same_normalized_body": 13,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/face.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 13,
+      "current_functions": 13,
+      "same_normalized_body": 12,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/init.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 27,
+      "current_functions": 27,
+      "same_normalized_body": 24,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/init_move_transitions.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 9,
+      "current_functions": 9,
+      "same_normalized_body": 6,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/melee.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 59,
+      "current_functions": 59,
+      "same_normalized_body": 58,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/pain.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 49,
+      "current_functions": 49,
+      "same_normalized_body": 44,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/scripted/truckride_backoftruck.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 2,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/setposemovement.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 55,
+      "current_functions": 55,
+      "same_normalized_body": 54,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/shared.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 104,
+      "current_functions": 104,
+      "same_normalized_body": 100,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/shoot_behavior.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 27,
+      "current_functions": 27,
+      "same_normalized_body": 25,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/soldier_combat.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [
+        "aim_point",
+        "role_fire_anim"
+      ],
+      "current_functions_new": [
+        "backpedal",
+        "begin_engagement",
+        "choose_pose",
+        "clip_remaining",
+        "crouch_line_clear",
+        "exposed_grenade_anim",
+        "fire_anim_for"
+      ],
+      "old_functions": 19,
+      "current_functions": 24,
+      "same_normalized_body": 8,
+      "missing_bodies": {
+        "aim_point": "aim_point( enemy )\n{\n\t\n\theight = 48;\n\tif ( isPlayer( enemy ) )\n\t{\n\t\tstance = enemy getStance();\n\t\tif ( stance == \"crouch\" )\n\t\t\theight = 32;\n\t\telse if ( stance == \"prone\" )\n\t\t\theight = 10;\n\t}\n\treturn enemy.origin + ( 0, 0, height );\n}",
+        "role_fire_anim": "role_fire_anim()\n{\n\tswitch ( self.coop_role )\n\t{\n\tcase \"shgn\":\n\tcase \"snpr\":\n\tcase \"pistol\":\n\t\treturn %exposed_shoot_semi1;\n\tcase \"lmg\":\n\t\treturn %exposed_shoot_auto_v2;\n\t}\n\treturn %exposed_shoot_burst3;\n}"
+      }
+    },
+    {
+      "path": "animscripts/soldier_cover.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "animscripts/soldier_death.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [
+        "pick_death_anim"
+      ],
+      "current_functions_new": [
+        "cover_death_anim",
+        "crouch_death_anim",
+        "explode_death_anim",
+        "get_death_anim",
+        "running_death_anim",
+        "stand_death_anim",
+        "stand_pistol_death_anim",
+        "strong_bullet_damage",
+        "strong_bullet_death_anim",
+        "try_long_death"
+      ],
+      "old_functions": 3,
+      "current_functions": 12,
+      "same_normalized_body": 1,
+      "missing_bodies": {
+        "pick_death_anim": "pick_death_anim()\n{\n\tanims = [];\n\tif ( isDefined( self.a ) && self.a.movement == \"run\" )\n\t{\n\t\tanims[ anims.size ] = %run_death_facedown;\n\t\tanims[ anims.size ] = %run_death_roll;\n\t\tanims[ anims.size ] = %run_death_flop;\n\t}\n\telse\n\t{\n\t\tanims[ anims.size ] = %exposed_death;\n\t\tanims[ anims.size ] = %exposed_death_02;\n\t\tanims[ anims.size ] = %exposed_death_falltoknees;\n\t\tanims[ anims.size ] = %exposed_death_twist;\n\t\tanims[ anims.size ] = %stand_death_tumbleback;\n\t\tanims[ anims.size ] = %stand_death_head_straight_back;\n\t}\n\treturn anims[ randomInt( anims.size ) ];\n}"
+      }
+    },
+    {
+      "path": "animscripts/soldier_flashed.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 1,
+      "current_functions": 1,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/soldier_init.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 1,
+      "current_functions": 1,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/soldier_jump.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "clean_name",
+        "death_anims",
+        "do_traverse",
+        "fit_traverse",
+        "ladder_down",
+        "ladder_up",
+        "land_on",
+        "traverse_clip"
+      ],
+      "old_functions": 1,
+      "current_functions": 9,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/soldier_move.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "patrol_start",
+        "rise_into_run",
+        "run_anim",
+        "run_n_gun",
+        "run_n_gun_anim",
+        "run_n_gun_dir",
+        "run_n_gun_fire",
+        "run_turn_anim",
+        "sprint_anim",
+        "start_move_transition",
+        "stop_run_n_gun",
+        "try_cover_arrival",
+        "try_exposed_arrival",
+        "try_run_reaction",
+        "try_run_reload",
+        "try_run_turn",
+        "walk_anim"
+      ],
+      "old_functions": 1,
+      "current_functions": 18,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/soldier_pain.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "cover_pain_anim",
+        "crouch_pain_anim",
+        "get_pain_anim",
+        "running_pain_anim",
+        "stand_pain_anim",
+        "stand_pistol_pain_anim"
+      ],
+      "old_functions": 1,
+      "current_functions": 7,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/soldier_shared.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "aim_idle_thread",
+        "aim_point",
+        "aim_track_thread",
+        "animarray",
+        "animarraypickrandom",
+        "animset_cqb_stand",
+        "animset_pistol_stand",
+        "animset_rifle_crouch",
+        "animset_rifle_stand",
+        "animset_rpg_crouch",
+        "animset_rpg_stand",
+        "animset_shotgun_crouch",
+        "animset_shotgun_stand",
+        "best_transition",
+        "bone_location",
+        "can_crouch",
+        "can_melee",
+        "can_throw_grenade",
+        "casual_idle_set",
+        "change_pose",
+        "cover_pose_for",
+        "cover_trans_type",
+        "damage_watch",
+        "damagelocationisany",
+        "delta_end",
+        "end_aim_idle",
+        "grenade_arc",
+        "grenade_danger",
+        "grenade_velocity",
+        "grenade_watch_player",
+        "grenade_watch_players",
+        "grenade_weapon",
+        "init_animsets",
+        "init_transitions",
+        "is_suppressed",
+        "iw4_damage_yaw",
+        "list1",
+        "list2",
+        "list3",
+        "list4",
+        "may_move",
+        "melee_strike",
+        "node_allows",
+        "node_stance_yaw_offset",
+        "notetrack_frac",
+        "pick",
+        "projectile_weapon",
+        "react_to_grenade",
+        "record_damage",
+        "reload_duration",
+        "set_aim_weight",
+        "set_aim_weights",
+        "set_anim_array",
+        "set_burst_and_semi_crouch",
+        "set_burst_and_semi_stand",
+        "set_custom_burst_and_semi",
+        "set_stance_change",
+        "setup_aim",
+        "shoot_from_height",
+        "slide_to",
+        "start_aiming",
+        "stat_bump",
+        "stop_aiming",
+        "throw_grenade",
+        "trace_anim",
+        "turn_anim",
+        "turn_toward",
+        "update_cover_use",
+        "was_damaged_by_explosive",
+        "watch_player_grenades",
+        "weapon_kind"
+      ],
+      "old_functions": 7,
+      "current_functions": 78,
+      "same_normalized_body": 5,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/soldier_stop.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "alert_idle",
+        "casual_idle",
+        "leave_casual_idle"
+      ],
+      "old_functions": 1,
+      "current_functions": 4,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/squadmanager.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 32,
+      "current_functions": 32,
+      "same_normalized_body": 31,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/traverse/shared.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 13,
+      "current_functions": 13,
+      "same_normalized_body": 12,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/traverse/wall_climb_90.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 2,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/traverse/wall_over_96.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 2,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/traverse/window_down.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 4,
+      "current_functions": 4,
+      "same_normalized_body": 2,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/utility.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 147,
+      "current_functions": 147,
+      "same_normalized_body": 134,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/zombie_combat.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "strike_schedule",
+        "swing_hit"
+      ],
+      "old_functions": 9,
+      "current_functions": 11,
+      "same_normalized_body": 6,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/zombie_dog_attack_log.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 15,
+      "current_functions": 15,
+      "same_normalized_body": 12,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/zombie_dog_combat.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "t5bitereaches",
+        "t5sq"
+      ],
+      "old_functions": 24,
+      "current_functions": 26,
+      "same_normalized_body": 23,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/zombie_dog_death.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 1,
+      "current_functions": 1,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/zombie_dog_init.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 4,
+      "current_functions": 4,
+      "same_normalized_body": 4,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/zombie_dog_jump.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 1,
+      "current_functions": 1,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/zombie_dog_move.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 14,
+      "current_functions": 14,
+      "same_normalized_body": 13,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/zombie_dog_pain.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 1,
+      "current_functions": 1,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/zombie_dog_shared.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "t5damageyaw"
+      ],
+      "old_functions": 19,
+      "current_functions": 20,
+      "same_normalized_body": 19,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/zombie_dog_stop.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 6,
+      "current_functions": 6,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/zombie_dog_turn.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 10,
+      "current_functions": 10,
+      "same_normalized_body": 9,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/zombie_init.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animscripts/zombie_jump.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "pick_climb_or_drop_anim",
+        "pick_window_anim"
+      ],
+      "old_functions": 4,
+      "current_functions": 6,
+      "same_normalized_body": 1,
+      "missing_bodies": {}
+    },
+    {
+      "path": "animtrees/animated_props.atr",
+      "data": true,
+      "old_file_missing": false,
+      "same": false
+    },
+    {
+      "path": "character/character_civilian_slum_male_aa.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_civilian_slum_male_aa_wht.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_civilian_slum_male_ab.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_civilian_slum_male_ab_wht.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_civilian_slum_male_ba.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_civilian_slum_male_ba_wht.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_civilian_slum_male_bb.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_civilian_slum_male_bb_wht.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_codo_complete_lw.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_codo_complete_tf_tan.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_codo_hero_harker.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_codo_tf_bdurolled.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_codo_tf_codotshirt.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_codo_tf_uniform.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_codo_tf_ustshirt.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_codo_tf_ustshirt_clean_blk.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_codo_tf_ustshirt_clean_yel.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_codo_vil_ortiz.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_codo_vil_ortiz_crash.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_codo_vil_vazquez.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_hero_desert_price.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_hero_forest_ghost.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_hero_seal_soccom_ghost.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_hero_seal_soccom_soap.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_op_militia_sniper.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_opf_militia_assault_aa_blk.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_opf_militia_assault_aa_wht.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_opf_militia_assault_ab_blk.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_opf_militia_assault_ac_blk.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_opf_militia_lmg_aa_blk.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_opf_militia_lmg_ab_blk.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_opf_militia_lmg_ac_blk.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_opf_militia_smg_aa_blk.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_opf_militia_smg_aa_wht.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_opf_militia_smg_ab_blk.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_opf_militia_smg_ac_blk.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_sas_ct_benjamin.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_sas_ct_charles.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_sas_ct_mitchel.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_sas_ct_neal.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_sas_ct_price_maskup.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_sas_ct_william.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_sas_woodland_assault_a.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_sas_woodland_assault_b.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_sas_woodland_mac.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_sas_woodland_support_a.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_seal_soccom_assault_c_blk.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_shadow_co_assault.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_shadow_co_lmg.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_shadow_co_shotgun.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_shadow_co_smg.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_sp_juggernaut_russian.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_tf_141_forest_shotgun.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_tf_141_forest_smg.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_us_army_dmg_a_blk.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_us_army_dmg_a_wht.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_us_army_dmg_b_blk.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_us_army_dmg_b_wht.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_us_army_dmg_c_blk.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_us_army_dmg_c_wht.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_us_army_smg.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_us_army_smg_b.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_us_army_smg_c.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "character/character_zm_zombie_dog.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "codescripts/character.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "get_random_mounted_character",
+        "modelmounted",
+        "mountedarray",
+        "precachemounted"
+      ],
+      "old_functions": 12,
+      "current_functions": 16,
+      "same_normalized_body": 5,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_compass.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 2,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_createfx.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "createintervalsound"
+      ],
+      "old_functions": 74,
+      "current_functions": 75,
+      "same_normalized_body": 72,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_destructible.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "codol_destructible_sound_alias",
+        "codol_parttagorigin"
+      ],
+      "old_functions": 99,
+      "current_functions": 101,
+      "same_normalized_body": 88,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_destructible_dlc.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 2,
+      "current_functions": 2,
+      "same_normalized_body": 1,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_destructible_dlc2.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 2,
+      "current_functions": 2,
+      "same_normalized_body": 1,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_destructible_types.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "toy_arcade_machine",
+        "toy_firecracker",
+        "toy_pinball_machine_model",
+        "toy_propane_tank02hr",
+        "toy_propane_tanks_02",
+        "toy_trashcan_animal",
+        "toy_trashcan_monkey",
+        "toy_tv_flatscreen_static"
+      ],
+      "old_functions": 74,
+      "current_functions": 82,
+      "same_normalized_body": 68,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_destructible_types_anim_firecracker.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "common_scripts/_elevator.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 55,
+      "current_functions": 55,
+      "same_normalized_body": 53,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_fx.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 27,
+      "current_functions": 27,
+      "same_normalized_body": 24,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_heli_rotors.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "common_scripts/_laststand.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "revive_bar_fill_long"
+      ],
+      "old_functions": 46,
+      "current_functions": 47,
+      "same_normalized_body": 44,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_load_common.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 11,
+      "current_functions": 11,
+      "same_normalized_body": 9,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_painter.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 53,
+      "current_functions": 53,
+      "same_normalized_body": 52,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_pipes.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 12,
+      "current_functions": 12,
+      "same_normalized_body": 11,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/_sentry.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 67,
+      "current_functions": 67,
+      "same_normalized_body": 66,
+      "missing_bodies": {}
+    },
+    {
+      "path": "common_scripts/utility.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 162,
+      "current_functions": 162,
+      "same_normalized_body": 159,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_ac130.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 69,
+      "current_functions": 69,
+      "same_normalized_body": 68,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_anim.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 128,
+      "current_functions": 128,
+      "same_normalized_body": 125,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_arcademode.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 63,
+      "current_functions": 63,
+      "same_normalized_body": 62,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_art.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 17,
+      "current_functions": 17,
+      "same_normalized_body": 16,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_attack_heli.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 71,
+      "current_functions": 71,
+      "same_normalized_body": 69,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_autosave.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 26,
+      "current_functions": 26,
+      "same_normalized_body": 13,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_climb.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 138,
+      "current_functions": 138,
+      "same_normalized_body": 131,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_climb_anim.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 29,
+      "current_functions": 29,
+      "same_normalized_body": 28,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_cobrapilot.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 75,
+      "current_functions": 75,
+      "same_normalized_body": 73,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_codol_maintenance_banner.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 2,
+      "current_functions": 2,
+      "same_normalized_body": 1,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_colors.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 69,
+      "current_functions": 69,
+      "same_normalized_body": 67,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_compass.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 2,
+      "current_functions": 2,
+      "same_normalized_body": 1,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_coop_callbacksetup.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 13,
+      "current_functions": 13,
+      "same_normalized_body": 11,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_coopanim.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/_coopcourse.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "spec1_cast"
+      ],
+      "old_functions": 14,
+      "current_functions": 15,
+      "same_normalized_body": 7,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_coopevents.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "drive_anim_name",
+        "fastrope_down",
+        "fastrope_unload",
+        "hover_for_ropes",
+        "load_riders",
+        "path_slice",
+        "play_drive_anim",
+        "release_group",
+        "rider_clip",
+        "rider_spawners",
+        "rope_queue",
+        "seat_node",
+        "unload_node_index"
+      ],
+      "old_functions": 19,
+      "current_functions": 32,
+      "same_normalized_body": 8,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_coopintro.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "door_anim",
+        "drive_anims",
+        "vehicle_clip"
+      ],
+      "old_functions": 12,
+      "current_functions": 15,
+      "same_normalized_body": 8,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_coopmission.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "spawn_class_actor",
+        "spawner_overrides",
+        "template_for"
+      ],
+      "old_functions": 50,
+      "current_functions": 53,
+      "same_normalized_body": 34,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_coopmission_defense_crash.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "ghost_radio",
+        "ghost_radio_end",
+        "ghost_stop_gesture",
+        "intro_puncher",
+        "ortiz_flashed",
+        "peek_node",
+        "search_loop",
+        "wake_after"
+      ],
+      "old_functions": 102,
+      "current_functions": 110,
+      "same_normalized_body": 61,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_coopmission_estate.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "alerted_hunt"
+      ],
+      "old_functions": 103,
+      "current_functions": 104,
+      "same_normalized_body": 65,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_coopmission_take_fav.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [
+        "civ_body",
+        "civ_head"
+      ],
+      "current_functions_new": [
+        "cars_scene",
+        "civ_hiding_door",
+        "civ_scene_name",
+        "driver_in_van",
+        "driver_scene_done",
+        "ending_close",
+        "informant_scene",
+        "opening_scene",
+        "ortiz_fires_on_car",
+        "ortiz_orders",
+        "ortiz_scene_done",
+        "scene_then",
+        "soldier_scenes",
+        "soldier_spawn_scene",
+        "tackle_hold",
+        "tackle_scene",
+        "technical_climb_out",
+        "van_scene",
+        "wait_scene"
+      ],
+      "old_functions": 70,
+      "current_functions": 87,
+      "same_normalized_body": 37,
+      "missing_bodies": {
+        "civ_body": "civ_body( n )\n{\n\tbodies = strTok( \"body_slum_civ_male_aa body_slum_civ_male_ab body_slum_civ_male_ba body_slum_civ_male_bb body_slum_civ_male_aa_wht body_slum_civ_male_bb_wht\", \" \" );\n\treturn bodies[ n % bodies.size ];\n}",
+        "civ_head": "civ_head( n )\n{\n\theads = strTok( \"head_slum_civ_male_a head_slum_civ_male_b head_slum_civ_male_c head_slum_civ_male_d head_slum_civ_male_e head_slum_civ_male_f head_slum_civ_male_g head_slum_civ_male_h\", \" \" );\n\treturn heads[ n % heads.size ];\n}"
+      }
+    },
+    {
+      "path": "maps/_coopmode.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 39,
+      "current_functions": 39,
+      "same_normalized_body": 30,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_coopscene_crash.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/_coopscene_estate.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/_coopscene_fav.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/_coopscene_killhouse.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/_cooptest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "anim_stats",
+        "casthead",
+        "characters",
+        "frag_near",
+        "hurt_enemies",
+        "nade_test",
+        "root_delta",
+        "root_play",
+        "skirmish",
+        "stack_test",
+        "trav_test",
+        "where"
+      ],
+      "old_functions": 33,
+      "current_functions": 45,
+      "same_normalized_body": 7,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_cooptraining.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [
+        "cast_models",
+        "cast_models_for"
+      ],
+      "current_functions_new": [
+        "cast_character",
+        "climb_out_of_jeep"
+      ],
+      "old_functions": 93,
+      "current_functions": 93,
+      "same_normalized_body": 51,
+      "missing_bodies": {
+        "cast_models": "cast_models( cls )\n{\n\tm = spawnStruct();\n\tcls = toLower( cls );\n\tif ( isSubStr( cls, \"price\" ) )\n\t{\n\t\tm.body = \"body_desert_tf141_assault_a\";\n\t\tm.head = \"head_hero_price_desert\";\n\t}\n\telse if ( isSubStr( cls, \"soap\" ) )\n\t{\n\t\tm.body = \"body_hero_soap_socom\";\n\t\tm.head = \"head_hero_soap_soccom_a\";\n\t}\n\telse if ( isSubStr( cls, \"ghost_forest\" ) )\n\t{\n\t\tm.body = \"body_forest_tf141_ghost\";\n\t\tm.head = \"head_hero_ghost_forest\";\n\t}\n\telse if ( isSubStr( cls, \"ghost\" ) )\n\t{\n\t\tm.body = \"body_hero_ghost_socom\";\n\t\tm.head = \"head_hero_ghost_soccom\";\n\t}\n\telse if ( isSubStr( cls, \"harker\" ) || isSubStr( cls, \"socom_shotgun\" ) )\n\t{\n\t\tm.body = \"body_seal_soccom_assault_c_blk\";\n\t\tm.head = \"head_seal_soccom_d\";\n\t}\n\telse if ( isSubStr( cls, \"tf_141_forest_shotgun\" ) )\n\t{\n\t\tm.body = \"body_forest_tf141_shotgun\";\n\t\tm.head = \"head_tf141_forest_a\";\n\t}\n\telse if ( isSubStr( cls, \"tf_141_forest\" ) )\n\t{\n\t\tm.body = \"body_forest_tf141_smg\";\n\t\tm.head = \"head_tf141_forest_b\";\n\t}\n\telse if ( isSubStr( cls, \"sas_woodland\" ) )\n\t{\n\t\tm.body = \"body_sp_sas_woodland_assault_a\";\n\t\tm.head = \"head_sp_sas_woodland_mac\";\n\t}\n\telse if ( isSubStr( cls, \"blackkit\" ) )\n\t{\n\t\tm.body = \"body_complete_sp_sas_ct_benjamin\";\n\t}\n\telse if ( isSubStr( cls, \"ustshirt\" ) )\n\t{\n\t\tm.body = \"body_ustshirt_tf_m_clean_yel\";\n\t\tm.head = \"head_complete_tf_tan\";\n\t}\n\telse\n\t{\n\t\tm.body = \"body_complete_sp_lw\";\n\t\tm.head = \"head_complete_sp_lw\";\n\t}\n\treturn m;\n}",
+        "cast_models_for": "cast_models_for( cls, key )\n{\n\tm = undefined;\n\tif ( isDefined( key ) )\n\t{\n\t\tswitch ( key )\n\t\t{\n\t\tcase \"mac\":\n\t\t\tm = spawnStruct();\n\t\t\tm.body = \"body_sp_sas_woodland_assault_a\";\n\t\t\tm.head = \"head_sp_sas_woodland_mac\";\n\t\t\tbreak;\n\t\tcase \"nwc\":\n\t\t\tm = spawnStruct();\n\t\t\tm.body = \"body_complete_tf_tan\";\n\t\t\tm.head = \"head_complete_tf_tan\";\n\t\t\tbreak;\n\t\tcase \"buddy1\":\n\t\tcase \"buddy2\":\n\t\tcase \"buddy3\":\n\t\t\tm = cast_models( \"actor_ally_codo_tf_ustshirt_clean_so\" );\n\t\t\tbreak;\n\t\t}\n\t}\n\tif ( !isDefined( m ) )\n\t\tm = cast_models( cls );\n\treturn m;\n}"
+      }
+    },
+    {
+      "path": "maps/_cooptraininghud.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 15,
+      "current_functions": 15,
+      "same_normalized_body": 13,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_coopvehicle.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 9,
+      "current_functions": 9,
+      "same_normalized_body": 8,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_createpath.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 33,
+      "current_functions": 33,
+      "same_normalized_body": 31,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_debug.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 104,
+      "current_functions": 104,
+      "same_normalized_body": 85,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_detonategrenades.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 30,
+      "current_functions": 30,
+      "same_normalized_body": 28,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_documents.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 1,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_drone.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 21,
+      "current_functions": 21,
+      "same_normalized_body": 20,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_endmission.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 47,
+      "current_functions": 47,
+      "same_normalized_body": 44,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_friendlyfire.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 15,
+      "current_functions": 15,
+      "same_normalized_body": 14,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_fx.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 10,
+      "current_functions": 10,
+      "same_normalized_body": 9,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_gameskill.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 115,
+      "current_functions": 115,
+      "same_normalized_body": 110,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_helicopter_ai.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 10,
+      "current_functions": 10,
+      "same_normalized_body": 9,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_helicopter_globals.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 14,
+      "current_functions": 14,
+      "same_normalized_body": 13,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_idle.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 15,
+      "current_functions": 15,
+      "same_normalized_body": 14,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_intelligence.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 16,
+      "current_functions": 16,
+      "same_normalized_body": 12,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_interactive_objects.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 36,
+      "current_functions": 36,
+      "same_normalized_body": 35,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_leapfrog.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 9,
+      "current_functions": 9,
+      "same_normalized_body": 8,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_load.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 163,
+      "current_functions": 163,
+      "same_normalized_body": 156,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_loadout.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 47,
+      "current_functions": 47,
+      "same_normalized_body": 45,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_menus.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 41,
+      "current_functions": 41,
+      "same_normalized_body": 38,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_mgturret.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 69,
+      "current_functions": 69,
+      "same_normalized_body": 66,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_mortar.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 44,
+      "current_functions": 44,
+      "same_normalized_body": 43,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_noder.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 77,
+      "current_functions": 77,
+      "same_normalized_body": 76,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_patrol.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 23,
+      "current_functions": 23,
+      "same_normalized_body": 21,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_photosource.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 28,
+      "current_functions": 28,
+      "same_normalized_body": 25,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_pmc.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 68,
+      "current_functions": 68,
+      "same_normalized_body": 62,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_radiation.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 17,
+      "current_functions": 17,
+      "same_normalized_body": 16,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_slowmo_breach.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 130,
+      "current_functions": 129,
+      "same_normalized_body": 125,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_spawner.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 212,
+      "current_functions": 212,
+      "same_normalized_body": 191,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_specialops_battlechatter.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 32,
+      "current_functions": 32,
+      "same_normalized_body": 31,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_specialops_code.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 85,
+      "current_functions": 85,
+      "same_normalized_body": 84,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_stealth_shared_utilities.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 56,
+      "current_functions": 56,
+      "same_normalized_body": 53,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_stealth_visibility_enemy.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 20,
+      "current_functions": 20,
+      "same_normalized_body": 18,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_stretcher.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 29,
+      "current_functions": 29,
+      "same_normalized_body": 28,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_underwater.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 11,
+      "current_functions": 11,
+      "same_normalized_body": 10,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_utility.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 710,
+      "current_functions": 710,
+      "same_normalized_body": 698,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_utility_code.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 75,
+      "current_functions": 75,
+      "same_normalized_body": 74,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_vehicle.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 298,
+      "current_functions": 298,
+      "same_normalized_body": 283,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_vehicle_aianim.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 101,
+      "current_functions": 101,
+      "same_normalized_body": 99,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_vehicle_missile.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 8,
+      "current_functions": 8,
+      "same_normalized_body": 7,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_vehicle_spline.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 61,
+      "current_functions": 61,
+      "same_normalized_body": 58,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_vehicle_spline_zodiac.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 62,
+      "current_functions": 62,
+      "same_normalized_body": 59,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_vehicledrive.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 14,
+      "current_functions": 14,
+      "same_normalized_body": 12,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_weather.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 15,
+      "current_functions": 15,
+      "same_normalized_body": 11,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_wood.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 5,
+      "current_functions": 5,
+      "same_normalized_body": 4,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "advance_round",
+        "array1",
+        "array2",
+        "reserve_spawn_point",
+        "spawn_point_available",
+        "zombie_melee_strike",
+        "zombie_melee_strike_times"
+      ],
+      "old_functions": 37,
+      "current_functions": 44,
+      "same_normalized_body": 26,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_ai_boss.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 52,
+      "current_functions": 52,
+      "same_normalized_body": 48,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_ai_dogs.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "dog_explode_fx",
+        "dog_thundergun_knockdown"
+      ],
+      "old_functions": 32,
+      "current_functions": 34,
+      "same_normalized_body": 27,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_audio.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 55,
+      "current_functions": 55,
+      "same_normalized_body": 55,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_auto_turret.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 13,
+      "current_functions": 13,
+      "same_normalized_body": 13,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_barrels.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 4,
+      "current_functions": 4,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_betty.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 7,
+      "current_functions": 7,
+      "same_normalized_body": 7,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_blockers.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 26,
+      "current_functions": 26,
+      "same_normalized_body": 23,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_blockertest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 6,
+      "current_functions": 6,
+      "same_normalized_body": 2,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_boxtest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 9,
+      "current_functions": 9,
+      "same_normalized_body": 9,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_callbacksetup.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 13,
+      "current_functions": 13,
+      "same_normalized_body": 13,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_challenges.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 19,
+      "current_functions": 19,
+      "same_normalized_body": 18,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_challengetest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 7,
+      "current_functions": 7,
+      "same_normalized_body": 1,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_cortex.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 26,
+      "current_functions": 26,
+      "same_normalized_body": 26,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_equipment.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 13,
+      "current_functions": 13,
+      "same_normalized_body": 13,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_extraction.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "map_routes",
+        "node_speed",
+        "node_ups",
+        "route_from_chain",
+        "route_point",
+        "route_priority",
+        "sumpf_routes"
+      ],
+      "old_functions": 60,
+      "current_functions": 67,
+      "same_normalized_body": 53,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_extractiontest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 8,
+      "current_functions": 8,
+      "same_normalized_body": 1,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_fftest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 8,
+      "current_functions": 8,
+      "same_normalized_body": 2,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_gib.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 23,
+      "current_functions": 23,
+      "same_normalized_body": 22,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_gibtest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 10,
+      "current_functions": 10,
+      "same_normalized_body": 2,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_intel.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 16,
+      "current_functions": 16,
+      "same_normalized_body": 13,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_laststand.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "all_down_can_recover"
+      ],
+      "old_functions": 23,
+      "current_functions": 24,
+      "same_normalized_body": 16,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_pathtest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 19,
+      "current_functions": 19,
+      "same_normalized_body": 17,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_perkpops.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 42,
+      "current_functions": 42,
+      "same_normalized_body": 42,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_perks.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "knuckle_crack_hold",
+        "knuckle_crack_timer",
+        "release_knuckle_crack",
+        "wait_for_player_to_take",
+        "wait_for_timeout"
+      ],
+      "old_functions": 41,
+      "current_functions": 46,
+      "same_normalized_body": 30,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_poi.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 26,
+      "current_functions": 26,
+      "same_normalized_body": 26,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_power.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 9,
+      "current_functions": 9,
+      "same_normalized_body": 9,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_powertest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 11,
+      "current_functions": 11,
+      "same_normalized_body": 11,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_powerups.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 78,
+      "current_functions": 78,
+      "same_normalized_body": 74,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_rcbomb.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 14,
+      "current_functions": 14,
+      "same_normalized_body": 14,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_revive_protection.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 11,
+      "current_functions": 11,
+      "same_normalized_body": 11,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_score.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 10,
+      "current_functions": 10,
+      "same_normalized_body": 9,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_spawner.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "round_budget"
+      ],
+      "old_functions": 70,
+      "current_functions": 71,
+      "same_normalized_body": 63,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_terminal.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 10,
+      "current_functions": 10,
+      "same_normalized_body": 8,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_tokens.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "token_recovery_available"
+      ],
+      "old_functions": 10,
+      "current_functions": 11,
+      "same_normalized_body": 4,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_traps.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "trap_burning_watch"
+      ],
+      "old_functions": 23,
+      "current_functions": 24,
+      "same_normalized_body": 15,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_traps_placeable.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 41,
+      "current_functions": 41,
+      "same_normalized_body": 41,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_utility.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 52,
+      "current_functions": 52,
+      "same_normalized_body": 51,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_weap_black_hole_bomb.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 24,
+      "current_functions": 24,
+      "same_normalized_body": 24,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_weap_cymbal_monkey.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 10,
+      "current_functions": 10,
+      "same_normalized_body": 10,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_weap_explosive_bolt.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 7,
+      "current_functions": 7,
+      "same_normalized_body": 7,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_weap_money_ball.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_weap_revive_knife.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 5,
+      "current_functions": 5,
+      "same_normalized_body": 2,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_weap_teleporter.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 10,
+      "current_functions": 10,
+      "same_normalized_body": 6,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_weap_tesla.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "tesla_viewmodel_ammo",
+        "tesla_viewmodel_fx_grenade_watch",
+        "tesla_viewmodel_fx_rail",
+        "tesla_viewmodel_fx_tube",
+        "tesla_viewmodel_fx_tube_on_fire",
+        "tesla_viewmodel_fx_tube_on_raise",
+        "tesla_viewmodel_trace",
+        "tesla_viewmodel_trace_event",
+        "tesla_viewmodel_trace_events",
+        "tesla_viewmodel_tube_fx",
+        "tesla_viewmodel_tube_play",
+        "tesla_viewmodel_weapon"
+      ],
+      "old_functions": 17,
+      "current_functions": 29,
+      "same_normalized_body": 11,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_weap_thundergun.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [
+        "cylinder_distance_squared",
+        "damage_target",
+        "fire",
+        "is_thundergun",
+        "watch_connections",
+        "watch_shots"
+      ],
+      "current_functions_new": [
+        "enemy_killed_by_thundergun",
+        "handle_thundergun_pain_notetracks",
+        "init_knockdown_anims",
+        "is_thundergun_damage",
+        "is_thundergun_weapon",
+        "play_sound_if_exists",
+        "setup_thundergun_vox",
+        "tg_anim",
+        "tg_c1_standin",
+        "tg_getup_rate",
+        "thundergun_centroid",
+        "thundergun_closest",
+        "thundergun_fired",
+        "thundergun_fling_zombie",
+        "thundergun_get_enemies_in_range",
+        "thundergun_knockdown_zombie",
+        "thundergun_network_choke",
+        "thundergun_on_player_connect",
+        "thundergun_viewmodel_fx_fire",
+        "thundergun_viewmodel_fx_power_cell",
+        "wait_for_thundergun_fired",
+        "zombie_knockdown"
+      ],
+      "old_functions": 7,
+      "current_functions": 23,
+      "same_normalized_body": 0,
+      "missing_bodies": {
+        "cylinder_distance_squared": "cylinder_distance_squared( origin, forward, center )\n{\n\toffset = center - origin;\n\td = vectorDot( offset, offset );\n\tif ( d > 1200 * 1200 )\n\t\treturn -1;\n\taxial = vectorDot( offset, forward );\n\tif ( axial < 0 || d - axial * axial > 180 * 180 )\n\t\treturn -1;\n\treturn d;\n}",
+        "damage_target": "damage_target( zombie, distance_squared, origin, weapon )\n{\n\tif ( distance_squared < 480 * 480 )\n\t{\n\t\tzombie doDamage( zombie.health + 666, origin, self, self, 0, \"MOD_PROJECTILE\", 0, weapon );\n\t\treturn;\n\t}\n\tzombie doDamage( 15, origin, self, self, 0, \"MOD_PROJECTILE\", 0, weapon );\n\tif ( isDefined( zombie ) && isAlive( zombie ) )\n\t\tzombie doDamage( 15, origin, self, self, 0, \"MOD_PROJECTILE\", 0, weapon );\n}",
+        "fire": "fire( weapon )\n{\n\tif ( !is_thundergun( weapon ) || !isDefined( level.zombies ) )\n\t\treturn;\n\torigin = self getEye();\n\tforward = anglesToForward( self getPlayerAngles() );\n\ttargets = [];\n\tfor ( i = 0; i < level.zombies.size; i++ )\n\t\ttargets[ targets.size ] = level.zombies[ i ];\n\tfor ( i = 0; i < targets.size; i++ )\n\t{\n\t\tzombie = targets[ i ];\n\t\tif ( !isDefined( zombie ) || !isAlive( zombie ) )\n\t\t\tcontinue;\n\t\td = cylinder_distance_squared( origin, forward, zombie getCentroid() );\n\t\tif ( d < 0 || zombie damageConeTrace( origin, self ) == 0 )\n\t\t\tcontinue;\n\t\tself damage_target( zombie, d, origin, weapon );\n\t}\n}",
+        "is_thundergun": "is_thundergun( weapon )\n{\n\treturn isDefined( weapon ) &&\n\t\t( weapon == \"thundergun_zm\" || weapon == \"thundergun_upgraded_zm\" );\n}",
+        "watch_connections": "watch_connections()\n{\n\tplayers = getPlayers();\n\tfor ( i = 0; i < players.size; i++ )\n\t\tplayers[ i ] thread watch_shots();\n\tfor ( ;; )\n\t{\n\t\tlevel waittill( \"connected\", player );\n\t\tplayer thread watch_shots();\n\t}\n}",
+        "watch_shots": "watch_shots()\n{\n\tself endon( \"disconnect\" );\n\tif ( isDefined( self.zm_thundergun_watcher ) && self.zm_thundergun_watcher )\n\t\treturn;\n\tself.zm_thundergun_watcher = true;\n\tfor ( ;; )\n\t{\n\t\tself waittill( \"weapon_fired\", weapon );\n\t\t\n\t\tif ( is_thundergun( weapon ) )\n\t\t\tself fire( weapon );\n\t}\n}"
+      }
+    },
+    {
+      "path": "maps/_zombiemode_weapon_lights.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 5,
+      "current_functions": 5,
+      "same_normalized_body": 5,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/_zombiemode_weapons.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [
+        "box_weapon_model_plain"
+      ],
+      "current_functions_new": [
+        "box_marker_init",
+        "box_marker_off",
+        "box_marker_on",
+        "extra_wall_buy",
+        "extra_wall_buy_table",
+        "is_lethal_wall_weapon",
+        "lethal_wall_buy",
+        "spawn_extra_wall_buys",
+        "switch_then_take",
+        "take_weapon_after_switch",
+        "wall_buy_model",
+        "weapon_limit_victim",
+        "weapon_swap"
+      ],
+      "old_functions": 46,
+      "current_functions": 58,
+      "same_normalized_body": 34,
+      "missing_bodies": {
+        "box_weapon_model_plain": "box_weapon_model_plain( model_name )\n{\n self showAllParts();\n optional = strTok( \"tag_acog_2 tag_aimpoint tag_aug_scope_rail tag_bayonet tag_big_mag tag_dualmag tag_elbit tag_eotech tag_ext_clip tag_foregrip tag_grenade_launcher tag_heartbeat tag_m203 tag_other_knife tag_red_dot tag_scope tag_scope_anpvs tag_scope_colt tag_shotgun tag_silencer tag_sra tag_suppressor tag_thermal_scope tag_upgraded_sights\", \" \" );\n for ( i = 0; i < getNumParts( model_name ); i++ )\n {\n  part = getPartName( model_name, i );\n  for ( j = 0; j < optional.size; j++ )\n  {\n   if ( part != optional[j] )\n    continue;\n   self hidePart( part );\n   break;\n  }\n }\n}"
+      }
+    },
+    {
+      "path": "maps/_zombiemode_zone_manager.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "add_adjacent_zone",
+        "adjacency_enable_zones",
+        "adjacency_occupied_neighbour"
+      ],
+      "old_functions": 13,
+      "current_functions": 16,
+      "same_normalized_body": 13,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/af_caves.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 193,
+      "current_functions": 193,
+      "same_normalized_body": 192,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/af_caves_code.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 76,
+      "current_functions": 76,
+      "same_normalized_body": 75,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/af_chase_anim.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 35,
+      "current_functions": 34,
+      "same_normalized_body": 34,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/af_chase_knife_fight_code.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 161,
+      "current_functions": 161,
+      "same_normalized_body": 159,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/airport.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 64,
+      "current_functions": 64,
+      "same_normalized_body": 62,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/airport_code.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 333,
+      "current_functions": 333,
+      "same_normalized_body": 331,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/animated_models/mid_wires_01_anim.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/mid_wires_02_anim.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/mp_abandon_banner_idle.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/mp_abandon_dragon_windsock_idle.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/mp_abandon_ferris_wheel.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/mp_abandon_sh_mk_badguys.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/mp_abandon_sh_mk_globe.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/mp_abandon_sh_mk_moat_fish.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/mp_abandon_sh_mk_ufo1.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/mp_abandon_sh_mk_ufo2.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/mp_quad_wind_lamp_brass.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/mp_quad_windy_cargo_net.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/mp_quad_windy_olive_tree.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/mp_quad_windy_pine_tall.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/mp_quad_windy_rope_bridge.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/mp_quad_windy_rope_swing.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/mp_quad_windy_umbrella_tree.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/qad_lamp_wall_01.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/seatown_lrg_wiregrp_sway.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/seatown_mid01_wiregrp_sway.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/seatown_wire_flags1_sway.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/animated_models/seatown_wire_flags2_sway.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/arcadia_stryker.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 13,
+      "current_functions": 13,
+      "same_normalized_body": 8,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/boneyard.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 84,
+      "current_functions": 84,
+      "same_normalized_body": 82,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/boneyard_code.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 141,
+      "current_functions": 141,
+      "same_normalized_body": 137,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/cliffhanger_code.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 198,
+      "current_functions": 198,
+      "same_normalized_body": 193,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/cliffhanger_fx.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 5,
+      "current_functions": 5,
+      "same_normalized_body": 4,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/cliffhanger_snowmobile.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 50,
+      "current_functions": 50,
+      "same_normalized_body": 49,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/cliffhanger_snowmobile_code.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 70,
+      "current_functions": 70,
+      "same_normalized_body": 69,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/cliffhanger_stealth.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 47,
+      "current_functions": 47,
+      "same_normalized_body": 44,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/co_hunted.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 35,
+      "current_functions": 35,
+      "same_normalized_body": 34,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/contingency.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 212,
+      "current_functions": 212,
+      "same_normalized_body": 206,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/createart/mp_abandon_sh_mk_art.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/createart/mp_ambush_sh_art.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/createart/mp_firingrange_art.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/createart/mp_rust_long_art.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/createart/mp_seatown_art.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/createart/mp_shipment_long_art.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/createart/mp_subbase_sh_art.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/createart/mp_terminal_cls_art.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/createfx/mp_abandon_sh_mk_fx.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/createfx/mp_ambush_sh_fx.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/createfx/mp_cha_quad_fx.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/createfx/mp_firingrange_fx.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/createfx/mp_mideast_fx.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/createfx/mp_rust_long_fx.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/createfx/mp_seatown_fx.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/createfx/mp_shipment_long_fx.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/createfx/mp_subbase_sh_fx.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/createfx/mp_terminal_cls_fx.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/dc_whitehouse.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 58,
+      "current_functions": 58,
+      "same_normalized_body": 56,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/dcburning.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 352,
+      "current_functions": 352,
+      "same_normalized_body": 347,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/dcemp.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 110,
+      "current_functions": 110,
+      "same_normalized_body": 109,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/dcemp_endpart.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 14,
+      "current_functions": 14,
+      "same_normalized_body": 13,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/estate_code.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 189,
+      "current_functions": 189,
+      "same_normalized_body": 188,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/favela_escape.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 52,
+      "current_functions": 52,
+      "same_normalized_body": 51,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/favela_escape_code.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 286,
+      "current_functions": 286,
+      "same_normalized_body": 283,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/gulag_code.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 279,
+      "current_functions": 279,
+      "same_normalized_body": 276,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/gulag_ending.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 17,
+      "current_functions": 17,
+      "same_normalized_body": 16,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/gulag_ending_code.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 96,
+      "current_functions": 96,
+      "same_normalized_body": 92,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/invasion.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 264,
+      "current_functions": 264,
+      "same_normalized_body": 255,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/invasion_fx.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 18,
+      "current_functions": 18,
+      "same_normalized_body": 16,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/jake_tools.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 66,
+      "current_functions": 66,
+      "same_normalized_body": 65,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_animatedmodels.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_art.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_awards.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 59,
+      "current_functions": 59,
+      "same_normalized_body": 58,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_compass.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 2,
+      "current_functions": 2,
+      "same_normalized_body": 1,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_crib.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 36,
+      "current_functions": 36,
+      "same_normalized_body": 36,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_dogs.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 84,
+      "current_functions": 84,
+      "same_normalized_body": 83,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_events.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 27,
+      "current_functions": 27,
+      "same_normalized_body": 25,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_fx.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 7,
+      "current_functions": 7,
+      "same_normalized_body": 7,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_javelin.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 17,
+      "current_functions": 17,
+      "same_normalized_body": 16,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_load.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "codolfogdvar"
+      ],
+      "old_functions": 6,
+      "current_functions": 7,
+      "same_normalized_body": 4,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_loot.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 23,
+      "current_functions": 23,
+      "same_normalized_body": 23,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_matchdata.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 14,
+      "current_functions": 14,
+      "same_normalized_body": 13,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_scoreboard.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_stinger.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 12,
+      "current_functions": 12,
+      "same_normalized_body": 11,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_train.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 14,
+      "current_functions": 14,
+      "same_normalized_body": 14,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/_utility.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "codolisweaponbase",
+        "codolitemisattachment",
+        "codolownedweaponwithbase",
+        "codolstrstart",
+        "codolweaponbase",
+        "codolweaponhasattachment"
+      ],
+      "old_functions": 196,
+      "current_functions": 202,
+      "same_normalized_body": 193,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/animscripts/dog_attack_log.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 15,
+      "current_functions": 15,
+      "same_normalized_body": 12,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/animscripts/dog_combat.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 24,
+      "current_functions": 24,
+      "same_normalized_body": 18,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/animscripts/dog_death.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 1,
+      "current_functions": 1,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/animscripts/dog_init.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 4,
+      "current_functions": 4,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/animscripts/dog_jump.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 1,
+      "current_functions": 1,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/animscripts/dog_move.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 12,
+      "current_functions": 12,
+      "same_normalized_body": 8,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/animscripts/dog_pain.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 1,
+      "current_functions": 1,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/animscripts/dog_shared.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "dogcap",
+        "t5damageyaw"
+      ],
+      "old_functions": 19,
+      "current_functions": 21,
+      "same_normalized_body": 19,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/animscripts/dog_stop.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 6,
+      "current_functions": 6,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/animscripts/dog_turn.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 10,
+      "current_functions": 10,
+      "same_normalized_body": 9,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/equipment/_bouncingbetty.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "empdisable"
+      ],
+      "old_functions": 17,
+      "current_functions": 18,
+      "same_normalized_body": 14,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/equipment/_pickup.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "pollcanreach",
+        "pollowneruse"
+      ],
+      "old_functions": 5,
+      "current_functions": 7,
+      "same_normalized_body": 4,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/equipment/_scrambler.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "empdisable"
+      ],
+      "old_functions": 12,
+      "current_functions": 13,
+      "same_normalized_body": 10,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/equipment/_tabun.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "addfx",
+        "addwhole",
+        "gastrace"
+      ],
+      "old_functions": 15,
+      "current_functions": 18,
+      "same_normalized_body": 7,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_callbacksetup.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 17,
+      "current_functions": 17,
+      "same_normalized_body": 17,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_class.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 59,
+      "current_functions": 59,
+      "same_normalized_body": 57,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_aar.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_bot_equipment.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 5,
+      "current_functions": 5,
+      "same_normalized_body": 5,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_bot_killstreaks.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 20,
+      "current_functions": 20,
+      "same_normalized_body": 16,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_bot_objective.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "threatblocksuse"
+      ],
+      "old_functions": 30,
+      "current_functions": 31,
+      "same_normalized_body": 25,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_bots.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "syncregularroomdifficulty"
+      ],
+      "old_functions": 40,
+      "current_functions": 41,
+      "same_normalized_body": 37,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_breathtest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 1,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_chtest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "armbase",
+        "weaponrefs"
+      ],
+      "old_functions": 13,
+      "current_functions": 15,
+      "same_normalized_body": 10,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_equiptest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "cartrial",
+        "cartrialdamage",
+        "cartrialdeath",
+        "cartrialnotes",
+        "knifecatch",
+        "knifetrial",
+        "knifevictimlaterdeath",
+        "knifevictimthaw",
+        "knifevictimthawondeath",
+        "pipetrial"
+      ],
+      "old_functions": 21,
+      "current_functions": 31,
+      "same_normalized_body": 20,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_perktest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 19,
+      "current_functions": 19,
+      "same_normalized_body": 19,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_ridetest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 7,
+      "current_functions": 7,
+      "same_normalized_body": 7,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_scavtest.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 19,
+      "current_functions": 19,
+      "same_normalized_body": 19,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_codol_top_players.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "tracewalkend",
+        "walktimeout"
+      ],
+      "old_functions": 20,
+      "current_functions": 22,
+      "same_normalized_body": 12,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_damage.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 69,
+      "current_functions": 69,
+      "same_normalized_body": 64,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_dev.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 27,
+      "current_functions": 27,
+      "same_normalized_body": 27,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_fieldorders.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/gametypes/_gamelogic.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "quickinitialpopulationready",
+        "quickplaysession"
+      ],
+      "old_functions": 69,
+      "current_functions": 71,
+      "same_normalized_body": 65,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_gamescore.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 21,
+      "current_functions": 21,
+      "same_normalized_body": 21,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_globallogic.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 11,
+      "current_functions": 11,
+      "same_normalized_body": 11,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_hostmigration.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 9,
+      "current_functions": 9,
+      "same_normalized_body": 8,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_hud_message.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [
+        "codolnoteclientsplash"
+      ],
+      "current_functions_new": [
+        "codolclosesplashmenu",
+        "codolregisterclosedsplashmenu"
+      ],
+      "old_functions": 41,
+      "current_functions": 42,
+      "same_normalized_body": 36,
+      "missing_bodies": {
+        "codolnoteclientsplash": "codolNoteClientSplash( duration )\r\n{\r\n\tuntil = getTime() + int( duration * 1000 );\r\n\tif ( !isDefined( self.codolClientSplashUntil ) || self.codolClientSplashUntil < until )\r\n\t\tself.codolClientSplashUntil = until;\r\n}"
+      }
+    },
+    {
+      "path": "maps/mp/gametypes/_killcam.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 23,
+      "current_functions": 23,
+      "same_normalized_body": 21,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_missions.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "challenge_gpval",
+        "codolnotechallengereward"
+      ],
+      "old_functions": 79,
+      "current_functions": 81,
+      "same_normalized_body": 69,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_playercards.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 3,
+      "current_functions": 3,
+      "same_normalized_body": 2,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_playerlogic.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [
+        "codolclientsplashvisible",
+        "codoldrainmenupulses"
+      ],
+      "current_functions_new": [],
+      "old_functions": 56,
+      "current_functions": 54,
+      "same_normalized_body": 48,
+      "missing_bodies": {
+        "codolclientsplashvisible": "codolClientSplashVisible()\r\n{\r\n\treturn isDefined( self.codolClientSplashUntil ) && getTime() < self.codolClientSplashUntil + 300;\r\n}",
+        "codoldrainmenupulses": "codolDrainMenuPulses()\r\n{\r\n\tself endon( \"disconnect\" );\r\n\r\n\twhile ( self.codolMenuPulses.size )\r\n\t{\r\n\t\twhile ( self codolClientSplashVisible() )\r\n\t\t\twait ( 0.05 );\r\n\r\n\t\tmenuName = self.codolMenuPulses[0];\r\n\t\tfor ( i = 1; i < self.codolMenuPulses.size; i++ )\r\n\t\t\tself.codolMenuPulses[i-1] = self.codolMenuPulses[i];\r\n\t\tself.codolMenuPulses[i-1] = undefined;\r\n\r\n\t\tself openMenu( menuName );\r\n\t\tself closeMenu();\r\n\t}\r\n}"
+      }
+    },
+    {
+      "path": "maps/mp/gametypes/_rank.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "getkillrankxp",
+        "getrankxpvalue",
+        "scalerankxp"
+      ],
+      "old_functions": 36,
+      "current_functions": 39,
+      "same_normalized_body": 33,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_shellshock.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 12,
+      "current_functions": 12,
+      "same_normalized_body": 11,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_spawnlogic.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 52,
+      "current_functions": 52,
+      "same_normalized_body": 51,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/_weapons.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "watchequipmentstungrenades"
+      ],
+      "old_functions": 105,
+      "current_functions": 106,
+      "same_normalized_body": 93,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/arena.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 25,
+      "current_functions": 25,
+      "same_normalized_body": 23,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/conf.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 20,
+      "current_functions": 20,
+      "same_normalized_body": 20,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/dd.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 28,
+      "current_functions": 28,
+      "same_normalized_body": 27,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/dom.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 31,
+      "current_functions": 31,
+      "same_normalized_body": 31,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/gun.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "canshowgunprogresshud",
+        "cleanupgunprogresshudongameend",
+        "destroygunprogresshud",
+        "monitorgunprogresshud",
+        "refillammo",
+        "updateprogressscore"
+      ],
+      "old_functions": 9,
+      "current_functions": 15,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/koth.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 25,
+      "current_functions": 25,
+      "same_normalized_body": 22,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/oic.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 6,
+      "current_functions": 6,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/shrp.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "retirepreviousweapon"
+      ],
+      "old_functions": 8,
+      "current_functions": 9,
+      "same_normalized_body": 3,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/gametypes/vip.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 23,
+      "current_functions": 23,
+      "same_normalized_body": 23,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/killstreaks/_ac130.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 74,
+      "current_functions": 74,
+      "same_normalized_body": 74,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/killstreaks/_airdrop.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 66,
+      "current_functions": 66,
+      "same_normalized_body": 66,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/killstreaks/_airstrike.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 43,
+      "current_functions": 43,
+      "same_normalized_body": 41,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/killstreaks/_autosentry.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 50,
+      "current_functions": 50,
+      "same_normalized_body": 50,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/killstreaks/_harrier.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 46,
+      "current_functions": 46,
+      "same_normalized_body": 44,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/killstreaks/_helicopter.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 79,
+      "current_functions": 79,
+      "same_normalized_body": 78,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/killstreaks/_killstreaks.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "codolrewardallowed",
+        "codolsurvivalrules"
+      ],
+      "old_functions": 50,
+      "current_functions": 52,
+      "same_normalized_body": 43,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/killstreaks/_littlebird.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 23,
+      "current_functions": 23,
+      "same_normalized_body": 23,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/killstreaks/_remotemissile.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 13,
+      "current_functions": 13,
+      "same_normalized_body": 12,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/killstreaks/_tank.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 81,
+      "current_functions": 81,
+      "same_normalized_body": 78,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/mp_abandon_sh_mk.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_abandon_sh_mk_fx.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_abandon_sh_mk_precache.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_ambush_sh.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_ambush_sh_fx.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_ambush_sh_precache.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_cha_quad.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_cha_quad_fx.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_cha_quad_precache.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_crash_intro.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 1,
+      "current_functions": 1,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/mp_firingrange.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_firingrange_fx.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_mideast.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_mideast_fx.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_mideast_precache.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_rust_long.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_rust_long_fx.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_rust_long_precache.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_seatown.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_seatown_fx.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_seatown_precache.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_shipment_long.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_shipment_long_fx.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_subbase_sh.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_subbase_sh_fx.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_subbase_sh_precache.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_terminal_cls.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_terminal_cls_fx.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/mp_terminal_cls_precache.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/mp/perks/_codol_equipperks.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "delayexplosivetime"
+      ],
+      "old_functions": 17,
+      "current_functions": 18,
+      "same_normalized_body": 16,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/mp/perks/_perkfunctions.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 90,
+      "current_functions": 90,
+      "same_normalized_body": 87,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/oilrig.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 277,
+      "current_functions": 277,
+      "same_normalized_body": 276,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/roadkill.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 32,
+      "current_functions": 32,
+      "same_normalized_body": 31,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/roadkill_code.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 363,
+      "current_functions": 363,
+      "same_normalized_body": 358,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/so_ac130_co_hunted.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 30,
+      "current_functions": 30,
+      "same_normalized_body": 29,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/so_bridge_code.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 32,
+      "current_functions": 32,
+      "same_normalized_body": 31,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/zm_asylum_sh.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 2,
+      "current_functions": 2,
+      "same_normalized_body": 2,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/zm_prototype_sh.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [
+        "hidenavigationarrows",
+        "prototype_fog",
+        "prototype_fog_dvar",
+        "prototype_fog_fx",
+        "prototype_fog_precache",
+        "prototype_fog_spot"
+      ],
+      "old_functions": 1,
+      "current_functions": 7,
+      "same_normalized_body": 0,
+      "missing_bodies": {}
+    },
+    {
+      "path": "maps/zm_sumpf_sh.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/zm_sumpf_sh_logtrap.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "maps/zm_zombie_training.gsc",
+      "old_file_missing": false,
+      "old_functions_missing": [],
+      "current_functions_new": [],
+      "old_functions": 64,
+      "current_functions": 64,
+      "same_normalized_body": 64,
+      "missing_bodies": {}
+    },
+    {
+      "path": "release-lineage/20261020-zombies.json",
+      "data": true,
+      "old_file_missing": true,
+      "same": false
+    },
+    {
+      "path": "xmodelalias/alias_civilian_slum_heads.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "xmodelalias/alias_civilian_slum_heads_wht.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "xmodelalias/alias_codo_tf_heads_clean.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "xmodelalias/alias_opforce_militia_heads_blk.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "xmodelalias/alias_opforce_militia_heads_wht.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "xmodelalias/alias_sas_woodland_heads.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "xmodelalias/alias_seal_soccom_heads_blk.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "xmodelalias/alias_shad_co_heads.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "xmodelalias/alias_tf141_heads_forest.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "xmodelalias/alias_us_army_heads.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "xmodelalias/alias_us_army_heads_dmg_blk.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    },
+    {
+      "path": "xmodelalias/alias_us_army_heads_dmg_wht.gsc",
+      "checkpoint_deleted": true,
+      "retained_current": true
+    }
+  ]
+}

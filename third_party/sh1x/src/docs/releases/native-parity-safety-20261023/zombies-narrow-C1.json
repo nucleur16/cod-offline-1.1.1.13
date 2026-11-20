@@ -1,0 +1,42 @@
+{
+  "accepted_scope": "One local four-human Zombies start, rendered initial gameplay/HUD, natural defeat, results and persistent room return.",
+  "client_image_sha256": "a5a7b44e66ca72da785eae4319126c23491586dc88dde499e8e6c9cf4bd6a976",
+  "direct_readonly_pin_receipt": {
+    "binds": "native/IWD/process epoch and four active human UIDs",
+    "filename": "pending-native-live-1792792498241782000.json",
+    "sha256": "f1474caa7c1c8c7a87a144d20835be4ae29a46b19e3427c7b2def91404cb1eb9"
+  },
+  "human_clients": 4,
+  "iwd_sha256": "76d3f4dde7a4a6b4af54752f03cc072fa4331772e864fe406a1b85ade90d4a60",
+  "locales": [
+    "en",
+    "zh",
+    "en",
+    "zh"
+  ],
+  "map": "zm_prototype_sh",
+  "native_process": {
+    "pid": 55812,
+    "start_ticks": "21941002"
+  },
+  "native_sha256": "4a226c41e6b734a2dce24210bcb51749f152adc41499a66db01c7f68d6bc4d50",
+  "not_accepted": [
+    "Normal92eb C1 gameplay",
+    "repeat-match stability",
+    "extended Zombies gameplay",
+    "production release",
+    "maintenance announcement",
+    "transient Servers busy while Master boots (separate backend/UI issue)"
+  ],
+  "observation_source": "Parent first-hand C1 QA report, with independent read-only exact-pin receipt binding. No new runtime interaction by this documentation preparation.",
+  "parent_observed_C1": {
+    "all_four_rendered_Round1_HUD": true,
+    "four_player_results_EN_and_ZH": true,
+    "native_ended1_humans0_before_normal_worker_rcon_quit": true,
+    "natural_idle_player_defeat": true,
+    "persistent_room_return": 289,
+    "room_roster_after_return": 4,
+    "same_four_client_process_epochs": true
+  },
+  "schema": "codol-zombies-narrow-local-C1-acceptance-v1"
+}

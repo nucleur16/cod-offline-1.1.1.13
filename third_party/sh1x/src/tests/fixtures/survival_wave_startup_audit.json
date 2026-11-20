@@ -1,0 +1,51 @@
+{
+  "stringtables": [
+    "mp/kiosks.csv",
+    "mp/survival_loot.csv",
+    "mp/survival_perks.csv",
+    "mp/survival_waves.csv",
+    "mp/survival_waves_abandon_sh.csv",
+    "mp/survival_waves_ambush_sh.csv",
+    "mp/survival_waves_crash_tropical.csv",
+    "mp/survival_waves_cross_fire.csv",
+    "mp/survival_waves_fav_tropical.csv",
+    "mp/survival_waves_firingrange.csv",
+    "mp/survival_waves_hardhat_sh.csv",
+    "mp/survival_waves_highrise.csv",
+    "mp/survival_waves_seatown.csv",
+    "mp/survival_waves_storm_spring.csv",
+    "mp/survival_waves_subbase_sh.csv",
+    "mp/survival_waves_terminal_cls.csv",
+    "mp/survival_waves_tier_1.csv",
+    "mp/survivalbounties.csv"
+  ],
+  "native_startup": [
+    {
+      "map": "mp_qadeem_sh",
+      "pid": 98800,
+      "port": 17761,
+      "ready": true,
+      "elapsed_seconds": 16.02,
+      "status": "\u00ff\u00ff\u00ff\u00ffprint\nsh1x_status map=mp_qadeem_sh session_map=mp_qadeem_sh gametype=survival type=survival running=1 ended=0 humans=0 bots=0 maxclients=16 parked=0 quick=0 quick_session=- epoch=0 joinable=0 quick_parties=0 uids=-",
+      "log": "D:\\CoD\\CoD4x_Server\\.claude\\worktrees\\iw4-asset-layout\\obj\\survival_wave_probes\\mp_qadeem_sh\\home\\main\\qconsole.log",
+      "waves": [
+        "CoDOL survival: 20 waves from mp/survival_waves_tier_1.csv, 4 repeat after them"
+      ],
+      "missing_table_fatal": false
+    },
+    {
+      "map": "mp_strike_sh",
+      "pid": 10840,
+      "port": 17761,
+      "ready": true,
+      "elapsed_seconds": 18.06,
+      "status": "\u00ff\u00ff\u00ff\u00ffprint\nsh1x_status map=mp_strike_sh session_map=mp_strike_sh gametype=survival type=survival running=1 ended=0 humans=0 bots=0 maxclients=16 parked=0 quick=0 quick_session=- epoch=0 joinable=0 quick_parties=0 uids=-",
+      "log": "D:\\CoD\\CoD4x_Server\\.claude\\worktrees\\iw4-asset-layout\\obj\\survival_wave_probes\\mp_strike_sh\\home\\main\\qconsole.log",
+      "waves": [
+        "CoDOL survival: 20 waves from mp/survival_waves_tier_1.csv, 4 repeat after them"
+      ],
+      "missing_table_fatal": false
+    }
+  ],
+  "installed_zone_sha256": "a3ecef87f4cbee36378d60b40c5e1bf63a636a065dbd833d1b0fde55a2575199"
+}

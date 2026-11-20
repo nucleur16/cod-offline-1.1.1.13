@@ -1,0 +1,636 @@
+[
+  {
+    "zone": "mp_afghan.zone",
+    "asset": 205,
+    "offset": 6530483,
+    "asset_sha256": "4f5387f513777898da38d09621f47ca20a0b884f727d91f20582cc740138e15e",
+    "consumed": 268354,
+    "text_size": 265326,
+    "text_sha256": "a2d6d381e911910ce325e536c8c4da3672928a8c17b9937a400eab6b1e9dbd27",
+    "counts": [
+      34,
+      37,
+      75
+    ],
+    "stages": [
+      {
+        "reference": 4294967295,
+        "name": "stage 0",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "trigger": 1024,
+        "sun": 1
+      }
+    ]
+  },
+  {
+    "zone": "mp_bloc_sh.zone",
+    "asset": 113,
+    "offset": 4540164,
+    "asset_sha256": "d809020790618e288c65267959bb94c2dee383123ba8bad0dc111eaceb936d81",
+    "consumed": 208607,
+    "text_size": 206095,
+    "text_sha256": "2063707b250db025003d263dcbe287fe030322bb8b74fbdb9915b5489f44af4b",
+    "counts": [
+      53,
+      53,
+      16
+    ],
+    "stages": [
+      {
+        "reference": 4294967295,
+        "name": "stage 0",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "trigger": 1024,
+        "sun": 1
+      }
+    ]
+  },
+  {
+    "zone": "mp_bog_sh.zone",
+    "asset": 153,
+    "offset": 1894822,
+    "asset_sha256": "a4cd59f70d620e5fff250f151b5813ea9747f243e36ff270fdacdc5ea4f0c7fa",
+    "consumed": 172549,
+    "text_size": 170665,
+    "text_sha256": "f31b362a5f710a8a445be4d0f02887a46106ba03f2fd05d0f7961c861ce48131",
+    "counts": [
+      23,
+      24,
+      43
+    ],
+    "stages": [
+      {
+        "reference": 4294967295,
+        "name": "stage 0",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "trigger": 1024,
+        "sun": 1
+      }
+    ]
+  },
+  {
+    "zone": "mp_cargoship_sh.zone",
+    "asset": 240,
+    "offset": 4247837,
+    "asset_sha256": "73db5636eed9259860a42fd0ca74131afb579249e53e9a197658e344c357c5b6",
+    "consumed": 160752,
+    "text_size": 159468,
+    "text_sha256": "3e6318725c8f48891fe34ffebf6c2e02fa3802d6df1a70eed0ef7c81e0c6e93a",
+    "counts": [
+      25,
+      26,
+      9
+    ],
+    "stages": [
+      {
+        "reference": 4294967295,
+        "name": "stage 0",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "trigger": 1024,
+        "sun": 1
+      }
+    ]
+  },
+  {
+    "zone": "mp_crash_intro.zone",
+    "asset": 202,
+    "offset": 2036171,
+    "asset_sha256": "90049921e635dc8e8eb9a6dc6ac5fc583d0075e7a18a986304e03d85e5b23094",
+    "consumed": 280478,
+    "text_size": 276482,
+    "text_sha256": "5dff22d6dcb1c8b38b33c18677a774fbd03721986be3fc35319a2c0841e6be3d",
+    "counts": [
+      81,
+      83,
+      31
+    ],
+    "stages": [
+      {
+        "reference": 4294967295,
+        "name": "stage 0",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "trigger": 1024,
+        "sun": 1
+      }
+    ]
+  },
+  {
+    "zone": "mp_crash_tropical.zone",
+    "asset": 231,
+    "offset": 2594417,
+    "asset_sha256": "09b151771f06014562481beb1b6fe2802c4abec067ff86ab5bef6f6cc18f2c08",
+    "consumed": 290021,
+    "text_size": 285329,
+    "text_sha256": "d09d27e963e35436aa9f8cd837001d1e3f4f0e21aec62d2493d28b99921ae258",
+    "counts": [
+      93,
+      98,
+      37
+    ],
+    "stages": [
+      {
+        "reference": 4294967295,
+        "name": "stage 0",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "trigger": 1024,
+        "sun": 1
+      }
+    ]
+  },
+  {
+    "zone": "mp_cross_fire.zone",
+    "asset": 152,
+    "offset": 4691120,
+    "asset_sha256": "d190908728e0736322d7d3b6c68c3c4a339a7865298d371d2ecd6f7fa8d3635f",
+    "consumed": 213958,
+    "text_size": 210486,
+    "text_sha256": "7d6bec17c26eac29d7a5c4c00f45aa54ada9d4db88e04b77dd4603923ffea98d",
+    "counts": [
+      38,
+      38,
+      94
+    ],
+    "stages": [
+      {
+        "reference": 4294967295,
+        "name": "stage 0",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "trigger": 1024,
+        "sun": 1
+      }
+    ]
+  },
+  {
+    "zone": "mp_estate_tropical.zone",
+    "asset": 255,
+    "offset": 5595095,
+    "asset_sha256": "d8d0f39883672e02fa694f8238b842945a203194e766e4d47bdd1441fc769a7d",
+    "consumed": 320833,
+    "text_size": 313241,
+    "text_sha256": "c55e7da8ca93a249715a00efbf4d5b443a63b7f7e5bce77ec972a69ac7ac2c45",
+    "counts": [
+      93,
+      103,
+      174
+    ],
+    "stages": [
+      {
+        "reference": 4294967295,
+        "name": "stage 0",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "trigger": 1024,
+        "sun": 1
+      }
+    ]
+  },
+  {
+    "zone": "mp_fav_tropical.zone",
+    "asset": 271,
+    "offset": 4189051,
+    "asset_sha256": "cb1d80c43f9e15550cef1ffce48ce60dce64cf85919fbe7f30a59f022252371b",
+    "consumed": 322001,
+    "text_size": 316781,
+    "text_sha256": "40963580e617fe663ecef37dbb504e77a13434156f27d5682b8a1562d1e7230c",
+    "counts": [
+      61,
+      75,
+      113
+    ],
+    "stages": [
+      {
+        "reference": 4294967295,
+        "name": "stage 0",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "trigger": 1024,
+        "sun": 1
+      }
+    ]
+  },
+  {
+    "zone": "mp_killhouse_sh.zone",
+    "asset": 202,
+    "offset": 4919985,
+    "asset_sha256": "57b8604770ece50ab73baec1f4513eb383aec540401b7820599892c1e53fb717",
+    "consumed": 233846,
+    "text_size": 227010,
+    "text_sha256": "869d44c2316f394dc9f88490aed698599bbe67e0b9b0a20c2433df740852a243",
+    "counts": [
+      143,
+      152,
+      35
+    ],
+    "stages": [
+      {
+        "reference": 4294967295,
+        "name": "stage 0",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "trigger": 1024,
+        "sun": 1
+      },
+      {
+        "reference": 4294967295,
+        "name": "stage 1",
+        "origin": [
+          157.0,
+          103.0,
+          353.0
+        ],
+        "trigger": 0,
+        "sun": 2
+      },
+      {
+        "reference": 4294967295,
+        "name": "stage 2",
+        "origin": [
+          157.0,
+          103.0,
+          722.0
+        ],
+        "trigger": 1,
+        "sun": 3
+      }
+    ]
+  },
+  {
+    "zone": "mp_nuked.zone",
+    "asset": 240,
+    "offset": 1328768,
+    "asset_sha256": "9caf46ccb091411c25e413eac0475903d32c004d6e4f1498078bd2a4e695b96f",
+    "consumed": 135249,
+    "text_size": 130429,
+    "text_sha256": "9a3a49ad78769c3f9f222085ce4f69faf69767e83e9250b8afa8183598bbdb57",
+    "counts": [
+      58,
+      62,
+      115
+    ],
+    "stages": [
+      {
+        "reference": 4294967295,
+        "name": "stage 0",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "trigger": 1024,
+        "sun": 1
+      }
+    ]
+  },
+  {
+    "zone": "mp_overgrown.zone",
+    "asset": 124,
+    "offset": 3766931,
+    "asset_sha256": "a653f3a9c95ca423c988638423f2e58673f769e08ad5986a0f6385df6a4d456f",
+    "consumed": 219835,
+    "text_size": 217679,
+    "text_sha256": "9f7fc741b74a65161e67fcc22ee2fd73da198d8e2515863f529eb729e7233672",
+    "counts": [
+      26,
+      28,
+      49
+    ],
+    "stages": [
+      {
+        "reference": 4294967295,
+        "name": "stage 0",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "trigger": 1024,
+        "sun": 1
+      }
+    ]
+  },
+  {
+    "zone": "mp_rust.zone",
+    "asset": 120,
+    "offset": 2431038,
+    "asset_sha256": "81a5feaf7fcaf68c3ab617e00b56592186709b8c36a81d1645f47ecb91b4aa1f",
+    "consumed": 81841,
+    "text_size": 79809,
+    "text_sha256": "0b672b191a93def808485e2d0629b986498fdd7c1140a1eaf96973833090fad9",
+    "counts": [
+      33,
+      37,
+      13
+    ],
+    "stages": [
+      {
+        "reference": 4294967295,
+        "name": "stage 0",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "trigger": 1024,
+        "sun": 1
+      },
+      {
+        "reference": 4294967295,
+        "name": "stage 1",
+        "origin": [
+          672.0,
+          736.0,
+          96.0
+        ],
+        "trigger": 0,
+        "sun": 2
+      },
+      {
+        "reference": 4294967295,
+        "name": "stage 2",
+        "origin": [
+          26496.0,
+          -68576.0,
+          12640.0
+        ],
+        "trigger": 1,
+        "sun": 3
+      },
+      {
+        "reference": 4294967295,
+        "name": "stage 3",
+        "origin": [
+          46080.0,
+          -18080.0,
+          560.0
+        ],
+        "trigger": 2,
+        "sun": 4
+      },
+      {
+        "reference": 4294967295,
+        "name": "stage 4",
+        "origin": [
+          34096.0,
+          -20976.0,
+          560.0
+        ],
+        "trigger": 3,
+        "sun": 5
+      },
+      {
+        "reference": 4294967295,
+        "name": "stage 5",
+        "origin": [
+          14208.0,
+          -20976.0,
+          560.0
+        ],
+        "trigger": 4,
+        "sun": 6
+      },
+      {
+        "reference": 4294967295,
+        "name": "stage 6",
+        "origin": [
+          1360.0,
+          -22704.0,
+          560.0
+        ],
+        "trigger": 5,
+        "sun": 7
+      },
+      {
+        "reference": 4294967295,
+        "name": "stage 7",
+        "origin": [
+          -4464.0,
+          -18832.0,
+          560.0
+        ],
+        "trigger": 6,
+        "sun": 8
+      },
+      {
+        "reference": 4294967295,
+        "name": "stage 8",
+        "origin": [
+          -9680.0,
+          -18832.0,
+          560.0
+        ],
+        "trigger": 7,
+        "sun": 9
+      },
+      {
+        "reference": 4294967295,
+        "name": "stage 9",
+        "origin": [
+          -35888.0,
+          -54896.0,
+          12640.0
+        ],
+        "trigger": 8,
+        "sun": 10
+      }
+    ]
+  },
+  {
+    "zone": "mp_storm_spring.zone",
+    "asset": 306,
+    "offset": 4748354,
+    "asset_sha256": "d4a764bef2bbdd4d48be996f8ad5354d339da5061d1cb55a859f5ef9008b4134",
+    "consumed": 352818,
+    "text_size": 348946,
+    "text_sha256": "0bc89e8ad586d91e9c3ff18513cbe6b1bc2b8888098cc3ba9d4f3afe03c60f41",
+    "counts": [
+      87,
+      92,
+      8
+    ],
+    "stages": [
+      {
+        "reference": 4294967295,
+        "name": "stage 0",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "trigger": 1024,
+        "sun": 1
+      }
+    ]
+  },
+  {
+    "zone": "mp_underpass.zone",
+    "asset": 270,
+    "offset": 3167513,
+    "asset_sha256": "2ba8d670aae6283ccfaa8912a0d64f25cd5aad1b9eee925431b531b617d37624",
+    "consumed": 267932,
+    "text_size": 264728,
+    "text_sha256": "c9dde87e2f1edc468d3452f1235c2734762df50e47ed13be5c24cd78aa467703",
+    "counts": [
+      39,
+      60,
+      45
+    ],
+    "stages": [
+      {
+        "reference": 4294967295,
+        "name": "stage 0",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "trigger": 1024,
+        "sun": 1
+      }
+    ]
+  },
+  {
+    "zone": "ui_viewer_mp.zone",
+    "asset": 6566,
+    "offset": 742611,
+    "asset_sha256": "34eb31f187c63691b54454e9c374544cc840f999b27bf884f95bf771f444139c",
+    "consumed": 38081,
+    "text_size": 38009,
+    "text_sha256": "cbcf269ad888e0bc7456a9804dde0587246db9af892e805a2118f0be26cdba31",
+    "counts": [
+      0,
+      0,
+      0
+    ],
+    "stages": [
+      {
+        "reference": 4294967295,
+        "name": "stage 0",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "trigger": 1024,
+        "sun": 1
+      }
+    ]
+  },
+  {
+    "zone": "zm_asylum_sh.zone",
+    "asset": 317,
+    "offset": 5187952,
+    "asset_sha256": "ac8205f00caf032f8a3eb28369ec211ac49bcbfffb1f426bb72c2a71c3cdd4ff",
+    "consumed": 357086,
+    "text_size": 350570,
+    "text_sha256": "37facebd5d053e8bc49957ead34aa05f1fb5f07e1fb214cfb902210f4f3ad093",
+    "counts": [
+      144,
+      146,
+      31
+    ],
+    "stages": [
+      {
+        "reference": 4294967295,
+        "name": "stage 0",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "trigger": 1024,
+        "sun": 1
+      }
+    ]
+  },
+  {
+    "zone": "zm_prototype_sh.zone",
+    "asset": 288,
+    "offset": 3075792,
+    "asset_sha256": "ebfeef0422b2e5c1de871775370f44027f0a5b51eef700c8739a0e71aaec22b9",
+    "consumed": 192816,
+    "text_size": 190504,
+    "text_sha256": "aa532437be911c1723374c6b8a812fd751eb098efc2343be21b7553cab90d40c",
+    "counts": [
+      51,
+      51,
+      10
+    ],
+    "stages": [
+      {
+        "reference": 4294967295,
+        "name": "stage 0",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "trigger": 1024,
+        "sun": 1
+      }
+    ]
+  },
+  {
+    "zone": "zm_zombie_training.zone",
+    "asset": 314,
+    "offset": 5766289,
+    "asset_sha256": "99512fd024682445e96f16b2d7850353cb86a7b74fc8449ddef0113b6f0c1896",
+    "consumed": 116241,
+    "text_size": 114229,
+    "text_sha256": "d31fa6805bed938e89c3585a900e058d6dece28e5370da40ff7232b1c80a22d6",
+    "counts": [
+      43,
+      43,
+      11
+    ],
+    "stages": [
+      {
+        "reference": 4294967295,
+        "name": "stage 0",
+        "origin": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "trigger": 1024,
+        "sun": 1
+      }
+    ]
+  }
+]

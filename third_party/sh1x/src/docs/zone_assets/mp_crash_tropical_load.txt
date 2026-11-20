@@ -1,0 +1,4 @@
+material	$defeatbackdrop
+material	$levelbriefing
+rawfile	mp_crash_tropical_load
+techset	2d
