@@ -771,8 +771,9 @@ Callback_PlayerDamage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, s
 	// (0.4 s).  The double-swipe attacks' two "fire" notes are further apart
 	// than that, so zombie_combat.gsc swing_notetracks lets one animation
 	// land only one hit.  60 a hit with 100
-	// health is a down on the second hit, and with Juggernog's 160 on the
-	// third; the regen thread below needs a 5 s quiet window in between.
+	// health is a down on the second hit, and with Juggernog's 250 (C1's
+	// modMaxHealth +150, _zombiemode_perks.gsc) on the fifth; the regen
+	// thread below needs a 5 s quiet window in between.
 	if ( isDefined( eAttacker ) && is_true( eAttacker.is_zombie ) )
 	{
 		if ( isDefined( self.ignoreAttacker ) && self.ignoreAttacker == eAttacker )
