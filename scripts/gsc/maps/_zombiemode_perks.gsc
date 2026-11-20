@@ -68,13 +68,24 @@
 init()
 {
 	set_zombie_var( "zombie_perk_cost", 2000 );
-	// T5 _zombiemode_perks.gsc:60: 160.  CoDOL's coPerkStatsTable row 43
-	// (specialty_zombie_armorvest) lists modMaxHealth +150, i.e. 250, but
-	// with T5's 60-point zombie hit (_zombiemode_spawner.gsc meleeDamage)
-	// 250 survives four hits and goes down on the fifth.  Juggernog must go
-	// down on the third hit -- 160 -> 100 -> 40 -> down -- against the plain
-	// player's second (100 -> 40 -> down), so T5's value is kept.
-	set_zombie_var( "zombie_perk_juggernaut_health", 160 );
+	// Juggernog is CoDOL's own perk row, not T5's number.  coPerkStatsTable
+	// row 43 (specialty_zombie_armorvest, the row setPerk resolves the T5
+	// name to) is modMaxHealth +150 over the 100 base: 250.  mp/zombiemode.csv
+	// row 44 (zombie_perk_juggernaut_health) is empty in every column, so the
+	// perk row is the only C1 figure.
+	//
+	// T5's 160 (_zombiemode_perks.gsc:60), used here until 2026-11-20, left a
+	// Juggernog player with no margin against T5's 60-point zombie hit: two
+	// zombies swinging together took 160 to 40 in one frame and a third downed
+	// him from full health (MEASURED, zm_prototype_sh, three zombies, 160 ->
+	// 100 -> 40 -> down inside 0.62 s), and regeneration waits for five quiet
+	// seconds.  T5 ran its 160 on the SP engine, whose
+	// player_deathInvulnerableTime (_gameskill::setSkill; playerHealthRegen
+	// notes code holding a player at 1 health while it runs) this server
+	// does not have.  At 250 a Juggernog player survives four hits and goes
+	// down on the fifth (250 -> 190 -> 130 -> 70 -> 10 -> down); without it
+	// 100 -> 40 -> down.
+	set_zombie_var( "zombie_perk_juggernaut_health", juggernog_health() );
 
 	if ( !isDefined( level.packapunch_timeout ) )
 		level.packapunch_timeout = 15;
@@ -124,6 +135,19 @@ init()
 	}
 	codolprintln( "CoDOL zm pap: m1911_zm world " + getWeaponModel( "m1911_zm" ) + ", m1911_upgraded_zm world " +
 		getWeaponModel( "m1911_upgraded_zm" ) + " hiding" + hide );
+}
+
+// Juggernog's max health from the perk table: the base player health plus
+// the modMaxHealth delta of specialty_zombie_armorvest (+150).
+juggernog_health()
+{
+	base = 100;
+	if ( isDefined( level.zombie_vars ) && isDefined( level.zombie_vars[ "player_starting_health" ] ) )
+		base = level.zombie_vars[ "player_starting_health" ];
+	bonus = int( common_scripts\_perks::perkModifierDelta( "specialty_zombie_armorvest", "modMaxHealth" ) );
+	if ( bonus <= 0 )
+		bonus = 150;
+	return base + bonus;
 }
 
 // BO1 _zombiemode_perks::turn_jugger_on / turn_revive_on / turn_sleight_on /
@@ -591,7 +615,7 @@ perk_think( perk )
 
 	if ( perk == "specialty_armorvest" )
 	{
-		self.maxhealth = 100;
+		self.maxhealth = level.zombie_vars[ "player_starting_health" ];
 		if ( self.health > self.maxhealth )
 			self.health = self.maxhealth;
 	}
