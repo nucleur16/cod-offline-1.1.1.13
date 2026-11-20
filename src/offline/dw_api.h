@@ -27,7 +27,7 @@ typedef struct DwOfflineStartInfo {
     char playerName[64], map[64], sessionMap[64], gametype[32], zoneType[16];
     int hostPort;
     int local;
-    int difficulty;          /* Zombies: 0..2; -1 for every other category */
+    int difficulty;          /* Zombies: 0..3 (3 = Endless); -1 for every other category */
 } DwOfflineStartInfo;
 
 typedef struct DwOfflineConfig {
