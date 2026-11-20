@@ -1037,9 +1037,12 @@ std::string JoinIds(const std::vector<int64_t> &ids)
 }
 
 /* _perk_gate (catalogue/perk_upgrades.py, THE RULE): a perk can be bought once its product's unlock
- * flags are earned, a Pro once its base perk is owned. Only `per` items are gated. -> 0 = let through. */
-int PerkGate(const MarketState &m, const MpPairs &pairs, const MpOwnedRows &rows, int64_t now, const std::set<int64_t> &granted,
-             const MpProduct *product, std::string &why)
+ * flags are earned, a Pro once its base perk is owned. Only `per` items are gated. -> 0 = let through.
+ * "Owned" is what the player's inventory shows (`served`, LoadItemIds), not only what was bought: the
+ * base perks come with the starting inventory, and a Pro whose base perk was never a purchase was
+ * refused (8011) although the client showed it for sale. */
+int PerkGate(const MarketState &m, const MpPairs &pairs, const MpOwnedRows &rows, const std::set<int64_t> &served, int64_t now,
+             const std::set<int64_t> &granted, const MpProduct *product, std::string &why)
 {
     std::vector<int64_t> perks;
     for (size_t i = 0; i < pairs.size(); i++)
@@ -1047,7 +1050,7 @@ int PerkGate(const MarketState &m, const MpPairs &pairs, const MpOwnedRows &rows
     if (perks.empty()) return 0;
     for (size_t i = 0; i < perks.size(); i++) {
         std::map<int64_t, int64_t>::const_iterator base = m.proBase.find(perks[i]);
-        if (base != m.proBase.end() && !Owns(rows, base->second, now)) {
+        if (base != m.proBase.end() && !Owns(rows, base->second, now) && !served.count(base->second)) {
             why = Fmt("Pro item %lld needs its base perk %lld owned first", (long long)perks[i], (long long)base->second);
             return BD_MARKETPLACE_MISSING_REQUIRED_ENTITLEMENT;
         }
@@ -1077,6 +1080,9 @@ Reply PurchaseSkus(Server &s, uint64_t uid, const Vals &args)
     std::set<int64_t> granted(flagIds.begin(), flagIds.end());
 
     MpOwnedRows rows = MpLoadOwned(s, uid);
+    /* the inventory this player is served (starting items + purchases): what the Pro gate counts as owned */
+    std::vector<int64_t> servedIds = LoadItemIds(s, uid, rows, NULL);
+    std::set<int64_t> served(servedIds.begin(), servedIds.end());
     std::string shown;
     bool changed = false;
     int refused = 0, refusal = 0; /* the first refusal's error code */
@@ -1111,7 +1117,7 @@ Reply PurchaseSkus(Server &s, uint64_t uid, const Vals &args)
         }
 
         std::string why;
-        int gate = PerkGate(m, pairs, rows, now, granted, prod, why);
+        int gate = PerkGate(m, pairs, rows, served, now, granted, prod, why);
         if (gate) {
             refused++;
             if (!refusal) refusal = gate;
