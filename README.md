@@ -72,6 +72,8 @@ The game creates `players\` (your profile and stats) and `p2p\offline\` on its o
 - **Map lists:** they show only maps whose `.ff` is in `client_shipRetail\chinese\` or `usermaps\<map>\`. Set
   `K33_MAPLIST_ALL=1` to list every map.
 - **Profile:** `+set dw_username <name>` picks a profile (default `Player`).
+- **Theatre:** every match you play is recorded into `players\<profile>\demos\` and listed on the THEATRE page,
+  where you can watch it. The newest 50 films are kept. Films are only read from and written to that folder.
 - **Logs:** `Kernel33.log` next to the exe, and `p2p\offline\lobby.log`.
 
 ## Development

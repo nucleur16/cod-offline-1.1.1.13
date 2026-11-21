@@ -15,12 +15,14 @@
  *                    ui_theatreOpen (1 reopens the THEATRE page after a recording ends)
  * This file answers those requests (main thread, every 200 ms, k33tick.c); every dvar write is a queued "set".
  *
- * Where recordings come from: this PC only, main\demo\*.demo (films copied there). Each row's id is the SHA-256 of
- * its file name; map, mode and length come from "<name>.demo.k33" when it exists (codol-classic's downloads wrote
- * one), else they show as unknown. The client cannot record: C1 removes "record" / "stoprecord" (Cmd_RemoveCommand
- * at 0x4990AC / 0x4990E0) and never adds them, so films are made server-side. The online client's recording service
- * (codol_theatre_url, the lobby's CODOL_THEATRE_SESSION_V1 broadcast token, the catalogue and download worker) was
- * removed: this client is offline only.
+ * Where recordings come from: the player's own folder, players\<profile>\demos\*.demo (OflDemoDir), and nowhere
+ * else. theatre_record.c records every match played into it (C1 has no recorder of its own: CL_Init never adds the
+ * "record" / "stoprecord" that CL_ShutdownOnceForAllClients removes at 0x4990AC / 0x4990E0, and the online films were
+ * written by the servers). Each row's id is the SHA-256 of its file name; map, mode, length and start come from the
+ * film's own metadata block (theatre_record.c). C1 opens a film it plays as demo/<name>.demo through its file
+ * system; offline_lobby.c's CreateFileA wrapper (OflDemoRedirect) sends every such path to the same folder. The
+ * online client's recording service (codol_theatre_url, the lobby's CODOL_THEATRE_SESSION_V1 broadcast token, the
+ * catalogue and download worker) was removed: this client is offline only.
  *
  * Playing: "cl_demo_play <name>" from the main menu only (connection state, clc demo flags and the demo allocation
  * all idle), ui_theatrePlayback 1 until the client is idle again, then ui_theatreOpen 1. "return" (the
@@ -50,14 +52,14 @@ static const char *const kThText[][2] = {
     { "Starting recording", "\xE6\xAD\xA3\xE5\x9C\xA8\xE6\x92\xAD\xE6\x94\xBE\xE5\xBD\x95\xE5\x83\x8F" }, /* 正在播放录像 */
     { "Return to the main menu before watching a recording",
       "\xE8\xAF\xB7\xE5\x85\x88\xE8\xBF\x94\xE5\x9B\x9E\xE4\xB8\xBB\xE8\x8F\x9C\xE5\x8D\x95\xE5\x86\x8D\xE8\xA7\x82\xE7\x9C\x8B\xE5\xBD\x95\xE5\x83\x8F" }, /* 请先返回主菜单再观看录像 */
-    { "Recordings on this PC", "\xE6\x9C\xAC\xE6\x9C\xBA\xE5\xBD\x95\xE5\x83\x8F" }, /* 本机录像 */
-    { "No recordings on this PC yet", "\xE6\x9C\xAC\xE6\x9C\xBA\xE6\x9A\x82\xE6\x97\xA0\xE5\xBD\x95\xE5\x83\x8F" }, /* 本机暂无录像 */
+    { "Your recorded matches", "\xE6\x9C\xAC\xE6\x9C\xBA\xE5\xBD\x95\xE5\x83\x8F" }, /* 本机录像 */
+    { "No recorded matches yet", "\xE6\x9C\xAC\xE6\x9C\xBA\xE6\x9A\x82\xE6\x97\xA0\xE5\xBD\x95\xE5\x83\x8F" }, /* 本机暂无录像 */
     { "Recording file missing - refresh", "\xE5\xBD\x95\xE5\x83\x8F\xE6\x96\x87\xE4\xBB\xB6\xE4\xB8\x8D\xE5\xAD\x98\xE5\x9C\xA8\xEF\xBC\x8C\xE8\xAF\xB7\xE5\x88\xB7\xE6\x96\xB0" }, /* 录像文件不存在，请刷新 */
 };
 
 typedef struct ThRow {
     char id[65], file[64], date[32], map[64], mode[32];
-    unsigned seconds;
+    unsigned seconds, started;     /* started: time_t from the film's metadata (0 = unknown: the file time is shown) */
     FILETIME written;
 } ThRow;
 
@@ -189,50 +191,28 @@ static void ThHideReplayMinimap(BOOL hide)
     }
 }
 
-/* ---- recordings on this PC ----------------------------------------------------------------------------------- */
+/* ---- recording every match (theatre_record.c) ---------------------------------------------------------------- */
 
-static int ThDemoDir(WCHAR *dir)
-{
-    DWORD n = GetModuleFileNameW(NULL, dir, MAX_PATH);
-    while (n && dir[n - 1] != L'\\') n--;
-    if (n + 16 >= MAX_PATH) return 0;
-    lstrcpyW(dir + n, L"main\\demo\\");
-    return (int)n + 10;
-}
+#include "theatre_record.c"
 
-/* "<name>.demo.k33": map\tmode\tseconds (written by the auto-recorder). */
-static void ThReadSidecar(const WCHAR *demoPath, ThRow *r)
-{
-    WCHAR p[MAX_PATH + 8];
-    lstrcpynW(p, demoPath, MAX_PATH);
-    lstrcatW(p, L".k33");
-    HANDLE f = CreateFileW(p, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
-    if (f == INVALID_HANDLE_VALUE) return;
-    char buf[160];
-    DWORD got = 0;
-    ReadFile(f, buf, sizeof(buf) - 1, &got, NULL);
-    CloseHandle(f);
-    buf[got] = 0;
-    char *map = buf, *mode = strchr(map, '\t'), *secs = mode ? strchr(mode + 1, '\t') : NULL;
-    if (!mode) return;
-    *mode++ = 0;
-    if (secs) { *secs++ = 0; r->seconds = (unsigned)strtoul(secs, NULL, 10); }
-    if (ThSafe(map)) lstrcpynA(r->map, map, sizeof(r->map));
-    if (ThSafe(mode)) lstrcpynA(r->mode, mode, sizeof(r->mode));
-}
+/* ---- the player's recordings ------------------------------------------------------------------------------------- */
 
-/* C1's demo envelope (C1 0x72BC80 / 0x72CB00, as codol-classic's website/replay_demo.py reads it): a 32800-byte
- * header whose first int is the tag (1..3), the record stream, then metadata (640 fixed bytes: tag, start, end, ...;
+static int ThDemoDir(WCHAR *dir) { return OflDemoDir(dir, FALSE); }
+
+/* C1's demo envelope (C1 0x72BC80 / 0x72CB00 / 0x72CC90): a 32800-byte header whose first int is the tag (1..3),
+ * the record stream, then metadata (640 fixed bytes: tag, start, end, gametype, map, ..., start time_t at +0x27C;
  * a table of at most 40 x 24 bytes; one of at most 300 x 8 bytes) and an 8-byte footer {metadata size, tag}. Only a
  * file with a consistent envelope is listed, so cl_demo_play never gets a file C1 would reject with
- * EXE_ERR_READING_DEMO (a structure check only: it does not prove the gameplay stream plays). */
-static BOOL ThDemoEnvelope(const WCHAR *path, unsigned *seconds)
+ * EXE_ERR_READING_DEMO (a structure check only: it does not prove the gameplay stream plays). With `r`, the row's
+ * map, mode and start come from the metadata. */
+static BOOL ThDemoEnvelope(const WCHAR *path, unsigned *seconds, ThRow *r)
 {
     BOOL ok = FALSE;
     HANDLE f = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
     if (f == INVALID_HANDLE_VALUE) return FALSE;
     LARGE_INTEGER size;
-    int head = 0, foot[2], fixed[3], count1 = 0, count2 = 0;
+    int head = 0, foot[2], count1 = 0, count2 = 0;
+    static int fixed[0x280 / 4];
     DWORD got;
     if (GetFileSizeEx(f, &size) && size.QuadPart >= 32800 + 640 + 8 + 8 && size.QuadPart < 0x7FFFFFFF &&
         ReadFile(f, &head, 4, &got, NULL) && got == 4 &&
@@ -241,7 +221,7 @@ static BOOL ThDemoEnvelope(const WCHAR *path, unsigned *seconds)
         foot[0] >= 640 + 8 && foot[0] <= (LONG)size.QuadPart - 32800 - 8) {
         LONG meta = (LONG)size.QuadPart - 8 - foot[0];
         if (SetFilePointer(f, meta, NULL, FILE_BEGIN) != INVALID_SET_FILE_POINTER &&
-            ReadFile(f, fixed, 12, &got, NULL) && got == 12 && fixed[0] == foot[1] &&
+            ReadFile(f, fixed, sizeof(fixed), &got, NULL) && got == sizeof(fixed) && fixed[0] == foot[1] &&
             SetFilePointer(f, meta + 640, NULL, FILE_BEGIN) != INVALID_SET_FILE_POINTER &&
             ReadFile(f, &count1, 4, &got, NULL) && got == 4 && count1 >= 0 && count1 <= 40 &&
             640 + 8 + count1 * 24 <= foot[0] &&
@@ -250,6 +230,14 @@ static BOOL ThDemoEnvelope(const WCHAR *path, unsigned *seconds)
             640 + 8 + count1 * 24 + count2 * 8 <= foot[0]) {
             ok = TRUE;
             if (seconds && fixed[2] > fixed[1]) *seconds = (unsigned)(fixed[2] - fixed[1]) / 1000;
+            if (r) {
+                char text[64];
+                lstrcpynA(text, (const char *)fixed + 0xC, sizeof(text));
+                if (ThSafe(text)) lstrcpynA(r->mode, text, sizeof(r->mode));
+                lstrcpynA(text, (const char *)fixed + 0x10C, sizeof(text));
+                if (ThSafe(text)) lstrcpynA(r->map, text, sizeof(r->map));
+                r->started = (unsigned)fixed[0x27C / 4];
+            }
         }
     }
     CloseHandle(f);
@@ -288,11 +276,16 @@ static void ThLocalCatalogue(void)
                 lstrcpyW(full, dir);
                 if (lstrlenW(full) + len >= MAX_PATH) continue;
                 lstrcatW(full, fd.cFileName);
-                if (!ThDemoEnvelope(full, &r->seconds)) continue;      /* not a C1 film: never offered */
-                ThReadSidecar(full, r);
+                if (!ThDemoEnvelope(full, &r->seconds, r)) continue;  /* not a C1 film: never offered */
                 SYSTEMTIME st;
-                FILETIME local;
-                FileTimeToLocalFileTime(&fd.ftLastWriteTime, &local);
+                FILETIME local, when = fd.ftLastWriteTime;
+                if (r->started) {
+                    ULONGLONG t = (ULONGLONG)r->started * 10000000ull + 116444736000000000ull;
+                    when.dwLowDateTime = (DWORD)t;
+                    when.dwHighDateTime = (DWORD)(t >> 32);
+                    r->written = when;
+                }
+                FileTimeToLocalFileTime(&when, &local);
                 FileTimeToSystemTime(&local, &st);
                 static const char *const kMon[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
                                                     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
@@ -346,7 +339,7 @@ static void ThWatchLocal(const char *id, const ThState *s)
         int base = ThDemoDir(p);
         if (!base || base + 72 >= MAX_PATH) break;
         _snwprintf(p + base, MAX_PATH - base, L"%hs.demo", r->file);
-        if (!ThDemoEnvelope(p, NULL)) break;
+        if (!ThDemoEnvelope(p, NULL, NULL)) break;
         if (!ThIdle(s)) { ThStatus(TH_MENU_FIRST); return; }
         ThSet("Playback", "1");
         lstrcpynA(g_thPlayingZone, ThZombieRow(r) ? "zm" : "mp", sizeof(g_thPlayingZone));
@@ -456,6 +449,7 @@ static void InstallTheatre(void)
     static const BYTE kShow[] = { 0x50, 0x56, 0xE8, 0x29, 0xFF, 0xFF, 0xFF, 0x83, 0xC4, 0x08, 0x85, 0xC0, 0x74, 0x07,
                                   0x8B, 0x0E, 0x83, 0x4C, 0x88, 0x48, 0x04 };
     C1GameInit();
+    InstallTheatreRecorder();
     if (!g_c1CbufOk || !g_c1DvarOk) {
         Log("theatre: Cbuf_AddText or Dvar_RegisterInt differs; THEATRE screen stays inert");
         return;
@@ -477,5 +471,5 @@ static void InstallTheatre(void)
     if (!g_thMenusOk) Log("theatre: Menus_Close / show differ; Zombies replays keep their minimap menu");
 
     K33OnMainTick(TheatreTick);
-    Log("theatre: THEATRE screen answered (recordings on this PC)");
+    Log("theatre: THEATRE screen answered (the player's recordings)");
 }

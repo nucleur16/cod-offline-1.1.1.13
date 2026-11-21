@@ -254,12 +254,66 @@ static const char *OflBaseName(const char *path)
     return b;
 }
 
+/* The player's films (theatre.c, theatre_record.c): players\<profile>\demos\ with a trailing backslash, or
+ * players\demos\ when the profile has no folder name. -> its length in characters, 0 when there is no players
+ * folder. `create` makes the folder. Any thread. */
+static int OflDemoDir(WCHAR *dir, BOOL create)
+{
+    WCHAR players[MAX_PATH];
+    /* the profile is chosen when the lobby starts (before C1's entry point) */
+    if (!g_ofl.active || !g_ofl.players[0] || !MultiByteToWideChar(CP_ACP, 0, g_ofl.players, -1, players, MAX_PATH)) return 0;
+    WCHAR profile[40];
+    profile[0] = 0;
+    if (g_ofl.player[0]) MultiByteToWideChar(CP_ACP, 0, g_ofl.player, -1, profile, 40);
+    int n = profile[0] ? _snwprintf(dir, MAX_PATH - 1, L"%ls\\%ls\\demos\\", players, profile)
+                       : _snwprintf(dir, MAX_PATH - 1, L"%ls\\demos\\", players);
+    if (n <= 0 || n >= MAX_PATH - 80) return 0;
+    dir[n] = 0;
+    if (create) {
+        CreateDirectoryW(players, NULL);
+        if (profile[0]) {
+            WCHAR mid[MAX_PATH];
+            _snwprintf(mid, MAX_PATH - 1, L"%ls\\%ls", players, profile);
+            mid[MAX_PATH - 1] = 0;
+            CreateDirectoryW(mid, NULL);
+        }
+        dir[n - 1] = 0;
+        CreateDirectoryW(dir, NULL);
+        dir[n - 1] = L'\\';
+    }
+    return n;
+}
+
+/* C1's films live only in OflDemoDir: a path C1 builds for one, <any folder>\demo\<name>.demo (cl_demo_play opens
+ * demo/<name>.demo through its file system; its local film scan and corrupt-film delete use <fs_homepath>/demo/),
+ * is rewritten to <OflDemoDir><name>.demo. -> FALSE for every other path. */
+static BOOL OflDemoRedirect(const char *path, WCHAR *out)
+{
+    size_t n = path ? strlen(path) : 0;
+    if (n < 11 || n >= MAX_PATH || _stricmp(path + n - 5, ".demo")) return FALSE;
+    const char *base = OflBaseName(path);
+    if (base - path < 5 || !*base || strlen(base) > 100) return FALSE;
+    const char *folder = base - 5;   /* "demo\" or "demo/" right before the name, at the start or after a separator */
+    if (_strnicmp(folder, "demo", 4) ||
+        (folder > path && folder[-1] != '\\' && folder[-1] != '/' && folder[-1] != ':')) return FALSE;
+    if (strstr(base, "..")) return FALSE;
+    int d = OflDemoDir(out, TRUE);
+    if (!d || !MultiByteToWideChar(CP_ACP, 0, base, -1, out + d, MAX_PATH - d)) return FALSE;
+    return TRUE;
+}
+
 /* C1's CRT fopen reaches CreateFileA through slot 0xB421D8 (local_multi.c). dwauth.ini is the five-line
  * route C1 logs on with (auth host, auth port, lobby host, lobby port, title id in hex); stun.ini is
  * up to ten NAT-discovery hosts (C1 0x00630CE2 / 0x00630D70). Both ports are the one the lobby got. */
 static HANDLE WINAPI OflCreateFileA(LPCSTR path, DWORD access, DWORD share, LPSECURITY_ATTRIBUTES security, DWORD disposition,
                                     DWORD flags, HANDLE templateFile)
 {
+    WCHAR film[MAX_PATH];
+    if (OflDemoRedirect(path, film)) {
+        static LONG logged;
+        if (InterlockedIncrement(&logged) <= 32) Log("theatre: C1 opens %s -> %ls", path, film);
+        return CreateFileW(film, access, share, security, disposition, flags, templateFile);
+    }
     if (g_ofl.active && path && access == GENERIC_READ && disposition == OPEN_EXISTING) {
         const char *base = OflBaseName(path);
         char text[256];
