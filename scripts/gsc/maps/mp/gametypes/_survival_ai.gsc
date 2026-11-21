@@ -134,11 +134,18 @@ table_int( table, row, column, fallback )
 	return int( v );
 }
 
+// The tables write some fractions without the leading zero (speed ".8" for
+// the demolitionist, ".9" for noob and searcher), which float() reads as 0:
+// a moveplaybackrate of 0 froze those soldiers in their run cycle for good.
 table_float( table, row, column, fallback )
 {
 	v = tableLookup( table, 0, "" + row, column );
 	if ( !isDefined( v ) || v == "" )
 		return fallback;
+	if ( v[ 0 ] == "." )
+		v = "0" + v;
+	else if ( v.size > 1 && v[ 0 ] == "-" && v[ 1 ] == "." )
+		v = "-0" + getSubStr( v, 1, v.size );
 	return float( v );
 }
 
@@ -346,6 +353,8 @@ type_attributes( t, scale )
 	a.speed = t.speed * ( 1.0 + 0.05 * repeated );
 	if ( a.speed > 1.5 )
 		a.speed = 1.5;
+	else if ( a.speed < 0.5 )
+		a.speed = 0.5;	// never a frozen (rate 0) or crawling cycle
 	// Keep this MP soldier contract's base accuracy and safe ceiling; use
 	// IW5's independent repeated-wave multiplier instead of health's scale.
 	a.accuracy = t.accuracy * 0.3 * ( 1.0 + 0.2 * repeated );
