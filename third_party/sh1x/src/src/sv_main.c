@@ -6223,6 +6223,23 @@ static void SV_ResolveAssetCategory(const char *mapname)
             explicitCat = "survival";
             source = "survival level reload";
         }
+        /* A running survival match moved to ANOTHER level with survival still
+         * its gametype: `devmap <level> survival` in a match (Kernel33 sends
+         * the server's own devmap over rcon), the room's map change or the
+         * next map.  None of those carries fs_game, and the session still
+         * names the previous level, so this resolved "mp": the new level
+         * mounted common_gametype_mp, the survival aitypes were never loaded
+         * (actor_scripts.cpp loads them only for the survival category) and
+         * every wave logged "no aitype template". The gametype read is the
+         * one this load will promote (g_gametype is CVAR_LATCH). A rotation
+         * to an mp gametype still resolves "mp" below. */
+        else if(!Q_stricmp(loadedZoneType, "survival") && sv_g_gametype &&
+                !Q_stricmp(sv_g_gametype->latchedString && *sv_g_gametype->latchedString ?
+                           sv_g_gametype->latchedString : sv_g_gametype->string, "survival"))
+        {
+            explicitCat = "survival";
+            source = "survival match map change";
+        }
     }
     if(!explicitCat && !proven && SV_SessionPairsWithLevel(mapname))
     {
