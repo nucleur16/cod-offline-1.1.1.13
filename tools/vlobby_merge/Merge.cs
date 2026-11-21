@@ -125,7 +125,8 @@ public static class Merge
 
         ReferenceEarlier(ctx, earlier, log);
         DedupeByName(ctx, log);
-        V0FileImages(ctx, log);
+        if (donors.FirstOrDefault(d => d.Zone.Build == GameBuild.V0_0_2_2) is { } v0)
+            V0FileImages.Run(ctx, _stockAssets, v0.Zone.Path, exe, outFf, log);
         if (donors.Count > 0 || Environment.GetEnvironmentVariable("VLOBBY_REBUILD_STOCK") == "1")
         {
             uint merged = BuildWorld(ctx, worlds, log);
@@ -234,6 +235,7 @@ public static class Merge
         byte[] ff = FastFileWriter.WriteUnsigned(GameBuild.V1_1_1_13, written.Zone, rsa);
         File.WriteAllBytes(outFf, ff);
         log($"wrote {outFf}: {img.Assets.Count} assets, zone {written.Zone.Length} bytes, file {ff.Length} bytes");
+        V0FileImages.WriteIwd(written.Zone, zoneName, log);
     }
 
     /// the donor's lightmaps and reflection probe images are named like the stock ones (*lightmap0_primary,
@@ -289,48 +291,8 @@ public static class Merge
     /// ui_viewer_mp: *lightmap0_primary is 0x00020103 ... name at +0x1C in 0.0.2.2, ... 0, name at +0x20 in 1.1.1.13;
     /// its load definition is the same). Every image of the donor gets a 1.1.1.13 header, and what led to the old one
     /// leads to the new one.
-    /// A 0.0.2.2 image whose pixels come from an iwd and that no 1.1.1.13 zone defines (stock ones of the same name were
-    /// joined by DedupeByName): its load definition is still 0.0.2.2's (an insert, flags 0), which 1.1.1.13 leaves as
-    /// the texture pointer (d3d9.dll faulted once a material using it was drawn), and written inline with flags guessed
-    /// from 1.1.1.13's per-image ones the zone did not load at all. So it stands for a built-in image of
-    /// code_post_gfx_mp by kind (normal maps $identitynormalmap, specular $black, the rest $gray), through a stub
-    /// asset ",<name>" as the stock zone references ",$identitynormalmap": a GfxImage that holds only its name.
-    static void V0FileImages(PortContext ctx, Action<string> log)
-    {
-        var img = ctx.Target; var T = ctx.T;
-        var stubs = new Dictionary<string, uint>();
-        foreach (var (h, t) in img.AssetHeaders)
-            if (t == AssetTypes.Image && img.Pointer(h + 0x20) is uint np and not 0 && T.CString(np, 128) is { } n && n.StartsWith(','))
-                stubs.TryAdd(n[1..].ToLowerInvariant(), h);
-        uint Stub(string name)
-        {
-            if (stubs.TryGetValue(name.ToLowerInvariant(), out uint h)) return h;
-            byte[] text = Encoding.Latin1.GetBytes("," + name);
-            uint str = ctx.NewObject((uint)text.Length + 1, 1);
-            T.Write(str, text);
-            T.WU8(str + (uint)text.Length, 0);
-            h = ctx.NewObject(0x24, 4);
-            img.SetPointer(h + 0x20, str);
-            img.AssetHeaders[h] = AssetTypes.Image;
-            return stubs[name.ToLowerInvariant()] = h;
-        }
-        var by = new SortedDictionary<string, List<string>>();
-        foreach (var (h, t) in img.AssetHeaders.ToList())
-        {
-            if (t != AssetTypes.Image || _stockAssets.Contains(h) || img.Encoding(h) != PointerEncoding.Insert || img.Pointer(h) == 0) continue;
-            byte sem = T.U8(h + 5);
-            string to = sem == 5 ? "$identitynormalmap" : sem == 8 ? "$black" : "$gray";
-            string name = img.Pointer(h + 0x20) is uint np and not 0 ? T.CString(np, 128) : "?";
-            ctx.ReplaceAsset(h, Stub(to));
-            (by.TryGetValue(to, out var l) ? l : by[to] = []).Add(name);
-        }
-        // a replaced image that was listed leaves its stub listed: once is enough
-        var seen = new HashSet<uint>();
-        for (int i = 0; i < img.Assets.Count; i++)
-            if (!seen.Add(img.Assets[i].Header)) img.Assets.RemoveAt(i--);
-        foreach (var (to, names) in by) log($"0.0.2.2: {names.Count} file images no 1.1.1.13 zone has stand for {to} ({string.Join(", ", names.Take(8))}{(names.Count > 8 ? ", ..." : "")})");
-    }
-
+    /// A 0.0.2.2 image whose pixels come from an iwd keeps its load definition here (an insert, flags 0): V0FileImages.cs
+    /// gives the ones the merged zone keeps 1.1.1.13's (inline, the .iwi's flags) and ships their files.
     static void V0Images(LoadedZone z, Action<string> log)
     {
         var I = z.Image; var m = z.M;
@@ -367,15 +329,7 @@ public static class Merge
             var texEnc = I.Encoding(h);
             uint ld = I.Pointer(h);
             bool inZone = ld != 0 && m.U32(ld + 12) > 0;   // resourceSize: the pixels follow in the zone
-            bool fileFix = Environment.GetEnvironmentVariable("VLOBBY_V0_FILE_IMAGES") == "1";
-            if (ld != 0 && !inZone && fileFix && texEnc == PointerEncoding.Insert)
-            {
-                // a file image (pixels from an iwd): 1.1.1.13 writes per-image load flags where 0.0.2.2 has 0 (or 2 for
-                // the HUD pictures); the most common ones by kind (normal maps 0x40000, others 0x340, HUD 0x173)
-                uint f0 = m.U32(ld + 4);
-                m.WU32(ld + 4, f0 == 2 ? 0x173u : m.U8(h + 5) == 5 ? 0x40000u : 0x340u);
-            }
-            I.SetPointer(nh, ld, texEnc == PointerEncoding.Insert && (inZone || fileFix) ? PointerEncoding.Inline : texEnc);
+            I.SetPointer(nh, ld, texEnc == PointerEncoding.Insert && inZone ? PointerEncoding.Inline : texEnc);
             I.SetPointer(nh + 0x20, I.Pointer(h + 0x1C), I.Encoding(h + 0x1C));
             moved[h] = nh;
         }

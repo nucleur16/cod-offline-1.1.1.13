@@ -30,7 +30,7 @@ The zone and iwd are build outputs (31 MB and 50 MB, made from the other builds'
         CodolSoundDumper port-map --game "<CODOL_2.6.9.7>" --map ui_mp --target "<1.1.1.13>" --out v2697 --iwd-name iw_image_18.iwd --roots-file roots.txt
         CodolSoundDumper iwd-merge --input v31926/iw_image_18.iwd --input v2697/iw_image_18.iwd --game "<1.1.1.13>" --out iwd --names iw_image_18.iwd
 
-   The merged iwd (113 images, 50 MB) installs as `main_shared\iw_image_18.iwd`.
+   The merged iwd (113 images, 50 MB) is the merge's `iwd=` input (step 3).
 
 2. The camera table: `python camera_rows.py <stock> <3.19.26.22> <2.6.9.7> camerapostable_vlobby.csv` with the three
    builds' `mp/camerapostable.csv` (`CodolSoundDumper zone-stringtables --input <code_post_gfx_mp / patch_code_post_gfx_mp .ff> --name camerapos --out <dir>`).
@@ -40,7 +40,11 @@ The zone and iwd are build outputs (31 MB and 50 MB, made from the other builds'
         vlobby_merge merge "<1.1.1.13>\client_shipRetail\chinese\ui_viewer_mp.ff" "<1.1.1.13>\codoMP_client_shipRetail.exe" ui_viewer_vlobby_mp.ff ^
           v31926\ui_mp.ff=-32768,0,0,v3_,3.19.26.22 v2697\ui_mp.ff=-16384,0,0,v2_,2.6.9.7 ^
           "<0.0.2.2>\client_shipRetail\chinese\ui_viewer_mp.ff=-44032,0,0,v0_,0.0.2.2,-2500:-12500:-2000:3500:2500:4000,stockgrid" ^
-          table=camerapostable_vlobby.csv
+          table=camerapostable_vlobby.csv iwd=iwd\iw_image_18.iwd
+
+   It writes `iw_image_18.iwd` next to the zone: the `iwd=` entries and the 0.0.2.2 image files 1.1.1.13 lacks
+   (`V0FileImages.cs`). It installs as `main_shared\iw_image_18.iwd`. `VLOBBY_EXTRA_IWDS` (folders, `;`) adds iwds
+   installed next to the stock ones (a map pack's `main`) to the name collision check.
 
    A donor is `<ff>=<dx>,<dy>,<dz>,<prefix>,<tag>[,<keep box x0:y0:z0:x1:y1:z1>[,stockgrid]]` (offsets in whole light
    grid cells: x, y multiples of 32, z of 64). Leave a donor out to build without it.
@@ -48,7 +52,9 @@ The zone and iwd are build outputs (31 MB and 50 MB, made from the other builds'
    Diagnostics: `probe`, `scenes` (static models and surfaces around each stand, any build), `images`, `imgcat`
    (image categories), `check` (surface materials, static model models), `techcheck` (technique pass shaders),
    `bsp` (the dpvs BSP cell of every stand and camera), `dump` / `deref` (asset header bytes, the object a field
-   points to). Test switches (`VLOBBY_TEST_*`, `VLOBBY_NO_COMPACT`, `VLOBBY_COMPACT_MAXV` / `_MAXT`) are read in
+   points to), `v0img scan` / `flags` / `users` / `surfaces` (0.0.2.2 file images against the stock zones' images
+   of the same name, load definition flags against the .iwi's, the materials using some images, the surfaces near
+   the stands the keep box drops). Test switches (`VLOBBY_TEST_*`, `VLOBBY_NO_COMPACT`, `VLOBBY_COMPACT_MAXV` / `_MAXT`) are read in
    Merge.cs / Compact.cs; none is needed for the build.
 
 ## How the merge works
@@ -88,6 +94,16 @@ case-insensitively; a second image of a name in one zone made C1 release a textu
   (-1). The tool rewrites all four. XModel is 0x16C (1.1.1.13: 0x168) and XModelSurfs differ, so its static models
   take the stock model of the same name or are left out; its light grid (65536 distinct colours, more than a merged
   grid indexes) is replaced by the stock rows of the same places.
+- 0.0.2.2 file images (pixels in an iwd, 181 the merged zone keeps before the left-out models drop 80 of them):
+  `v0img scan` paired them with the stock zones' images of the same name (15287 pairs of the same size over the 200 zones). The header is
+  1.1.1.13's byte for byte (+0x04..+0x1B; +0x1C, the new u32, is 0; +0x1A is 1 in map zones and 0 in ui_viewer_mp,
+  as in 0.0.2.2's). Only the load definition differs: 0.0.2.2 an insert with flags 0, 1.1.1.13 inline with the .iwi
+  header's flags word (`v0img flags`: 6144 stock file images, all equal: 0x340 colour and specular, 0x40000 / 0x40008
+  normal maps, 0x360, 0x370, 0x140, 0x341 ...). Left as an insert, C1 took the -2 for a texture (d3d9.dll fault).
+  Both builds read IWI version 9 (formats 1..13, same layout and picmip sizes, same wavelet tables), so the files are
+  used as they are: 164 are byte-identical in 1.1.1.13's iwds; the others ship in iw_image_18.iwd (3 the zone uses:
+  codo_ui_sun and the sky sides). A 0.0.2.2 file of a name 1.1.1.13 uses for other pixels would be renamed v0_<name>
+  (none is).
 - Poses: 1.1.1.13 poses the lobby character from `mp/uivieweranimposes.csv` (tf_m / sc_m class poses, lobby_stand_01..06,
   lobby_sit_*, cyborg_menu_*) whatever the scene; its stands name no pose. The later lobbies' character stands name
   lobby_stand_05 (1.1.1.13 has it) and their lineup slots menu_lobby_slotN_rifle / _riot_idle (1.1.1.13 does not).
