@@ -2,8 +2,10 @@
 
 The lobby's 3D scene is the map `mp_ui_viewer` (zone `ui_viewer_mp`). Each scene is a place in that one map; a row
 of `mp/cameraPosTable.csv` names its character stand and camera (script_origin targetnames), vision and light.
-`src/vlobby_env.c` is the environment switch (`ui_vlobbyEnv`, `vlobby_env`): stock rows (center, urb, woo, des, arc,
-zombie) always, the merged scenes when the zone below is installed.
+`src/vlobby_env.c` has two switches. `vlobby_env` / `ui_vlobbyEnv` picks the menu scene (the main menu's and the
+Multiplayer lobby's character view: center and the merged menu scenes). `vlobby_roomenv` / `ui_vlobbyRoomEnv` picks the
+scene a room (the game lobby) shows instead of its map's environment: a stock environment, a 0.0.2.2 one (`v0_urb` ..),
+or `v0` (the 0.0.2.2 version of whatever environment the room's map has).
 
 This tool builds `client_shipRetail\chinese\ui_viewer_vlobby_mp.ff`, which Kernel33 opens for `ui_viewer_mp` when it
 is there (`VlobbyZoneOpen`): every stock asset of `ui_viewer_mp`, its `mp_ui_viewer` GfxWorld and MapEnts with the
@@ -13,11 +15,17 @@ does not carry go in `main_shared\iw_image_18.iwd` (a name no stock or map pack 
 
 The zone and iwd are build outputs (31 MB and 50 MB, made from the other builds' files), not checked in.
 
-| build | scenes | moved by | names |
+| build | menu scenes (`vlobby_env`) | room scenes (`vlobby_roomenv`) | moved by |
 |---|---|---|---|
-| 3.19.26.22 (3.5.2.6 has the same lobby) | lobby (2 cameras), character details, career, champion select, team lobby, zombie champions, DMZ, supply depot, daily reward | x -32768 | `v3_*` |
-| 2.6.9.7 | lobby (2 cameras), team lobby | x -16384 | `v2_*` |
-| 0.0.2.2 | urban, forest, desert, arctic and zombies scenes (earlier versions of 1.1.1.13's) | x -44032 | `v0_*` |
+| 3.19.26.22 (3.5.2.6 has the same lobby) | `v3_lobby`, `v3_champion`, `v3_team`, `v3_zchamp`, `v3_dmz`, `v3_depot`, `v3_reward` | | x -32768 |
+| 2.6.9.7 | `v2_lobby`, `v2_team` | | x -16384 |
+| 0.0.2.2 | `v0_menu` (its main menu: the urban stand from player_camera_urb) | `v0_urb`, `v0_woo`, `v0_des`, `v0_arc`, `v0_zm`, or `v0` | x -44032 |
+
+The 3.x / 2.x menu scenes are framed like 1.1.1.13's own menu (`character_loadout_center`): `Framing.cs` places a
+camera at the stock camera's offset from each donor stand (turned with the stand), and the row takes the stock
+distance (397) and field of view (20); the scene's own row keeps its vision, light and depth of field. Rows that
+share a stand frame alike, so one is kept per stand (3.19.26.22's lobby2 / details / career and 2.6.9.7's lobby2 were
+the lobby stand under other cameras).
 
 ## Rebuild
 
@@ -32,17 +40,18 @@ The zone and iwd are build outputs (31 MB and 50 MB, made from the other builds'
 
    The merged iwd (113 images, 50 MB) installs as `main_shared\iw_image_18.iwd`.
 
-2. The camera table: `python camera_rows.py <stock> <3.19.26.22> <2.6.9.7> camerapostable_vlobby.csv` with the three
-   builds' `mp/camerapostable.csv` (`CodolSoundDumper zone-stringtables --input <code_post_gfx_mp / patch_code_post_gfx_mp .ff> --name camerapos --out <dir>`).
+2. The camera table and the framing cameras: `python camera_rows.py <stock> <3.19.26.22> <2.6.9.7> <0.0.2.2>
+   camerapostable_vlobby.csv framing_vlobby.txt` with the four builds' `mp/camerapostable.csv` (`CodolSoundDumper zone-stringtables --input <code_post_gfx_mp / patch_code_post_gfx_mp .ff> --name camerapos --out <dir>`).
 
 3. Merge (`dotnet build -c Release`; AeBin = the AssetExplorer's built `Codol.*.dll` folder):
 
         vlobby_merge merge "<1.1.1.13>\client_shipRetail\chinese\ui_viewer_mp.ff" "<1.1.1.13>\codoMP_client_shipRetail.exe" ui_viewer_vlobby_mp.ff ^
           v31926\ui_mp.ff=-32768,0,0,v3_,3.19.26.22 v2697\ui_mp.ff=-16384,0,0,v2_,2.6.9.7 ^
           "<0.0.2.2>\client_shipRetail\chinese\ui_viewer_mp.ff=-44032,0,0,v0_,0.0.2.2,-2500:-12500:-2000:3500:2500:4000,stockgrid" ^
-          table=camerapostable_vlobby.csv
+          table=camerapostable_vlobby.csv frame=framing_vlobby.txt slots=v0_
 
-   A donor is `<ff>=<dx>,<dy>,<dz>,<prefix>,<tag>[,<keep box x0:y0:z0:x1:y1:z1>[,stockgrid]]` (offsets in whole light
+   `frame=` adds the framing cameras (`Framing.cs`); `slots=v0_` appends 0.0.2.2's room character slots
+   (`s<n>_place<1..9>` and their `_target`s, as `v0_*`). A donor is `<ff>=<dx>,<dy>,<dz>,<prefix>,<tag>[,<keep box x0:y0:z0:x1:y1:z1>[,stockgrid]]` (offsets in whole light
    grid cells: x, y multiples of 32, z of 64). Leave a donor out to build without it.
 
    Diagnostics: `probe`, `scenes` (static models and surfaces around each stand, any build), `images`, `imgcat`
@@ -67,6 +76,18 @@ their preview model and lineup pose keys. Assets named alike in another case are
 case-insensitively; a second image of a name in one zone made C1 release a texture that was never created).
 
 ## Findings
+
+- **Rooms.** A room's camera row is `team_<environment>` (the map's arena `environment`), but its characters stand in
+  the slots of that environment's row of `mp/uiViewerScenes.csv` (urban: `s1_place4`, `s1_place2` ..), read once into
+  the slot arrays by 0x005E8830 through the lobby server's G_Find (0x00572320). Changing only the row showed the new
+  scene with the character still in the stock one. `vlobby_roomenv` therefore also sets the environment index for a
+  forced scene (0x00611A30) and, for 0.0.2.2 scenes, has the slot names looked up with the `v0_` prefix and the slots
+  read again. 0.0.2.2's main menu is its home page in character-loadout mode with terrain `urb`
+  (`PageNavigationController` / `CharacterLoadoutService.TERRAIN_NAME` in its codo.gfx), hence `v0_menu`.
+- **The 3.19.26.22 lobby backdrop is meant to be blue.** Its studio is a black box with a flat panel wall behind the
+  stand; the panel textures (`mtl_ui_bg_01/02_col`, `mtl_ui_softround_02/04_col`, `mtl_ui_dot_01_col`) are soft blues,
+  and its rows add strong depth of field (512 .. 1024, 10). Its rows' 11 extra columns (colour grading: lift / gamma /
+  gain triples, saturation, bloom) have no 1.1.1.13 counterpart, so the tint differs a little.
 
 - **C1 refuses scene positions outside the stock lobby's x range.** The row's stand and camera origins reach the scene
   through float dvars; `2110` (stand x) allows -1024 .. 7680 and `2104` (camera x) -1024 .. 10000

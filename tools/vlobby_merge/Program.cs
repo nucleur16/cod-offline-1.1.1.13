@@ -35,6 +35,59 @@ if (args.Length >= 8 && args[0] == "deref")
     Console.WriteLine("not found");
     return 0;
 }
+if (args.Length >= 4 && args[0] == "matimages")
+{
+    // matimages <zone.ff> <exe> <material name filter>: the images each matching material's texture table names
+    var z = LoadedZone.Read(args[1], args[2], anyBuild: true);
+    var I = z.Image; var m = z.M;
+    foreach (var (h, t) in I.AssetHeaders)
+    {
+        if (t != AssetTypes.Material) continue;
+        string name = m.CString(I.Pointer(h), 128) ?? "";
+        if (!name.Contains(args[3], StringComparison.OrdinalIgnoreCase)) continue;
+        // MaterialInfo 0x18 bytes, then the texture count at +0x4C? find the texture table: the first pointer whose
+        // entries are 12 bytes {nameHash, nameStart, nameEnd, samplerState, semantic, image*}
+        var imgs = new List<string>();
+        for (uint o = 0x18; o < 0x60; o += 4)
+        {
+            uint tt = I.Pointer(h + o);
+            if (tt == 0) continue;
+            for (uint k = 0; k < 16; k++)
+            {
+                uint ip = I.Pointer(tt + 12 * k + 8);
+                if (ip != 0 && I.AssetHeaders.TryGetValue(ip, out int it) && it == AssetTypes.Image)
+                {
+                    uint np = I.Pointer(ip + 0x20); if (np == 0) np = I.Pointer(ip + 0x1C);
+                    imgs.Add(m.CString(np, 128) ?? "?");
+                }
+                else if (k > 0) break;
+            }
+            if (imgs.Count > 0) break;
+        }
+        Console.WriteLine($"{name}: {string.Join(", ", imgs)}");
+    }
+    return 0;
+}
+if (args.Length >= 7 && args[0] == "near")
+{
+    // near <zone.ff> <exe> <x> <y> <z> <radius>: world surfaces whose bounds come within radius of the point
+    var z = LoadedZone.Read(args[1], args[2], anyBuild: true);
+    var I = z.Image; var m = z.M;
+    float px = float.Parse(args[3], CultureInfo.InvariantCulture), py = float.Parse(args[4], CultureInfo.InvariantCulture), pz = float.Parse(args[5], CultureInfo.InvariantCulture), r = float.Parse(args[6], CultureInfo.InvariantCulture);
+    uint w = z.Find(AssetTypes.GfxWorld), dp = w + 0x1C8;
+    int n = (int)m.U32(dp + 4);
+    uint surfs = I.Pointer(dp + 84), bnds = I.Pointer(dp + 88);
+    for (int i = 0; i < n; i++)
+    {
+        uint b = bnds + (uint)(24 * i);
+        float[] c = { m.F32(b), m.F32(b + 4), m.F32(b + 8) }, e = { m.F32(b + 12), m.F32(b + 16), m.F32(b + 20) };
+        float dx = Math.Max(0, Math.Abs(c[0] - px) - e[0]), dy = Math.Max(0, Math.Abs(c[1] - py) - e[1]), dz = Math.Max(0, Math.Abs(c[2] - pz) - e[2]);
+        if (dx * dx + dy * dy + dz * dz > r * r) continue;
+        uint s = surfs + (uint)(24 * i), mat = I.Pointer(s + 16);
+        Console.WriteLine($"{i,5} {m.CString(I.Pointer(mat), 128),-48} tris {m.U16(s + 10),5} lm {m.U8(s + 20)} centre {c[0]:0},{c[1]:0},{c[2]:0} half {e[0]:0},{e[1]:0},{e[2]:0}");
+    }
+    return 0;
+}
 if (args.Length >= 4 && args[0] == "imgflags")
 {
     // imgflags <1.1.1.13 zone> <0.0.2.2 zone> <exe>: the load definition words of the images both have, side by side
@@ -222,6 +275,10 @@ if (args.Length >= 4 && args[0] == "merge")
     foreach (string spec in args.Skip(4))
     {
         if (spec.StartsWith("table=")) { table = spec[6..]; continue; }
+        // frame=<file>: cameras at the stock menu's offset from donor stands (Framing.cs)
+        if (spec.StartsWith("frame=")) { Framing.File = spec[6..]; continue; }
+        // slots=<prefix>: that donor's room character slots are appended too (Merge.AppendEntities)
+        if (spec.StartsWith("slots=")) { Merge.SlotPrefixes.Add(spec[6..]); continue; }
         // earlier=<zone.ff>: a zone C1 loads before ui_viewer_mp (repeatable)
         if (spec.StartsWith("earlier=")) { earlier.Add(LoadedZone.Read(spec[8..], args[2])); continue; }
         int eq = spec.LastIndexOf('=');

@@ -134,6 +134,7 @@ public static class Merge
             _mergedWorld = merged;
         }
 
+        Framing.Apply(entText, log);
         // MapEnts: the stock copy with the longer entity string
         byte[] text = Encoding.Latin1.GetBytes(entText.ToString());
         uint str = ctx.NewObject((uint)text.Length + 1, 1);
@@ -1044,6 +1045,9 @@ public static class Merge
     }
 
     /// the donor's entities (all but worldspawn), moved, their targetname / target keys prefixed
+    /// donor prefixes whose room character slots are appended too (Program: slots=<prefix>)
+    public static HashSet<string> SlotPrefixes { get; } = [];
+
     static int AppendEntities(StringBuilder sb, string ents, Donor d, HashSet<string>? wanted)
     {
         int added = 0;
@@ -1094,7 +1098,11 @@ public static class Merge
             }
             outb.Append("}\n");
             var mt = System.Text.RegularExpressions.Regex.Match(outb.ToString(), "\"targetname\" \"([^\"]+)\"");
-            if (wanted is not null && (!mt.Success || !wanted.Contains(mt.Groups[1].Value))) continue;
+            // a room's character slots (mp/uiViewerScenes.csv: s<scene>_place<1..9> and their _target): kept for the
+            // donors named by slots= (0.0.2.2, whose rooms Kernel33 can show: vlobby_env.c VlFindEntHook)
+            bool slot = mt.Success && SlotPrefixes.Contains(d.Prefix)
+                && System.Text.RegularExpressions.Regex.IsMatch(mt.Groups[1].Value[d.Prefix.Length..], "^s[0-9]+_place[1-9](_target)?$");
+            if (wanted is not null && !slot && (!mt.Success || !wanted.Contains(mt.Groups[1].Value))) continue;
             sb.Append(outb);
             added++;
         }

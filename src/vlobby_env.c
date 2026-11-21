@@ -11,11 +11,26 @@
  * (CharacterLoadOutController.onChangeTerrainHandle -> UIViewer_SetTerrain), but no control sends that event and the
  * character view always takes the _center row.
  *
- *   ui_vlobbyEnv    string, archived: the environment the main lobby's character view shows, a row
- *                   character_loadout_<name> of the table ("" or "center": C1's own). Read on the main tick.
- *   vlobby_env      console command: no argument lists the environments (every character_loadout_* row) and the
- *                   current one; <name>, "next", "prev" or "default" sets ui_vlobbyEnv. Bind it to a key to cycle,
- *                   e.g. bind F6 "vlobby_env next".
+ *   ui_vlobbyEnv    string, archived: the scene the main menu's and the Multiplayer lobby's character view shows,
+ *                   a row character_loadout_<name> of the table ("" or "center": C1's own). Read on the main tick.
+ *   vlobby_env      console command: no argument lists the menu scenes (the character_loadout_* rows but the
+ *                   environment scenes urb, woo, des, arc, zombie, which belong to rooms) and the current one;
+ *                   <name>, "next", "prev" or "default" sets ui_vlobbyEnv. Bind it to a key to cycle, e.g.
+ *                   bind F6 "vlobby_env next".
+ *   ui_vlobbyRoomEnv  string, archived: the scene a room (the game lobby) shows instead of its map's environment:
+ *                   "" (the map's own, C1's choice), an environment (urban / urb, forest / woo, desert / des,
+ *                   arctic / arc, zombie / zm), the name of another team_<name> row (v0_urb, v0_woo, v0_des, v0_arc,
+ *                   v0_zm: 0.0.2.2's scenes), or "v0": the 0.0.2.2 version of whatever environment the room's map has.
+ *   vlobby_roomenv  console command: lists the room scenes, or sets ui_vlobbyRoomEnv (<name>, "v0", "default").
+ *
+ * A room's row is "team_<environment>" (0x00610D80 mode 3: the map's arena "environment" through 0x005ED910, the
+ * name checked against urban / forest / desert / arctic / zombie by 0x00611A30, which keeps its index at viewer +
+ * 0xD8); the room switch answers that request with the chosen team_ row. The room's characters do not stand at the
+ * row's stand but in the slots of the environment's row of mp/uiViewerScenes.csv (urban: s1_place4, s1_place2 ..),
+ * whose positions the slot loader 0x005E8830 reads once from the lobby server's entities (G_Find by targetname,
+ * 0x00572320) into 0x0281E790. So a forced scene of another environment also sets that index (0x00611A30 with the
+ * scene's environment), and a 0.0.2.2 scene (v0, v0_*) has the slot names looked up with the prefix v0_ (0.0.2.2's
+ * own s<n>_place<1..9>, merged under that prefix) and the slots read again.
  *
  * The scenes of the other builds (tools/vlobby_merge: 3.19.26.22, 2.6.9.7, 0.0.2.2) are merged into the stock world by
  * client_shipRetail\chinese\ui_viewer_vlobby_mp.ff, which C1 opens for ui_viewer_mp (VlobbyZoneOpen): every stock
@@ -41,6 +56,10 @@
 #define VL_ROW_DEFAULT     "character_loadout_center"
 #define VL_VIEWER_TABLE    0x142A90u   /* the viewer's cached camera table (0x0060F2F2) */
 #define VL_VIEWER_DIRTY    0xE5u       /* the mode is applied again on the next update (0x0060B043) */
+#define VL_ROOM_DVAR       "ui_vlobbyRoomEnv"
+#define VL_ROOM_PREFIX     "team_"
+#define VL_MODE_CHARACTER  1
+#define VL_MODE_TEAM       3
 
 static void *VlobbyFindSubstitute(int type, const char *name, void *h);
 
@@ -78,7 +97,9 @@ typedef char(__attribute__((thiscall)) *VlCamRowFn)(void *viewer, const char *ro
 static VlCamRowFn g_vlCamRowOriginal;
 static void *volatile g_vlViewer;
 static char g_vlEnv[64];          /* the applied environment ("" = C1's own row) */
-static const BYTE *g_vlDvar;
+static char g_vlRoomEnv[64];      /* the applied room scene ("" = the map's) */
+static char g_vlSlotPrefix[8];    /* the prefix the room slots are looked up with ("" or "v0_") */
+static const BYTE *g_vlDvar, *g_vlRoomDvar;
 static BOOL g_vlReady, g_vlTried, g_vlLoggedTable;
 
 /* the table C1 reads: the merged one when the zone is loaded, else the stock one */
@@ -102,30 +123,148 @@ static const BYTE *VlTable(void)
     return t && Readable(t, 16) ? t : NULL;
 }
 
-/* the environments: every character_loadout_<name> row, in table order; returns how many were written */
-static int VlEnvironments(char (*out)[64], int max)
+/* the environment scenes of rooms: the stock character_loadout_ rows of these names are left out of the menu list */
+static const char *const kVlRoomEnvs[5][2] = { { "urban", "urb" }, { "forest", "woo" }, { "desert", "des" },
+                                               { "arctic", "arc" }, { "zombie", "zm" } };
+
+static BOOL VlIsRoomEnvName(const char *name)
+{
+    for (int i = 0; i < 5; i++)
+        if (!_stricmp(name, kVlRoomEnvs[i][0]) || !_stricmp(name, kVlRoomEnvs[i][1])) return TRUE;
+    return FALSE;
+}
+
+/* the rows <prefix><name>, in table order (the menu list without the room environments); returns how many */
+static int VlRows(const char *prefix, BOOL menu, char (*out)[64], int max)
 {
     const BYTE *t = VlTable();
     if (!t) return 0;
     int cols = *(const int *)(t + 4), rows = *(const int *)(t + 8);
     const BYTE *cells = *(const BYTE *const *)(t + 12);
     if (cols < 1 || rows < 1 || rows > 4096 || !Readable(cells, (SIZE_T)cols * 8 * rows)) return 0;
-    int n = 0;
+    int n = 0, pl = lstrlenA(prefix);
     for (int r = 0; r < rows && n < max; r++) {
         const char *row = *(const char *const *)(cells + (SIZE_T)cols * 8 * r);
-        if (!row || !Readable(row, 1) || _strnicmp(row, VL_ROW_PREFIX, sizeof(VL_ROW_PREFIX) - 1)) continue;
-        lstrcpynA(out[n++], row + sizeof(VL_ROW_PREFIX) - 1, 64);
+        if (!row || !Readable(row, 1) || _strnicmp(row, prefix, pl)) continue;
+        if (menu && (VlIsRoomEnvName(row + pl) || !_stricmp(row + pl, "zombie"))) continue;
+        lstrcpynA(out[n++], row + pl, 64);
     }
     return n;
+}
+
+static int VlEnvironments(char (*out)[64], int max) { return VlRows(VL_ROW_PREFIX, TRUE, out, max); }
+
+/* the C1 environment (urban ..) a forced room scene stands for: "arctic" for arc, arctic or v0_arc; NULL for "v0"
+ * (the map's own environment) or a scene of none of them */
+static const char *VlRoomSceneEnv(const char *scene)
+{
+    if (!_strnicmp(scene, "v0_", 3)) scene += 3;
+    for (int i = 0; i < 5; i++)
+        if (!_stricmp(scene, kVlRoomEnvs[i][0]) || !_stricmp(scene, kVlRoomEnvs[i][1])) return kVlRoomEnvs[i][0];
+    return NULL;
+}
+
+#define VL_FINDENT_VA      0x00572320u   /* G_Find by targetname: gentity_t *__cdecl (const char *name) */
+#define VL_SLOTLOAD_VA     0x005E8830u   /* the room slots from mp/uiViewerScenes.csv: void __cdecl (void) */
+#define VL_SETENV_VA       0x00611A30u   /* void __stdcall (viewer, const char *environment) */
+typedef void *(__cdecl *VlFindEntFn)(const char *name);
+static VlFindEntFn g_vlFindEntOriginal;
+
+/* s<n>_place<1..9> or s<n>_place<1..9>_target: a room slot of an environment row */
+static BOOL VlIsSlotName(const char *n)
+{
+    if (n[0] != 's' || n[1] < '0' || n[1] > '9') return FALSE;
+    int i = 1;
+    while (n[i] >= '0' && n[i] <= '9') i++;
+    if (_strnicmp(n + i, "_place", 6)) return FALSE;
+    i += 6;
+    if (n[i] < '1' || n[i] > '9') return FALSE;
+    i++;
+    return n[i] == 0 || !_stricmp(n + i, "_target");
+}
+
+static void *__cdecl VlFindEntHook(const char *name)
+{
+    if (g_vlSlotPrefix[0] && name && Readable(name, 1) && VlIsSlotName(name)) {
+        char want[80];
+        _snprintf(want, sizeof(want), "%s%s", g_vlSlotPrefix, name);
+        want[sizeof(want) - 1] = 0;
+        void *e = g_vlFindEntOriginal(want);
+        if (e) return e;
+    }
+    return g_vlFindEntOriginal(name);
+}
+
+static BOOL VlHookFindEnt(void)
+{
+    static const BYTE kProlog[6] = { 0x55, 0x8B, 0xEC, 0x53, 0x56, 0x57 };
+    BYTE *entry = (BYTE *)(DWORD_PTR)VL_FINDENT_VA;
+    static const BYTE kLoad[6] = { 0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x64 };
+    if (!Readable(entry, 6) || memcmp(entry, kProlog, 6) || !Readable((void *)(DWORD_PTR)VL_SLOTLOAD_VA, 6) ||
+        memcmp((void *)(DWORD_PTR)VL_SLOTLOAD_VA, kLoad, 6)) return FALSE;
+    BYTE *tramp = (BYTE *)VirtualAlloc(NULL, 16, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    if (!tramp) return FALSE;
+    memcpy(tramp, kProlog, 6);
+    tramp[6] = 0xE9;
+    LONG back = (LONG)(DWORD_PTR)(entry + 6) - (LONG)(DWORD_PTR)(tramp + 11);
+    memcpy(tramp + 7, &back, 4);
+    FlushInstructionCache(GetCurrentProcess(), tramp, 16);
+    g_vlFindEntOriginal = (VlFindEntFn)(void *)tramp;
+    BYTE jump[6] = { 0xE9, 0, 0, 0, 0, 0x90 };
+    LONG rel = (LONG)(DWORD_PTR)VlFindEntHook - (LONG)(DWORD_PTR)(entry + 5);
+    memcpy(jump + 1, &rel, 4);
+    WriteCode(entry, jump, sizeof(jump));
+    return TRUE;
+}
+
+/* the slot prefix the room switch wants; on a change the slots are read again (main thread, with the lobby's
+ * entities spawned: the loader only takes the slots it finds) */
+static void VlApplySlots(void)
+{
+    if (!g_vlFindEntOriginal) return;
+    const char *want = g_vlRoomEnv[0] && (!_stricmp(g_vlRoomEnv, "v0") || !_strnicmp(g_vlRoomEnv, "v0_", 3)) ? "v0_" : "";
+    if (!strcmp(want, g_vlSlotPrefix)) return;
+    if (!g_vlFindEntOriginal("player_pos_urb")) return;   /* the lobby map is not up: later */
+    lstrcpynA(g_vlSlotPrefix, want, sizeof(g_vlSlotPrefix));
+    ((void (__cdecl *)(void))(DWORD_PTR)VL_SLOTLOAD_VA)();
+    Log("vlobby: room slots read again%s%s", want[0] ? " with the prefix " : " (stock)", want);
+}
+
+/* the row a room asks for ("team_<environment>") under the room switch: false when the switch does not apply */
+static BOOL VlRoomRow(const char *row, char *out, int size)
+{
+    if (!g_vlRoomEnv[0] || _strnicmp(row, VL_ROOM_PREFIX, sizeof(VL_ROOM_PREFIX) - 1)) return FALSE;
+    const char *env = row + sizeof(VL_ROOM_PREFIX) - 1;
+    if (!_stricmp(g_vlRoomEnv, "v0")) {
+        for (int i = 0; i < 5; i++)
+            if (!_stricmp(env, kVlRoomEnvs[i][0])) {
+                _snprintf(out, size, VL_ROOM_PREFIX "v0_%s", kVlRoomEnvs[i][1]);
+                out[size - 1] = 0;
+                return TRUE;
+            }
+        return FALSE;
+    }
+    const char *want = g_vlRoomEnv;
+    for (int i = 0; i < 5; i++)
+        if (!_stricmp(want, kVlRoomEnvs[i][1])) want = kVlRoomEnvs[i][0];
+    _snprintf(out, size, VL_ROOM_PREFIX "%s", want);
+    out[size - 1] = 0;
+    return TRUE;
 }
 
 static char __attribute__((thiscall)) VlCamRowHook(void *viewer, const char *row)
 {
     g_vlViewer = viewer;
+    char want[96];
     if (g_vlEnv[0] && row && Readable(row, 1) && MlNameEq(row, VL_ROW_DEFAULT)) {
-        char want[96];
         _snprintf(want, sizeof(want), VL_ROW_PREFIX "%s", g_vlEnv);
         want[sizeof(want) - 1] = 0;
+        if (g_vlCamRowOriginal(viewer, want)) return 1;
+    }
+    if (row && Readable(row, 1) && VlRoomRow(row, want, sizeof(want))) {
+        /* a forced scene of another environment: its slots (the room's characters) too */
+        const char *env = _stricmp(g_vlRoomEnv, "v0") ? VlRoomSceneEnv(g_vlRoomEnv) : NULL;
+        if (env) ((void (__stdcall *)(void *, const char *))(DWORD_PTR)VL_SETENV_VA)(viewer, env);
         if (g_vlCamRowOriginal(viewer, want)) return 1;
     }
     return g_vlCamRowOriginal(viewer, row);
@@ -155,11 +294,12 @@ static BOOL VlHookCamRow(void)
  * (0x0060B043) run the mode function 0x00610D80 again on its own thread and frame, which asks for the camera row
  * (VlCamRowHook). Calling the camera row function from the tick instead moved the camera while the renderer was
  * drawing the old view (a crash in the static model pass), so nothing here calls into the viewer. */
-static void VlApply(void)
+static void VlApply(int mode)
 {
     BYTE *v = (BYTE *)g_vlViewer;
     if (!v || !Readable(v + 8, 12) || !Readable(v + VL_VIEWER_DIRTY, 1)) return;
-    if (*(const int *)(v + 8) != 1 || *(const int *)(v + 0x10) == 2) return;   /* character view, not Zombies */
+    if (*(const int *)(v + 8) != mode) return;
+    if (mode == VL_MODE_CHARACTER && *(const int *)(v + 0x10) == 2) return;   /* character view, not Zombies */
     *(volatile BYTE *)(v + VL_VIEWER_DIRTY) = 1;
 }
 
@@ -201,6 +341,39 @@ static void __cdecl VlCmd(void)
 
 static C1Cmd g_vlCmd = { NULL, "vlobby_env", (void *)VlCmd };
 
+static void __cdecl VlRoomCmd(void)
+{
+    char rows[64][64];
+    int n = VlRows(VL_ROOM_PREFIX, FALSE, rows, 64);
+    if (VoiceArgc() < 2) {
+        char line[1024];
+        int at = 0;
+        for (int i = 0; i < n && at < (int)sizeof(line) - 70; i++) at += _snprintf(line + at, sizeof(line) - at, " %s", rows[i]);
+        line[at] = 0;
+        C1Printf("vlobby_roomenv: %s (ui_vlobbyRoomEnv); room scenes:%s v0\n", g_vlRoomEnv[0] ? g_vlRoomEnv : "the map's",
+                 n ? line : " (no camera table yet)");
+        C1Printf("vlobby_roomenv <scene> | v0 (0.0.2.2's version of the map's environment) | default\n");
+        return;
+    }
+    const char *a = VoiceArgv(1);
+    char pick[64];
+    lstrcpynA(pick, a, sizeof(pick));
+    if (!_stricmp(a, "default")) pick[0] = 0;
+    else if (_stricmp(a, "v0") && !VlIsRoomEnvName(a)) {
+        BOOL known = FALSE;
+        for (int i = 0; i < n; i++)
+            if (!_stricmp(rows[i], a)) known = TRUE;
+        if (!known) {
+            C1Printf("vlobby_roomenv: no room scene %s (vlobby_roomenv lists them)\n", a);
+            return;
+        }
+    }
+    C1QueueSet(VL_ROOM_DVAR, pick);
+    C1Printf("vlobby_roomenv: %s\n", pick[0] ? pick : "the map's");
+}
+
+static C1Cmd g_vlRoomCmd = { NULL, "vlobby_roomenv", (void *)VlRoomCmd };
+
 /* C1 hands the row's stand and camera origins to the scene through float dvars, and two of them hold x within the
  * stock lobby's extent: "2110" (the stand's x, -1024 .. 7680) and "2104" (the camera's x, -1024 .. 10000). The merged
  * scenes lie at x -16384 and beyond (the light grid's rows run along x and hold one scene each), so set to such a
@@ -241,7 +414,10 @@ static void VlobbyTick(void)
         }
         g_vlDvar = ((RegStr)(DWORD_PTR)HUD_STYLE_REGISTER_STRING_VA)(VL_DVAR, "", 0x1,
             "Kernel33: the virtual lobby environment of the main lobby (vlobby_env lists them)");
+        g_vlRoomDvar = ((RegStr)(DWORD_PTR)HUD_STYLE_REGISTER_STRING_VA)(VL_ROOM_DVAR, "", 0x1,
+            "Kernel33: the scene rooms show instead of their map's environment (vlobby_roomenv lists them)");
         C1AddCommand(&g_vlCmd);
+        C1AddCommand(&g_vlRoomCmd);
         g_vlReady = g_vlDvar && Readable(g_vlDvar, 0x10);
         Log("vlobby: %s %s, command vlobby_env", VL_DVAR, g_vlReady ? "registered" : "not registered");
         if (!g_vlReady) return;
@@ -268,7 +444,20 @@ static void VlobbyTick(void)
     if (strcmp(want, g_vlEnv)) {
         lstrcpynA(g_vlEnv, want, sizeof(g_vlEnv));
         Log("vlobby: environment %s", g_vlEnv[0] ? g_vlEnv : "center (stock)");
-        VlApply();
+        VlApply(VL_MODE_CHARACTER);
+    }
+    if (g_vlRoomDvar && Readable(g_vlRoomDvar, 0x10)) {
+        const char *rv = *(const char *const *)(g_vlRoomDvar + 0xC);
+        char rwant[64] = "";
+        if (rv && Readable(rv, 1)) lstrcpynA(rwant, rv, sizeof(rwant));
+        if (!_stricmp(rwant, "default")) rwant[0] = 0;
+        if (strcmp(rwant, g_vlRoomEnv)) {
+            lstrcpynA(g_vlRoomEnv, rwant, sizeof(g_vlRoomEnv));
+            Log("vlobby: room scene %s", g_vlRoomEnv[0] ? g_vlRoomEnv : "the map's (stock)");
+            VlApplySlots();
+            VlApply(VL_MODE_TEAM);
+        }
+        VlApplySlots();   /* again once the lobby map is up */
     }
 }
 
@@ -318,6 +507,8 @@ static void InstallVlobbyEnv(void)
     /* the merged camera table is served by maplist_filter.c's DB_FindXAssetHeader hook; with K33_MAPLIST_ALL=1 that
      * hook is not installed, so it is installed here (its map list part then only reads the Survival rows) */
     if (!g_mlFindOriginal && !MlHookLookup()) Log("vlobby: DB_FindXAssetHeader 0x%08X differs; the stock camera table stays", ML_DB_FIND_VA);
+    if (!VlHookFindEnt()) Log("vlobby: G_Find 0x%08X or the slot loader 0x%08X differs; rooms keep their stock slots",
+                              VL_FINDENT_VA, VL_SLOTLOAD_VA);
     if (!VlHookCamRow()) {
         Log("vlobby: the camera row function 0x%08X differs; no environment switch", VL_CAMROW_VA);
         return;
