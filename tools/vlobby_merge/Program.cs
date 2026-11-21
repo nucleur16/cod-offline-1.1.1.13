@@ -69,6 +69,31 @@ if (args.Length >= 4 && args[0] == "matimages")
     }
     return 0;
 }
+if (args.Length >= 3 && args[0] == "smtail")
+{
+    // smtail <zone.ff> <exe> [filter]: each static model's draw instance bytes 52..75 (model, cull distance, probe,
+    // light, the rest) and its model, x
+    var z = LoadedZone.Read(args[1], args[2], anyBuild: true);
+    var I = z.Image; var m = z.M;
+    uint w = z.Find(AssetTypes.GfxWorld), dp = w + 0x1C8;
+    int n = (int)m.U32(dp); uint di = I.Pointer(dp + 92), si = I.Pointer(dp + 80);
+    var hist = new Dictionary<string, int>();
+    for (int i = 0; i < n; i++)
+    {
+        uint d = di + (uint)(76 * i);
+        string model = m.CString(I.Pointer(I.Pointer(d + 52)), 96) ?? "?";
+        string tail = string.Join(" ", Enumerable.Range(0, 6).Select(k => m.U32(d + 52 + (uint)(4 * k)).ToString("X8")).Skip(1));
+        string inst = string.Join(" ", Enumerable.Range(0, 9).Select(k => m.U32(si + (uint)(36 * i) + (uint)(4 * k)).ToString("X8")));
+        if (args.Length > 3 && !model.Contains(args[3])) continue;
+        Console.WriteLine($"{i,5} x {m.F32(d):0} {model,-36} tail {tail} | inst {inst}");
+    }
+    return 0;
+}
+if (args.Length >= 4 && args[0] == "stockcmp")
+{
+    Compare.Stock(args[1], args[2], args[3]);
+    return 0;
+}
 if (args.Length >= 3 && args[0] == "vstats")
 {
     // vstats <zone.ff> <exe>: the world vertices' colour, texture and lightmap coordinates (GfxWorldVertex: xyz, binormal
