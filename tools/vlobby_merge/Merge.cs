@@ -40,6 +40,7 @@ public static class Merge
         P_SmodelVis = 52, P_SurfVis = 64, P_Sorted = 76, P_SmodelInsts = 80, P_Surfaces = 84, P_SurfBounds = 88, P_DrawInsts = 92,
         P_SurfMaterials = 96, P_CastsSun = 100;
     const int XModelSurfsType = 3;
+    const int MaxSurfaces = 2048;
     const int SurfSize = 24, BoundsSize = 24, DrawInstSize = 76, InstSize = 36, VertexSize = 44, NodeSize = 44, CellSize = 40, SkySize = 16;
 
     sealed class World
@@ -53,6 +54,7 @@ public static class Merge
         public int[] NewIndex = [];          // old surface index -> merged
         public float[]? Keep;
         public bool StockGrid;
+        public bool NoProbes, NoLightmaps;
         public bool OldLayoutModels;
         public int VertexBase, IndexBase, VldBase, LightmapBase, ProbeBase, SmodelBase;
         public int[] SmodelMap = [];      // static model -> merged index, -1 when left out
@@ -62,7 +64,7 @@ public static class Merge
         }
     }
 
-    public static void Run(LoadedZone stock, IReadOnlyList<Donor> donors, string exe, string outFf, string? tableCsv, Action<string> log)
+    public static void Run(LoadedZone stock, IReadOnlyList<Donor> donors, string exe, string outFf, string? tableCsv, IReadOnlyList<LoadedZone> earlier, Action<string> log)
     {
         // XModel and XModelSurfs (3, 4) are never matched by name to the zone's own (MapPorter does the same): a donor
         // model's surfaces of the same name as a stock model's are another model's geometry (different surface and
@@ -77,6 +79,7 @@ public static class Merge
         // every stock asset, unchanged (the zone stands for ui_viewer_mp); the world and MapEnts are then changed
         ctx.ConvertTopLevel();
         _stockAssets = new HashSet<uint>(img.AssetHeaders.Keys);
+        _copiesFrom = ctx.NewObject(4);
         uint aw = ctx.ConvertAsset(stockWorld);
         uint ae = ctx.ConvertAsset(stockEnts);
         var a = Describe(T, img, aw, "stock", false, 0, 0, 0);
@@ -94,6 +97,8 @@ public static class Merge
         {
             if (dn.Zone.Build == GameBuild.V0_0_2_2) V0Images(dn.Zone, log);
             RenameSceneImages(dn.Zone, lmBase, probeBase, log);
+            if (dn.Zone.Build != GameBuild.V0_0_2_2 && Environment.GetEnvironmentVariable("VLOBBY_RENAME_RENDER") == "1")
+                RenameRenderAssets(dn.Zone, "_" + dn.Prefix.TrimEnd('_'), log);
             var known = new HashSet<uint>(img.AssetHeaders.Keys);
             uint dw = ctx.CopyTargetAsset(dn.Zone.Image, dn.Zone.Find(AssetTypes.GfxWorld));
             var newAssets = img.AssetHeaders.Where(kv => !known.Contains(kv.Key)).GroupBy(kv => kv.Value).OrderBy(g => g.Key)
@@ -102,8 +107,11 @@ public static class Merge
             if (Environment.GetEnvironmentVariable("VLOBBY_LIST_ADDED") == "1")
                 foreach (var kv in img.AssetHeaders.Where(kv => !known.Contains(kv.Key)))
                     log($"  added {kv.Value} {ZoneImageDiff.AssetName(img, kv.Key)}");
+            if (Environment.GetEnvironmentVariable("VLOBBY_NO_COMPACT") != "1") Compact.World(ctx, dw, log, dn.Tag, dn.Keep);
             var w = Describe(T, img, dw, dn.Tag, true, dn.Dx, dn.Dy, dn.Dz);
             w.Keep = dn.Keep;
+            if (Environment.GetEnvironmentVariable("VLOBBY_TEST_NO_DONOR_PROBES") == "1") { w.Probes = 0; w.NoProbes = true; }
+            if (Environment.GetEnvironmentVariable("VLOBBY_TEST_NO_DONOR_LIGHTMAPS") == "1") { w.Lightmaps = 0; w.NoLightmaps = true; }
             w.StockGrid = dn.StockGrid;
             w.OldLayoutModels = dn.Zone.Build == GameBuild.V0_0_2_2;
             worlds.Add(w);
@@ -115,12 +123,15 @@ public static class Merge
             log($"{dn.Tag}: {w.Surfaces} surfaces, {w.Smodels} static models, {w.Vertices} vertices, {w.Lightmaps} lightmaps, {w.Probes} probes, {w.Cells} cells, {added} entities (moved by {dn.Dx},{dn.Dy},{dn.Dz}, names {dn.Prefix}*)");
         }
 
+        ReferenceEarlier(ctx, earlier, log);
         DedupeByName(ctx, log);
+        V0FileImages(ctx, log);
         if (donors.Count > 0 || Environment.GetEnvironmentVariable("VLOBBY_REBUILD_STOCK") == "1")
         {
             uint merged = BuildWorld(ctx, worlds, log);
             img.AssetHeaders[merged] = AssetTypes.GfxWorld;
             ctx.ReplaceAsset(aw, merged);
+            _mergedWorld = merged;
         }
 
         // MapEnts: the stock copy with the longer entity string
@@ -141,9 +152,79 @@ public static class Merge
         var refs = img.NameReferences.Values.Distinct().OrderBy(r => r.Type).ThenBy(r => r.Name).ToList();
         log($"{refs.Count} assets named from other zones (they must be loaded before this one):");
         File.WriteAllLines(outFf + ".refs.txt", refs.Select(r => $"{r.Type}	{r.Name}"));
+        {
+            // A pointer the donor zone wrote as an offset to data another pointer loads (techniques that two technique
+            // sets share, wc_unlit_blend_lin and wc_unlit_blend_lin_ua) waits for that other pointer; when what held it
+            // is not in this zone (an asset the stock zone stands for), the offset was never filled in, and C1 read every
+            // technique of the set from the stream block's base (0x1D9BC000: pass 0 pixel shader 0x476). Every such
+            // pointer of the copies is left for the writer to place at its first use and alias at the others.
+            int freed = 0;
+            foreach (uint f in img.Pointers.Enumerate(_copiesFrom, uint.MaxValue - _copiesFrom).ToList())
+            {
+                if (img.Encoding(f) != PointerEncoding.Reference || img.AssetHeaders.ContainsKey(T.U32(f))) continue;
+                img.SetEncoding(f, PointerEncoding.Unknown);
+                img.RawReferences.Remove(f);
+                freed++;
+            }
+            log($"{freed} offset pointers of the copies left to the writer");
+        }
+        {
+            // The donors' models, materials and images become top-level assets ahead of the stock ones. Placed first
+            // through a pointer of the new world arrays (written inline into the zone's persistent memory), a material
+            // left every other pointer to it aliasing that zone copy instead of the header C1 keeps in its asset pool;
+            // C1 numbers materials by their pool slot ((pointer - 0x01DEA3D8) / 96, 0x004CE700), and the material sort at
+            // load (0x00A87400) then read a technique set from a slot past the pool (pixel shader 0x476 at 0x00A8753F).
+            // A top-level asset is read into temporary memory and every pointer to it aliases its insert slot, which
+            // holds the pool header (ZoneWriter: "an asset placed from temp memory always gets an insert slot").
+            var listed = new HashSet<uint>(img.Assets.Select(a => a.Header));
+            // only what the merged world leads to (a 0.0.2.2 model left out is still in the image, unreached)
+            var reached = new HashSet<uint>();
+            var todo = new Stack<uint>();
+            todo.Push(_mergedWorld);
+            var seenObj = new HashSet<uint>();
+            while (todo.Count > 0)
+            {
+                uint at0 = todo.Pop();
+                if (!img.TryFindObject(at0, out uint st, out uint len) || !seenObj.Add(st)) continue;
+                if (img.AssetHeaders.ContainsKey(st)) reached.Add(st);
+                foreach (uint f in img.Pointers.Enumerate(st, len)) todo.Push(T.U32(f));
+            }
+            var add = img.AssetHeaders.Where(kv => reached.Contains(kv.Key) && !_stockAssets.Contains(kv.Key) && !listed.Contains(kv.Key)
+                    && kv.Value is AssetTypes.Image or AssetTypes.Material or AssetTypes.XModel && !img.NameReferences.ContainsKey(kv.Key))
+                .OrderBy(kv => kv.Value == AssetTypes.Image ? 0 : kv.Value == AssetTypes.Material ? 1 : 2).ThenBy(kv => kv.Key).ToList();
+            img.Assets.InsertRange(0, add.Select(kv => new ZoneImageAsset(kv.Value, kv.Key)));
+            // a pointer that wrote one of them inline would write it a second time
+            var top = new HashSet<uint>(add.Select(kv => kv.Key));
+            foreach (uint f in img.Pointers.Enumerate(0, uint.MaxValue).ToList())
+                if (top.Contains(T.U32(f)) && img.Encoding(f) is PointerEncoding.Inline or PointerEncoding.Insert)
+                    img.SetEncoding(f, PointerEncoding.Unknown);
+            log($"{add.Count} donor assets listed as top-level assets ({string.Join(", ", add.GroupBy(kv => kv.Value).Select(g => $"{g.Count()} of type {g.Key}"))})");
+        }
+        if (Environment.GetEnvironmentVariable("VLOBBY_INSERT_ASSETS") == "1")
+        {
+            // A pointer to an asset that the writer places with -1 (inline) leaves later pointers aliasing the asset's
+            // pool copy; when C1 already holds an asset of that name from a zone loaded earlier (code_post_gfx_mp,
+            // ui_mp: shaders, vertex declarations, technique sets the donors share by name), it keeps the earlier one and
+            // frees the pool copy, and those aliases read freed memory (the material sort at 0x00A8753F read a technique
+            // pass shader of 0x476). -2 (insert) makes the loader store the header it keeps in a slot that the later
+            // pointers alias, as the shipped zones do for shared assets.
+            int forced = 0;
+            foreach (uint f in img.Pointers.Enumerate(0, uint.MaxValue).ToList())
+            {
+                uint v = T.U32(f);
+                if (img.Encoding(f) == PointerEncoding.Unknown && img.AssetHeaders.TryGetValue(v, out int at)
+                    && at is 3 or 5 or 6 or 7 or 8 or 9 or 10 or 0 or 1)
+                {
+                    img.SetEncoding(f, PointerEncoding.Insert);
+                    forced++;
+                }
+            }
+            log($"{forced} asset pointers placed with insert slots");
+        }
         string zoneName = Path.GetFileNameWithoutExtension(outFf);
         var written = ZoneWriter.Write(GameBuild.V1_1_1_13, img, zoneName);
-        foreach (var wn in written.Warnings.Distinct().Take(40)) log("writer: " + wn);
+        foreach (var wn in written.Warnings.Distinct().Where(x => !x.Contains("aliased before it is loaded")).Take(60)) log("writer: " + wn);
+        log($"writer: {written.Warnings.Count(x => x.Contains("aliased before it is loaded"))} assets aliased before they were loaded");
         var reload = new ZoneLoadEmulator(GameBuild.V1_1_1_13).Load(zoneName, written.Zone);
         if (reload.Assets.Count != img.Assets.Count)
             throw new InvalidDataException($"the 1.1.1.13 loaders read {reload.Assets.Count} assets back, {img.Assets.Count} were written");
@@ -208,6 +289,48 @@ public static class Merge
     /// ui_viewer_mp: *lightmap0_primary is 0x00020103 ... name at +0x1C in 0.0.2.2, ... 0, name at +0x20 in 1.1.1.13;
     /// its load definition is the same). Every image of the donor gets a 1.1.1.13 header, and what led to the old one
     /// leads to the new one.
+    /// A 0.0.2.2 image whose pixels come from an iwd and that no 1.1.1.13 zone defines (stock ones of the same name were
+    /// joined by DedupeByName): its load definition is still 0.0.2.2's (an insert, flags 0), which 1.1.1.13 leaves as
+    /// the texture pointer (d3d9.dll faulted once a material using it was drawn), and written inline with flags guessed
+    /// from 1.1.1.13's per-image ones the zone did not load at all. So it stands for a built-in image of
+    /// code_post_gfx_mp by kind (normal maps $identitynormalmap, specular $black, the rest $gray), through a stub
+    /// asset ",<name>" as the stock zone references ",$identitynormalmap": a GfxImage that holds only its name.
+    static void V0FileImages(PortContext ctx, Action<string> log)
+    {
+        var img = ctx.Target; var T = ctx.T;
+        var stubs = new Dictionary<string, uint>();
+        foreach (var (h, t) in img.AssetHeaders)
+            if (t == AssetTypes.Image && img.Pointer(h + 0x20) is uint np and not 0 && T.CString(np, 128) is { } n && n.StartsWith(','))
+                stubs.TryAdd(n[1..].ToLowerInvariant(), h);
+        uint Stub(string name)
+        {
+            if (stubs.TryGetValue(name.ToLowerInvariant(), out uint h)) return h;
+            byte[] text = Encoding.Latin1.GetBytes("," + name);
+            uint str = ctx.NewObject((uint)text.Length + 1, 1);
+            T.Write(str, text);
+            T.WU8(str + (uint)text.Length, 0);
+            h = ctx.NewObject(0x24, 4);
+            img.SetPointer(h + 0x20, str);
+            img.AssetHeaders[h] = AssetTypes.Image;
+            return stubs[name.ToLowerInvariant()] = h;
+        }
+        var by = new SortedDictionary<string, List<string>>();
+        foreach (var (h, t) in img.AssetHeaders.ToList())
+        {
+            if (t != AssetTypes.Image || _stockAssets.Contains(h) || img.Encoding(h) != PointerEncoding.Insert || img.Pointer(h) == 0) continue;
+            byte sem = T.U8(h + 5);
+            string to = sem == 5 ? "$identitynormalmap" : sem == 8 ? "$black" : "$gray";
+            string name = img.Pointer(h + 0x20) is uint np and not 0 ? T.CString(np, 128) : "?";
+            ctx.ReplaceAsset(h, Stub(to));
+            (by.TryGetValue(to, out var l) ? l : by[to] = []).Add(name);
+        }
+        // a replaced image that was listed leaves its stub listed: once is enough
+        var seen = new HashSet<uint>();
+        for (int i = 0; i < img.Assets.Count; i++)
+            if (!seen.Add(img.Assets[i].Header)) img.Assets.RemoveAt(i--);
+        foreach (var (to, names) in by) log($"0.0.2.2: {names.Count} file images no 1.1.1.13 zone has stand for {to} ({string.Join(", ", names.Take(8))}{(names.Count > 8 ? ", ..." : "")})");
+    }
+
     static void V0Images(LoadedZone z, Action<string> log)
     {
         var I = z.Image; var m = z.M;
@@ -219,8 +342,40 @@ public static class Merge
             _donorTop += 0x40;
             m.Write(nh, m.ReadBytes(h, 0x1C));
             m.WU32(nh + 0x1C, 0);
+            // the category (+6): 1.1.1.13 numbers the scene images' categories anew (lightmaps 2 -> 10, reflection probe
+            // cubes 1 -> 9; files stay 3, $outdoor 1). Loaded under 0.0.2.2's numbers, a lightmap or probe became a
+            // texture of another kind and d3d9.dll faulted the first time the scene was drawn.
+            // The flags word of an image whose pixels are in the zone (GfxImageLoadDef +4) is numbered anew too:
+            // 1.1.1.13 writes 0x08000003 for a lightmap, 0x08010301 for a reflection probe cube and 3 for $outdoor,
+            // 0.0.2.2 2 (2D) and 0x10000 (cube); C1 then made the textures wrongly and d3d9.dll faulted drawing them.
+            byte cat = m.U8(nh + 6);
+            string? iname = I.Pointer(h + 0x1C) is uint np and not 0 ? m.CString(np, 128) : null;
+            bool probe = cat == 1 && iname is not null && iname.StartsWith("*reflection_probe", StringComparison.OrdinalIgnoreCase);
+            uint def = I.Pointer(nh);
+            uint? flags = cat == 2 ? 0x08000003u : probe ? 0x08010301u : cat == 1 ? 3u : null;
+            if (cat == 2) m.WU8(nh + 6, 10);
+            else if (probe) m.WU8(nh + 6, 9);
+            if (flags is uint fl && def != 0)
+            {
+                uint was = m.U32(def + 4);
+                if (was is 2 or 0x10000) m.WU32(def + 4, fl);
+                else log($"0.0.2.2: image {iname}: load flags 0x{was:X8} not known; left");
+            }
             I.Objects[nh] = 0x24;
-            I.SetPointer(nh, I.Pointer(h), I.Encoding(h));
+            // the pixels (GfxImageLoadDef) of an image in the zone: 0.0.2.2 streams them as an insert (-2), 1.1.1.13 inline
+            // (-1); its loader leaves a -2 there as the texture pointer (d3d9.dll faulted on 0xFFFFFFFE once drawn)
+            var texEnc = I.Encoding(h);
+            uint ld = I.Pointer(h);
+            bool inZone = ld != 0 && m.U32(ld + 12) > 0;   // resourceSize: the pixels follow in the zone
+            bool fileFix = Environment.GetEnvironmentVariable("VLOBBY_V0_FILE_IMAGES") == "1";
+            if (ld != 0 && !inZone && fileFix && texEnc == PointerEncoding.Insert)
+            {
+                // a file image (pixels from an iwd): 1.1.1.13 writes per-image load flags where 0.0.2.2 has 0 (or 2 for
+                // the HUD pictures); the most common ones by kind (normal maps 0x40000, others 0x340, HUD 0x173)
+                uint f0 = m.U32(ld + 4);
+                m.WU32(ld + 4, f0 == 2 ? 0x173u : m.U8(h + 5) == 5 ? 0x40000u : 0x340u);
+            }
+            I.SetPointer(nh, ld, texEnc == PointerEncoding.Insert && (inZone || fileFix) ? PointerEncoding.Inline : texEnc);
             I.SetPointer(nh + 0x20, I.Pointer(h + 0x1C), I.Encoding(h + 0x1C));
             moved[h] = nh;
         }
@@ -240,8 +395,57 @@ public static class Merge
         log($"0.0.2.2: {moved.Count} image headers rewritten in the 1.1.1.13 layout, {repointed} pointers to them");
     }
 
+    /// C1 loads the UI zones before ui_viewer_mp (code_pre_gfx_mp, code_post_gfx_mp, the patch folder's zones, ui_mp,
+    /// localized_ui_mp ...). A material of this zone named like one of theirs is a second definition: C1 keeps the
+    /// first and returns the new one's pool slot to the free list, but the slot stays in the renderer's sorted material
+    /// list, and sorting it (0x00A87400 -> 0x00A87330, slot index -> 0x01DEA3D8 + 96 * index) reads a free slot's
+    /// garbage as a technique set (the pass 0 pixel shader 0x476 at 0x00A8753F). So every donor asset of a render type
+    /// whose name an earlier zone defines is written as a reference by name to that one, as the shipped zones do.
+    static void ReferenceEarlier(PortContext ctx, IReadOnlyList<LoadedZone> earlier, Action<string> log)
+    {
+        if (earlier.Count == 0) return;
+        var img = ctx.Target;
+        int[] types = [AssetTypes.Material, AssetTypes.Image, AssetTypes.Techset, 6, 7, 8];
+        var names = new HashSet<(int, string)>();
+        foreach (var z in earlier)
+            foreach (var (h, t) in z.Image.AssetHeaders)
+                if (types.Contains(t) && ZoneImageDiff.AssetName(z.Image, h) is { } n && !n.StartsWith(','))
+                    names.Add((t, n.ToLowerInvariant()));
+        var counts = new SortedDictionary<int, int>();
+        foreach (var (h, t) in img.AssetHeaders.ToList())
+        {
+            if (_stockAssets.Contains(h) || !types.Contains(t)) continue;
+            if (ZoneImageDiff.AssetName(img, h) is not { } n || n.StartsWith(',') || !names.Contains((t, n.ToLowerInvariant()))) continue;
+            ctx.ReplaceAsset(h, ctx.NameReference(t, n));
+            counts[t] = counts.GetValueOrDefault(t) + 1;
+        }
+        log($"donor assets an earlier UI zone defines, referenced by name: {string.Join(", ", counts.Select(kv => $"{kv.Value} of type {kv.Key}"))}");
+    }
+
     static HashSet<uint> _stockAssets = [];
+    static uint _copiesFrom;
+    static uint _mergedWorld;
     static string _leftOut = "";
+
+    /// A ported donor's technique sets, shaders and vertex declarations get names of their own (name + _v3): the ones
+    /// the stock zone has under the same name are other builds' (a vertex declaration "pp" of another stream layout, a
+    /// shader compiled for other constants), and matching them by name drew the donor geometry with the stock ones (a
+    /// crash in d3d9.dll once a donor scene was in view). 0.0.2.2 keeps its names: its render assets are 1.1.1.13's.
+    static void RenameRenderAssets(LoadedZone z, string suffix, Action<string> log)
+    {
+        var I = z.Image; var m = z.M;
+        int n = 0;
+        foreach (var (h, t) in I.AssetHeaders.ToList())
+        {
+            if (t is not (6 or 7 or 8 or 9)) continue;
+            uint np = I.Pointer(h);
+            string? name = np == 0 ? null : m.CString(np, 256);
+            if (string.IsNullOrEmpty(name) || name.StartsWith(',')) continue;
+            I.SetPointer(h, NewDonorString(z, Encoding.Latin1.GetBytes(name + suffix + "\0")), I.Encoding(h));
+            n++;
+        }
+        log($"{suffix.TrimStart('_')}: {n} technique sets, shaders and vertex declarations renamed *{suffix}");
+    }
 
     static uint _donorTop = 0xA0000000;
     static uint NewDonorString(LoadedZone z, byte[] bytes)
@@ -294,6 +498,20 @@ public static class Merge
             catStart[k] = total;
             foreach (var w in worlds) total += w.End[k] - w.Begin[k];
         }
+        bool donorLast = Environment.GetEnvironmentVariable("VLOBBY_TEST_DONOR_LAST") == "1";
+        if (donorLast)
+        {
+            // test: stock surfaces keep their indices, every donor surface goes after them in the last range
+            var a1 = worlds[0];
+            for (int k = 0; k < 4; k++) catStart[k] = a1.Begin[k];
+            int at = a1.Surfaces;
+            foreach (var w in worlds)
+            {
+                w.NewIndex = new int[w.Surfaces];
+                for (int i = 0; i < w.Surfaces; i++) w.NewIndex[i] = w.IsDonor ? at++ : i;
+            }
+        }
+        else
         {
             int[] fill = (int[])catStart.Clone();
             foreach (var w in worlds)
@@ -330,6 +548,7 @@ public static class Merge
             }
             int at = 0, left = 0;
             var dropNames = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+            int outsideKeep = 0;
             var v0Missing = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
             var stockModelHeaders = new Dictionary<string, uint>(StringComparer.OrdinalIgnoreCase);
             foreach (uint x in _stockAssets)
@@ -346,6 +565,16 @@ public static class Merge
                     string model = ZoneImageDiff.AssetName(img, modelHeader) ?? T.CString(img.Pointer(modelHeader), 256) ?? "";
                     if (Environment.GetEnvironmentVariable("VLOBBY_LIST_MODELS") == "1" && w.IsDonor) log($"  {w.Tag} smodel {i}: {model} (0x{modelHeader:X8})");
                     bool drop = w.IsDonor && stockModels.Contains(model) && !stockPlaced.Contains(model);
+                    if (w.IsDonor && Environment.GetEnvironmentVariable("VLOBBY_TEST_NO_DONOR_SMODELS") == "1") drop = true;
+                    if (w.OldLayoutModels && Environment.GetEnvironmentVariable("VLOBBY_TEST_NO_V0_SMODELS") == "1") drop = true;
+                    if (w.IsDonor && w.Keep is { } kb)
+                    {
+                        // a static model outside the keep box (0.0.2.2's sky shell props) stays out: moved with the
+                        // scene it would stretch the merged cell past the stock world's bounds
+                        uint o = sd + (uint)(DrawInstSize * i);
+                        float ox = T.F32(o), oy = T.F32(o + 4), oz = T.F32(o + 8);
+                        if (ox < kb[0] || oy < kb[1] || oz < kb[2] || ox > kb[3] || oy > kb[4] || oz > kb[5]) { drop = true; outsideKeep++; }
+                    }
                     if (w.IsDonor && model.StartsWith(','))
                     {
                         // a stub (",name": the model is another zone's of the donor build; 2.6.9.7's character and
@@ -369,12 +598,16 @@ public static class Merge
                 }
             }
             _leftOut = (left == 0 ? "" : $"{left} donor static models left out (models the stock lobby loads on demand): {string.Join(", ", dropNames)}")
-                + (v0Missing.Count == 0 ? "" : $"; 0.0.2.2 models no stock static model places (left out): {string.Join(", ", v0Missing)}");
+                + (v0Missing.Count == 0 ? "" : $"; 0.0.2.2 models no stock static model places (left out): {string.Join(", ", v0Missing)}")
+                + (outsideKeep == 0 ? "" : $"; {outsideKeep} outside their keep box");
         }
         int N = total, M = worlds.Sum(w => w.SmodelMap.Count(x => x >= 0));
         if (_leftOut.Length > 0) log(_leftOut);
         if (N > 0xFFFF || M > 0xFFFF) throw new NotSupportedException("more than 65535 surfaces or static models");
+        // a conservative bound (the stock lobby has 1748 surfaces; Compact keeps the merge near that)
+        if (N > MaxSurfaces) throw new NotSupportedException($"{N} world surfaces: the lobby draws {MaxSurfaces} at most");
         uint dp = h + W_Dpvs, draw = h + W_Draw;
+        uint a0surfaces = worlds[0].H + W_Dpvs + P_Surfaces;
         uint surfaces = ctx.NewObject((uint)(SurfSize * N)), bounds = ctx.NewObject((uint)(BoundsSize * N));
         int vBase = 0, iBase = 0, vldBase = 0, lmBase = 0, probeBase = 0, dropped = 0;
         foreach (var w in worlds)
@@ -386,13 +619,16 @@ public static class Merge
                 Copy(ctx, d, src + (uint)(SurfSize * i), SurfSize);
                 Copy(ctx, bounds + (uint)(BoundsSize * w.NewIndex[i]), srcB + (uint)(BoundsSize * i), BoundsSize);
                 if (!w.IsDonor) continue;
+                if (Environment.GetEnvironmentVariable("VLOBBY_TEST_STOCK_MATERIAL") == "1")
+                    img.SetPointer(d + 16, img.Pointer(img.Pointer(a0surfaces) + 16));
                 if (w.Keep is { } kb && !Inside(T, bounds + (uint)(BoundsSize * w.NewIndex[i]), kb)) { T.WU16(d + 10, 0); dropped++; }
-                T.WU32(d + 0, T.U32(d + 0) + (uint)vldBase);
+                if (Environment.GetEnvironmentVariable("VLOBBY_TEST_VLD0") == "1") T.WU32(d + 0, 0);
+                else T.WU32(d + 0, T.U32(d + 0) + (uint)vldBase);
                 T.WU32(d + 4, T.U32(d + 4) + (uint)vBase);
                 T.WU32(d + 12, T.U32(d + 12) + (uint)iBase);
                 byte lm = T.U8(d + 20);
-                if (lm != 31) T.WU8(d + 20, (byte)(lm + lmBase));
-                T.WU8(d + 21, (byte)(T.U8(d + 21) + probeBase));
+                if (lm != 31) T.WU8(d + 20, w.NoLightmaps ? (byte)31 : (byte)(lm + lmBase));
+                T.WU8(d + 21, w.NoProbes ? (byte)0 : (byte)(T.U8(d + 21) + probeBase));
                 T.WU8(d + 22, 0);
                 MoveBounds(T, bounds + (uint)(BoundsSize * w.NewIndex[i]), w);
             }
@@ -411,6 +647,7 @@ public static class Merge
             int len = worlds.Sum(w => w.End[k] - w.Begin[k]);
             T.WU32(dp + P_Ranges + (uint)(8 * k), (uint)catStart[k]);
             T.WU32(dp + P_Ranges + (uint)(8 * k) + 4, (uint)(catStart[k] + len));
+            if (donorLast) T.WU32(dp + P_Ranges + (uint)(8 * k) + 4, k == 3 ? (uint)N : (uint)worlds[0].End[k]);
         }
 
         // sorted surface lists: [stock, donors...] for the first half, the same for the no-decal half
@@ -443,7 +680,7 @@ public static class Merge
                     MoveBounds(T, di, w);
                     MovePoint(T, di + 24, w);
                     MovePoint(T, dd, w);
-                    T.WU8(dd + 60, (byte)(T.U8(dd + 60) + w.ProbeBase));
+                    T.WU8(dd + 60, w.NoProbes ? (byte)0 : (byte)(T.U8(dd + 60) + w.ProbeBase));
                     T.WU8(dd + 61, 0);
                 }
             }
@@ -462,6 +699,9 @@ public static class Merge
         img.SetPointer(dp + P_CastsSun, ctx.NewObject(4 * VisCount(N)));
 
         // vertices, vertex layer data, indices
+        int extraVerts = int.TryParse(Environment.GetEnvironmentVariable("VLOBBY_TEST_EXTRA_VERTS"), out int ev) ? ev : 0;
+        vBase += extraVerts;
+        iBase += int.TryParse(Environment.GetEnvironmentVariable("VLOBBY_TEST_EXTRA_INDICES"), out int ei) ? ei : 0;
         uint verts = ctx.NewObject((uint)(VertexSize * vBase), 4), vld = ctx.NewObject((uint)Math.Max(vldBase, 1), 4), idx = ctx.NewObject((uint)(2 * iBase), 2);
         foreach (var w in worlds)
         {
@@ -470,6 +710,25 @@ public static class Merge
             if (w.IsDonor) for (int i = 0; i < w.Vertices; i++) MovePoint(T, verts + (uint)(VertexSize * (w.VertexBase + i)), w);
             if (w.Vld > 0) T.Write(vld + (uint)w.VldBase, T.ReadBytes(img.Pointer(wd + D_Vld), w.Vld));
             T.Write(idx + (uint)(2 * w.IndexBase), T.ReadBytes(img.Pointer(wd + D_Indices), 2 * w.Indices));
+        }
+        if (Environment.GetEnvironmentVariable("VLOBBY_TEST_RELOCATE") == "1")
+        {
+            // test: the 40 stock surfaces nearest the urban stand use copies of their vertices placed past 65535
+            var near = Enumerable.Range(0, N).Select(i => (i, d2: Dist2(T, bounds + (uint)(BoundsSize * i), 286, 334))).OrderBy(x => x.d2).Take(40).ToList();
+            int extra = near.Sum(x => (int)T.U16(surfaces + (uint)(SurfSize * x.i) + 8));
+            uint nv = ctx.NewObject((uint)(VertexSize * (vBase + Math.Max(65536 - vBase, 0) + extra)), 4);
+            T.Write(nv, T.ReadBytes(verts, VertexSize * vBase));
+            int at = Math.Max(vBase, 65536);
+            foreach (var (i, _) in near)
+            {
+                uint sf = surfaces + (uint)(SurfSize * i);
+                int fv = (int)T.U32(sf + 4), vc = T.U16(sf + 8);
+                T.Write(nv + (uint)(VertexSize * at), T.ReadBytes(verts + (uint)(VertexSize * fv), VertexSize * vc));
+                T.WU32(sf + 4, (uint)at);
+                at += vc;
+            }
+            verts = nv; vBase = at;
+            log($"test: 40 surfaces moved to vertices from 65536 ({vBase} vertices)");
         }
         img.SetPointer(draw + D_Vertices, verts);
         img.SetPointer(draw + D_Vld, vld);
@@ -499,10 +758,11 @@ public static class Merge
 
         // material memory
         {
-            int count = worlds.Sum(w => (int)T.U32(w.H + W_MaterialMemoryCount));
+            var mmWorlds = Environment.GetEnvironmentVariable("VLOBBY_TEST_STOCK_MATMEM") == "1" ? worlds.Take(1).ToList() : worlds;
+            int count = mmWorlds.Sum(w => (int)T.U32(w.H + W_MaterialMemoryCount));
             uint mm = ctx.NewObject((uint)(8 * count));
             int at = 0;
-            foreach (var w in worlds)
+            foreach (var w in mmWorlds)
             {
                 int c = (int)T.U32(w.H + W_MaterialMemoryCount);
                 Copy(ctx, mm + (uint)(8 * at), img.Pointer(w.H + W_MaterialMemory), (uint)(8 * c));
@@ -514,10 +774,13 @@ public static class Merge
 
         // skies: the stock sky, then each donor's
         {
-            int count = worlds.Sum(w => (int)T.U32(w.H + W_SkyCount));
+            // only the stock sky: C1 draws the world's skies as one sky box (a second GfxSky crashed d3d9.dll while the
+            // urban scene was drawn); a donor's sky surfaces stay ordinary surfaces of their scene
+            var skyWorlds = worlds.Take(1).ToList();
+            int count = skyWorlds.Sum(w => (int)T.U32(w.H + W_SkyCount));
             uint skies = ctx.NewObject((uint)(SkySize * count));
             int at = 0;
-            foreach (var w in worlds)
+            foreach (var w in skyWorlds)
             {
                 uint src = img.Pointer(w.H + W_Skies);
                 for (int s = 0; s < (int)T.U32(w.H + W_SkyCount); s++, at++)
@@ -573,6 +836,7 @@ public static class Merge
 
         BuildCell(ctx, h, worlds, N, log);
         Bounds(T, h + W_Bounds, worlds);
+        if (Environment.GetEnvironmentVariable("VLOBBY_TEST_STOCK_GRID") != "1")
         LightGridMerge.Merge(ctx, h + W_Grid, worlds.Select(w => (w.H + W_Grid, w.IsDonor, w.Dx, w.Dy, w.Dz, w.StockGrid)).ToList(), log);
         log($"merged world: {N} surfaces, {M} static models, {vBase} vertices, {iBase} indices, {lmBase} lightmaps, {probeBase} probes");
         return h;
@@ -629,7 +893,7 @@ public static class Merge
                 FixChildren(T, Node(cellRoots + c), tree, Node(rest) - NodeSize);
                 boxes.Add(Box(T, Node(cellRoots + c)));
                 uint cell = dcells + (uint)(CellSize * c);
-                for (int k = 0; k < T.U8(cell + 32); k++) probeSet.Add(d.ProbeBase + T.U8(img.Pointer(cell + 36) + (uint)k));
+                for (int k = 0; !d.NoProbes && k < T.U8(cell + 32); k++) probeSet.Add(d.ProbeBase + T.U8(img.Pointer(cell + 36) + (uint)k));
             }
             SetBox(T, head, Union(boxes));
             surfFirstHalf += d.Surfaces;
@@ -638,7 +902,7 @@ public static class Merge
         if (pos != total) throw new InvalidOperationException($"tree layout {pos} != {total}");
         // root: the stock root and the donor heads
         Copy(ctx, Node(root), Node(stockRoot), NodeSize);
-        T.WU16(Node(root) + 24, (ushort)(1 + donors.Count));
+        T.WU16(Node(root) + 24, (ushort)(Environment.GetEnvironmentVariable("VLOBBY_TEST_NO_DONOR_TREE") == "1" ? 1 : 1 + donors.Count));
         T.WU16(Node(root) + 26, (ushort)N);
         T.WU16(Node(root) + 28, 0);
         T.WU16(Node(root) + 30, (ushort)N);
@@ -710,6 +974,12 @@ public static class Merge
         ctx.T.Write(dst, ctx.T.ReadBytes(src, (int)len));
         ctx.Target.CopyTags(dst, src, len);
         foreach (uint f in ctx.Target.Pointers.Enumerate(dst, len).ToList()) ctx.Target.SetEncoding(f, PointerEncoding.Unknown);
+    }
+
+    static float Dist2(VirtualMemory T, uint b, float x, float y)
+    {
+        float dx = T.F32(b) - x, dy = T.F32(b + 4) - y;
+        return dx * dx + dy * dy;
     }
 
     static bool Inside(VirtualMemory T, uint b, float[] k)

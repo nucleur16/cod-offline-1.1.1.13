@@ -17,6 +17,98 @@ if (args.Length >= 7 && args[0] == "dump")
     Dump.Asset(z, int.Parse(args[3]), args[4], int.Parse(args[5]), int.Parse(args[6]));
     return 0;
 }
+if (args.Length >= 8 && args[0] == "deref")
+{
+    // deref <zone.ff> <exe> <type> <name> <name offset> <pointer offset> <size>: the object a header field points to
+    var z = LoadedZone.Read(args[1], args[2], anyBuild: true);
+    int type = int.Parse(args[3]); uint no = uint.Parse(args[5]), po = uint.Parse(args[6]); int size = int.Parse(args[7]);
+    foreach (var (h, t) in z.Image.AssetHeaders)
+    {
+        if (t != type || !string.Equals(z.M.CString(z.Image.Pointer(h + no), 256), args[4], StringComparison.OrdinalIgnoreCase)) continue;
+        uint p = z.Image.Pointer(h + po);
+        Console.WriteLine($"0x{p:X8} encoding {z.Image.Encoding(h + po)} raw 0x{z.M.U32(h + po):X8} (object {(z.Image.TryFindObject(p, out uint st, out uint len) ? $"0x{st:X8}+{len}" : "?")})");
+        var b = z.M.ReadBytes(p, size);
+        for (int o = 0; o < size; o += 4) Console.Write($"{o:X3}:{BitConverter.ToUInt32(b, o):X8} " + (o % 32 == 28 ? Environment.NewLine : ""));
+        Console.WriteLine();
+        return 0;
+    }
+    Console.WriteLine("not found");
+    return 0;
+}
+if (args.Length >= 4 && args[0] == "imgflags")
+{
+    // imgflags <1.1.1.13 zone> <0.0.2.2 zone> <exe>: the load definition words of the images both have, side by side
+    var a1 = LoadedZone.Read(args[1], args[3], anyBuild: true);
+    var a0 = LoadedZone.Read(args[2], args[3], anyBuild: true);
+    var old = new Dictionary<string, uint>(StringComparer.OrdinalIgnoreCase);
+    foreach (var (h, t) in a0.Image.AssetHeaders)
+        if (t == AssetTypes.Image && a0.M.CString(a0.Image.Pointer(h + 28), 128) is { } n) old[n] = h;
+    var hist = new Dictionary<string, int>();
+    foreach (var (h, t) in a1.Image.AssetHeaders)
+    {
+        if (t != AssetTypes.Image || a1.M.CString(a1.Image.Pointer(h + 32), 128) is not { } n || !old.TryGetValue(n, out uint h0)) continue;
+        uint d1 = a1.Image.Pointer(h), d0 = a0.Image.Pointer(h0);
+        if (d1 == 0 || d0 == 0) continue;
+        string k = $"0022 {a0.M.U32(d0):X8} {a0.M.U32(d0 + 4):X8} -> 1113 {a1.M.U32(d1):X8} {a1.M.U32(d1 + 4):X8} fmt {a1.M.U32(d1 + 8):X8} size {a1.M.U32(d1 + 12)} cat {a1.M.U8(h + 6)} sem {a1.M.U8(h + 5)} {a1.M.U16(h + 0x14)}x{a1.M.U16(h + 0x16)}";
+        hist[k] = hist.GetValueOrDefault(k) + 1;
+        if (hist[k] == 1) Console.WriteLine($"{n}: {k}");
+    }
+    return 0;
+}
+if (args.Length >= 4 && args[0] == "imgcat")
+{
+    // imgcat <zone.ff> <exe> <name offset>: images by map type / semantic / category (header bytes 4..6), with examples
+    var z = LoadedZone.Read(args[1], args[2], anyBuild: true);
+    uint no = uint.Parse(args[3]);
+    foreach (var g in z.Image.AssetHeaders.Where(kv => kv.Value == AssetTypes.Image)
+                 .Select(kv => (Key: $"type {z.M.U8(kv.Key + 4)} semantic {z.M.U8(kv.Key + 5)} category {z.M.U8(kv.Key + 6)}", Name: z.M.CString(z.Image.Pointer(kv.Key + no), 128)))
+                 .GroupBy(x => x.Key).OrderBy(g => g.Key))
+        Console.WriteLine($"{g.Key}: {g.Count()} ({string.Join(", ", g.Take(3).Select(x => x.Name))})");
+    return 0;
+}
+if (args.Length >= 3 && args[0] == "bsp")
+{
+    // bsp <zone.ff> <exe>: the world's dpvs BSP (planes, nodes) and the cell of every stand and camera of the MapEnts
+    var z = LoadedZone.Read(args[1], args[2], anyBuild: true);
+    var I = z.Image; var m = z.M;
+    uint w = z.Find(AssetTypes.GfxWorld);
+    int planeCount = (int)m.U32(w + 8), nodeCount = (int)m.U32(w + 0xC), cellCount = (int)m.U32(w + 0x34);
+    uint planes = I.Pointer(w + 0x38), nodes = I.Pointer(w + 0x3C);
+    Console.WriteLine($"planes {planeCount}, nodes {nodeCount}, cells {cellCount}");
+    Console.WriteLine("nodes: " + string.Join(" ", Enumerable.Range(0, Math.Min(nodeCount, 60)).Select(i => m.U16(nodes + (uint)(2 * i)).ToString())));
+    for (int i = 0; i < Math.Min(planeCount, 12); i++)
+    {
+        uint pl = planes + (uint)(20 * i);
+        Console.WriteLine($"plane {i}: n=({m.F32(pl):0.##},{m.F32(pl + 4):0.##},{m.F32(pl + 8):0.##}) d={m.F32(pl + 12):0.##} type {m.U8(pl + 16)}");
+    }
+    int Walk(float[] o, bool frontIsNext)
+    {
+        uint node = nodes;
+        for (int guard = 0; guard < 10000; guard++)
+        {
+            int v = m.U16(node);
+            if (v < cellCount + 1) return v - 1;
+            uint pl = planes + (uint)(20 * (v - cellCount - 1));
+            float d = o[0] * m.F32(pl) + o[1] * m.F32(pl + 4) + o[2] * m.F32(pl + 8) - m.F32(pl + 12);
+            bool front = d > 0;
+            node = (front == frontIsNext) ? node + 4 : node + 2u * m.U16(node + 2);
+        }
+        return -99;
+    }
+    uint me = I.Pointer(z.Find(AssetTypes.ClipMapMp) + 0x9C);
+    string ents = m.CString(I.Pointer(me + 4), 1 << 22);
+    foreach (System.Text.RegularExpressions.Match e in System.Text.RegularExpressions.Regex.Matches(ents, "[{][^}]*[}]"))
+    {
+        var tn = System.Text.RegularExpressions.Regex.Match(e.Value, "\"targetname\" \"([^\"]*)\"");
+        var og = System.Text.RegularExpressions.Regex.Match(e.Value, "\"origin\" \"([^\"]*)\"");
+        if (!tn.Success || !og.Success) continue;
+        string name = tn.Groups[1].Value;
+        if (!(name.Contains("pos") || name.Contains("camera") || name.Contains("place1"))) continue;
+        var o = og.Groups[1].Value.Split(' ').Select(x => float.Parse(x, CultureInfo.InvariantCulture)).ToArray();
+        Console.WriteLine($"{name,-40} {og.Groups[1].Value,-28} cell A {Walk(o, true)} B {Walk(o, false)}");
+    }
+    return 0;
+}
 if (args.Length >= 3 && args[0] == "check")
 {
     // every surface's material and every static model's model must be an asset of that type
@@ -84,6 +176,24 @@ if (args.Length >= 3 && args[0] == "techcheck")
     Console.WriteLine($"{passes} passes, {bad} bad");
     return 0;
 }
+if (args.Length >= 3 && args[0] == "count")
+{
+    // every asset of the zone (top-level or inline) by type
+    var z = LoadedZone.Read(args[1], args[2], anyBuild: true);
+    Console.WriteLine(string.Join(" ", z.Image.AssetHeaders.GroupBy(kv => kv.Value).OrderBy(g => g.Key).Select(g => $"{g.Key}:{g.Count()}")));
+    if (args.Length > 3)
+        foreach (var g in z.Image.AssetHeaders.Where(kv => kv.Value == int.Parse(args[3])).GroupBy(kv => Codol.FastFiles.Porting.ZoneImageDiff.AssetName(z.Image, kv.Key) ?? "?").Where(g => g.Count() > 1).Take(15))
+            Console.WriteLine($"  {g.Key} x{g.Count()}");
+    return 0;
+}
+if (args.Length >= 4 && args[0] == "names")
+{
+    // names of every asset of a type (top-level or inline)
+    var z = LoadedZone.Read(args[1], args[2], anyBuild: true);
+    foreach (var (h, t) in z.Image.AssetHeaders)
+        if (t == int.Parse(args[3])) Console.WriteLine(Codol.FastFiles.Porting.ZoneImageDiff.AssetName(z.Image, h));
+    return 0;
+}
 if (args.Length >= 3 && args[0] == "images")
 {
     // every image of the zone: name and the size of the pixels it carries (0: streamed from an IWD)
@@ -108,9 +218,12 @@ if (args.Length >= 4 && args[0] == "merge")
     var stock = LoadedZone.Read(args[1], args[2]);
     var donors = new List<Donor>();
     string? table = null;
+    var earlier = new List<LoadedZone>();
     foreach (string spec in args.Skip(4))
     {
         if (spec.StartsWith("table=")) { table = spec[6..]; continue; }
+        // earlier=<zone.ff>: a zone C1 loads before ui_viewer_mp (repeatable)
+        if (spec.StartsWith("earlier=")) { earlier.Add(LoadedZone.Read(spec[8..], args[2])); continue; }
         int eq = spec.LastIndexOf('=');
         string[] p = spec[(eq + 1)..].Split(',');
         float F(string s) => float.Parse(s, CultureInfo.InvariantCulture);
@@ -118,7 +231,7 @@ if (args.Length >= 4 && args[0] == "merge")
         float[]? keep = p.Length > 5 ? p[5].Split(':').Select(F).ToArray() : null;
         donors.Add(new Donor(LoadedZone.Read(spec[..eq], args[2], anyBuild: true), F(p[0]), F(p[1]), F(p[2]), p[3], p[4]) { Keep = keep, StockGrid = p.Length > 6 && p[6] == "stockgrid" });
     }
-    Merge.Run(stock, donors, args[2], args[3], table, Console.WriteLine);
+    Merge.Run(stock, donors, args[2], args[3], table, earlier, Console.WriteLine);
     return 0;
 }
 Console.Error.WriteLine("usage: vlobby_merge probe <zone.ff> <exe> | merge <stock.ff> <exe> <out.ff> <donor.ff>=dx,dy,dz,prefix,tag ...");

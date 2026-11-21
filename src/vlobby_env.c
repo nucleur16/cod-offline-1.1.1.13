@@ -17,12 +17,12 @@
  *                   current one; <name>, "next", "prev" or "default" sets ui_vlobbyEnv. Bind it to a key to cycle,
  *                   e.g. bind F6 "vlobby_env next".
  *
- * The scenes of the other builds (tools/vlobby_merge, work in progress: not shipped yet) are merged into the stock world by
+ * The scenes of the other builds (tools/vlobby_merge: 3.19.26.22, 2.6.9.7, 0.0.2.2) are merged into the stock world by
  * client_shipRetail\chinese\ui_viewer_vlobby_mp.ff, which C1 opens for ui_viewer_mp (VlobbyZoneOpen): every stock
  * asset of ui_viewer_mp, with the merged world and MapEnts. The same zone carries the camera table
  * with their rows as mp/camerapostable_vlobby.csv; the lookup of mp/cameraPosTable.csv returns that table while it is
- * loaded (VlobbyFindSubstitute, called from maplist_filter.c's hook). Without the zone everything is stock and the
- * switch offers the stock rows only.
+ * loaded (VlobbyFindSubstitute, called from maplist_filter.c's hook), and the scene position dvars take the merged
+ * scenes' x (VlWidenDomains). Without the zone everything is stock and the switch offers the stock rows only.
  *
  * C1 sites (1.1.1.13), byte-checked before use; on a mismatch one line is logged and the switch stays off:
  *   0x0060F2D0  the viewer's camera row: bool __thiscall (viewer, const char *row); finds the row in the table it
@@ -53,6 +53,8 @@ static void *VlobbyFindSubstitute(int type, const char *name, void *h);
  * next to ui_viewer_mp leaves duplicate images that C1 never created but still releases when the UI zones go
  * (0x00A921B8 calls a texture's Release through what is still its load definition), so the scenes replace the
  * zone rather than add to it. */
+static BOOL g_vlZone;             /* the merged zone was opened: the scene dvars' domains are widened */
+
 static HANDLE VlobbyZoneOpen(const char *name)
 {
     if (!name || lstrcmpiA(name, VL_ZONE) != 0) return INVALID_HANDLE_VALUE;
@@ -62,6 +64,7 @@ static HANDLE VlobbyZoneOpen(const char *name)
     lstrcpynA(path + n, VL_ZONE_FILE, MAX_PATH - n);
     HANDLE f = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
                            FILE_FLAG_OVERLAPPED | FILE_FLAG_NO_BUFFERING, NULL);
+    if (f != INVALID_HANDLE_VALUE) g_vlZone = TRUE;
     static BOOL logged;
     if (!logged) {
         logged = TRUE;
@@ -198,6 +201,31 @@ static void __cdecl VlCmd(void)
 
 static C1Cmd g_vlCmd = { NULL, "vlobby_env", (void *)VlCmd };
 
+/* C1 hands the row's stand and camera origins to the scene through float dvars, and two of them hold x within the
+ * stock lobby's extent: "2110" (the stand's x, -1024 .. 7680) and "2104" (the camera's x, -1024 .. 10000). The merged
+ * scenes lie at x -16384 and beyond (the light grid's rows run along x and hold one scene each), so set to such a
+ * row's x those dvars refused the value ("not a valid value for dvar") and kept the previous scene's: the view stood
+ * at the old x with the new y and z (black, or the stock sky). With the merged zone loaded their domains are widened
+ * to the light grid's whole extent. The domain is found by its stock bounds next to the value, and left alone when
+ * they are not there. */
+static void VlWidenDomains(void)
+{
+    static const struct { const char *name; float lo, hi; } kDvars[] = { { "2110", -1024.0f, 7680.0f }, { "2104", -1024.0f, 10000.0f } };
+    for (int i = 0; i < (int)(sizeof(kDvars) / sizeof(kDvars[0])); i++) {
+        BYTE *d = (BYTE *)C1DvarFind(kDvars[i].name);
+        if (!d || !Readable(d, 0x60) || d[8] != 1) { Log("vlobby: dvar %s missing or not a float; its domain stays", kDvars[i].name); continue; }
+        int at = -1;
+        for (int o = 0x10; o + 8 <= 0x60; o += 4)
+            if (*(const float *)(d + o) == kDvars[i].lo && *(const float *)(d + o + 4) == kDvars[i].hi) { at = o; break; }
+        if (at < 0) { Log("vlobby: dvar %s: no domain %g .. %g found; left as it is", kDvars[i].name, kDvars[i].lo, kDvars[i].hi); continue; }
+        DWORD old;
+        if (!VirtualProtect(d + at, 8, PAGE_READWRITE, &old)) continue;
+        *(float *)(d + at) = -131072.0f;
+        *(float *)(d + at + 4) = 131072.0f;
+        Log("vlobby: dvar %s domain (+0x%X) %g .. %g widened to -131072 .. 131072", kDvars[i].name, at, kDvars[i].lo, kDvars[i].hi);
+    }
+}
+
 static void VlobbyTick(void)
 {
     if (!g_vlReady) {
@@ -217,6 +245,11 @@ static void VlobbyTick(void)
         g_vlReady = g_vlDvar && Readable(g_vlDvar, 0x10);
         Log("vlobby: %s %s, command vlobby_env", VL_DVAR, g_vlReady ? "registered" : "not registered");
         if (!g_vlReady) return;
+    }
+    static BOOL widened;
+    if (g_vlZone && !widened && C1DvarFind("2110")) {
+        widened = TRUE;
+        VlWidenDomains();
     }
     /* a viewer that cached the stock table (looked up before the merged one was linked) reads the merged one */
     BYTE *vw = (BYTE *)g_vlViewer;
@@ -239,8 +272,49 @@ static void VlobbyTick(void)
     }
 }
 
+#if K33_DIAGNOSTICS
+/* Diagnostics: a fault in C1's material sort (0x00A87400, after a zone load) names the two materials it compared
+ * (edi, esi there) and their technique sets, so a merged lobby zone's bad material can be found. */
+static const char *VlName(DWORD p)
+{
+    const char *const *n = (const char *const *)(DWORD_PTR)p;
+    if (!p || !Readable(n, 4) || !*n || !Readable(*n, 1)) return "?";
+    return *n;
+}
+
+static LONG CALLBACK VlFaultProbe(EXCEPTION_POINTERS *e)
+{
+    DWORD eip = e->ContextRecord->Eip;
+    if (e->ExceptionRecord->ExceptionCode != EXCEPTION_ACCESS_VIOLATION || eip < 0x00A87400u || eip >= 0x00A87800u)
+        return EXCEPTION_CONTINUE_SEARCH;
+    DWORD m[2] = { e->ContextRecord->Edi, e->ContextRecord->Esi };
+    for (int i = 0; i < 2; i++) {
+        DWORD ts = Readable((void *)(DWORD_PTR)(m[i] + 0x50), 4) ? *(DWORD *)(DWORD_PTR)(m[i] + 0x50) : 0;
+        DWORD rm = ts && Readable((void *)(DWORD_PTR)(ts + 8), 4) ? *(DWORD *)(DWORD_PTR)(ts + 8) : 0;
+        Log("vlobby: material sort fault at 0x%08lX: material %d 0x%08lX \"%s\" techset 0x%08lX \"%s\" remapped 0x%08lX \"%s\"",
+            (unsigned long)eip, i, (unsigned long)m[i], VlName(m[i]), (unsigned long)ts, VlName(ts), (unsigned long)rm, VlName(rm));
+        DWORD set = rm ? rm : ts;
+        for (int k = 0; set && k < 48; k++) {
+            DWORD t = Readable((void *)(DWORD_PTR)(set + 0xC + 4 * k), 4) ? *(DWORD *)(DWORD_PTR)(set + 0xC + 4 * k) : 0;
+            if (!t) continue;
+            DWORD ps = Readable((void *)(DWORD_PTR)(t + 0x10), 4) ? *(DWORD *)(DWORD_PTR)(t + 0x10) : 0;
+            Log("vlobby:   technique %d 0x%08lX \"%s\" pass0 decl 0x%08lX vs 0x%08lX ps 0x%08lX", k, (unsigned long)t, VlName(t),
+                Readable((void *)(DWORD_PTR)(t + 8), 4) ? (unsigned long)*(DWORD *)(DWORD_PTR)(t + 8) : 0ul,
+                Readable((void *)(DWORD_PTR)(t + 12), 4) ? (unsigned long)*(DWORD *)(DWORD_PTR)(t + 12) : 0ul, (unsigned long)ps);
+        }
+    }
+    Log("vlobby: eax 0x%08lX ebx 0x%08lX ecx 0x%08lX edx 0x%08lX ebp 0x%08lX", (unsigned long)e->ContextRecord->Eax,
+        (unsigned long)e->ContextRecord->Ebx, (unsigned long)e->ContextRecord->Ecx, (unsigned long)e->ContextRecord->Edx,
+        (unsigned long)e->ContextRecord->Ebp);
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+#endif
+
 static void InstallVlobbyEnv(void)
 {
+#if K33_DIAGNOSTICS
+    AddVectoredExceptionHandler(1, VlFaultProbe);
+#endif
     /* the merged camera table is served by maplist_filter.c's DB_FindXAssetHeader hook; with K33_MAPLIST_ALL=1 that
      * hook is not installed, so it is installed here (its map list part then only reads the Survival rows) */
     if (!g_mlFindOriginal && !MlHookLookup()) Log("vlobby: DB_FindXAssetHeader 0x%08X differs; the stock camera table stays", ML_DB_FIND_VA);
