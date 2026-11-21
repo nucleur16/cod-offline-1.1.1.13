@@ -6,7 +6,7 @@ with the rows of the scenes merged from other builds (vlobby_merge), and the cam
 
 The tables are AssetExplorer dumps: CodolSoundDumper zone-stringtables --input <zone.ff> --name camerapos --out <dir>.
 
-Two kinds of scene:
+The scenes are menu scenes:
 - Menu scenes (character_loadout_<name>, the main menu's and the Multiplayer lobby's character view, ui_vlobbyEnv):
   the later builds' lobby, team lobby, champion select, depot and reward scenes, and 0.0.2.2's main menu (v0_menu).
   The 3.x / 2.x ones are framed like 1.1.1.13's own menu (character_loadout_center): a camera at the stock camera's
@@ -14,8 +14,7 @@ Two kinds of scene:
   row gives the rest (vision, light, depth of field). Rows of one stand frame alike, so one row per stand is kept.
   v0_menu is 0.0.2.2's own main menu view: its home page shows character_loadout_<terrain> with terrain urb
   (CharacterLoadoutService.TERRAIN_NAME[0]), the urban stand seen from player_camera_urb.
-- Environment scenes (team_<name>, the game lobby's room view, ui_vlobbyRoomEnv): 0.0.2.2's urban, forest, desert,
-  arctic and zombies scenes from its team_* rows, with their cameras.
+Rooms (the game lobby, team_<environment>) keep the stock environment scenes.
 
 0.0.2.2's rows have 14 columns of an older layout: 0-9 as 1.1.1.13's (name, game, stand, camera, distance, vision,
 light pitch / yaw / roll, light colour), 10-11 the weapon page's second stand and camera, 12 the light intensity
@@ -47,11 +46,6 @@ STOCK_MENU = ("character_loadout_center", "player_pos_center", "player_camera_ce
 # 0.0.2.2: row name in this table, 0.0.2.2 source row, 1.1.1.13 row of the same scene (the columns 0.0.2.2 lacks)
 V0 = [
     ("character_loadout_v0_menu", "character_loadout_urb", "character_loadout_urb"),
-    ("team_v0_urb", "team_urban", "team_urban"),
-    ("team_v0_woo", "team_forest", "team_forest"),
-    ("team_v0_des", "team_desert", "team_desert"),
-    ("team_v0_arc", "team_arctic", "team_arctic"),
-    ("team_v0_zm", "team_zombie", "team_zombie"),
 ]
 
 

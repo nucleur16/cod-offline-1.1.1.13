@@ -201,6 +201,26 @@ public static class Merge
                 if (top.Contains(T.U32(f)) && img.Encoding(f) is PointerEncoding.Inline or PointerEncoding.Insert)
                     img.SetEncoding(f, PointerEncoding.Unknown);
             log($"{add.Count} donor assets listed as top-level assets ({string.Join(", ", add.GroupBy(kv => kv.Value).Select(g => $"{g.Count()} of type {g.Key}"))})");
+
+            // Donor render assets nothing written leads to (the materials, images and models of the surfaces and static
+            // models the keep box and the filters above left out: 0.0.2.2's forest, desert, zombies and arctic areas)
+            // leave the list, so that neither the zone nor the iwd (V0FileImages.WriteIwd: the images the zone holds)
+            // carries them. What stays is what the stock assets and the top-level assets other than these lead to.
+            int[] render = [AssetTypes.Image, AssetTypes.Material, AssetTypes.XModel, XModelSurfsType, AssetTypes.Techset, 6, 7, 8];
+            bool Prunable(ZoneImageAsset a0) => !_stockAssets.Contains(a0.Header) && render.Contains(a0.Type);
+            var live = new HashSet<uint>();
+            var stack = new Stack<uint>(img.Assets.Where(a0 => !Prunable(a0)).Select(a0 => a0.Header));
+            var seen = new HashSet<uint>();
+            while (stack.Count > 0)
+            {
+                uint at0 = stack.Pop();
+                if (!img.TryFindObject(at0, out uint st, out uint len) || !seen.Add(st)) continue;
+                if (img.AssetHeaders.ContainsKey(st)) live.Add(st);
+                foreach (uint f in img.Pointers.Enumerate(st, len)) stack.Push(T.U32(f));
+            }
+            var pruned = img.Assets.Where(a0 => Prunable(a0) && !live.Contains(a0.Header)).ToList();
+            img.Assets.RemoveAll(a0 => Prunable(a0) && !live.Contains(a0.Header));
+            log($"{pruned.Count} donor assets nothing written uses left out ({string.Join(", ", pruned.GroupBy(a0 => a0.Type).Select(g => $"{g.Count()} of type {g.Key}"))})");
         }
         if (Environment.GetEnvironmentVariable("VLOBBY_INSERT_ASSETS") == "1")
         {
@@ -715,15 +735,29 @@ public static class Merge
         // material memory
         {
             var mmWorlds = Environment.GetEnvironmentVariable("VLOBBY_TEST_STOCK_MATMEM") == "1" ? worlds.Take(1).ToList() : worlds;
-            int count = mmWorlds.Sum(w => (int)T.U32(w.H + W_MaterialMemoryCount));
-            uint mm = ctx.NewObject((uint)(8 * count));
-            int at = 0;
+            // a donor's entries only for the materials its kept surfaces use (a material of the surfaces the keep box
+            // left out would keep that material and its images in the zone)
+            var keepEntries = new List<(World w, int i)>();
             foreach (var w in mmWorlds)
             {
                 int c = (int)T.U32(w.H + W_MaterialMemoryCount);
-                Copy(ctx, mm + (uint)(8 * at), img.Pointer(w.H + W_MaterialMemory), (uint)(8 * c));
-                at += c;
+                uint src = img.Pointer(w.H + W_MaterialMemory);
+                HashSet<uint>? used = null;
+                if (w.IsDonor)
+                {
+                    used = [];
+                    uint ws = img.Pointer(w.H + W_Dpvs + P_Surfaces);
+                    for (int i = 0; i < w.Surfaces; i++)
+                        if (T.U16(ws + (uint)(SurfSize * i) + 10) > 0) used.Add(img.Pointer(ws + (uint)(SurfSize * i) + 16));
+                }
+                for (int i = 0; i < c; i++)
+                    if (used is null || used.Contains(img.Pointer(src + (uint)(8 * i)))) keepEntries.Add((w, i));
             }
+            int count = keepEntries.Count;
+            uint mm = ctx.NewObject((uint)(8 * Math.Max(count, 1)));
+            int at = 0;
+            foreach (var (w, i) in keepEntries)
+                Copy(ctx, mm + (uint)(8 * at++), img.Pointer(w.H + W_MaterialMemory) + (uint)(8 * i), 8);
             img.SetPointer(h + W_MaterialMemory, mm);
             T.WU32(h + W_MaterialMemoryCount, (uint)count);
         }
@@ -1000,9 +1034,6 @@ public static class Merge
     }
 
     /// the donor's entities (all but worldspawn), moved, their targetname / target keys prefixed
-    /// donor prefixes whose room character slots are appended too (Program: slots=<prefix>)
-    public static HashSet<string> SlotPrefixes { get; } = [];
-
     static int AppendEntities(StringBuilder sb, string ents, Donor d, HashSet<string>? wanted)
     {
         int added = 0;
@@ -1053,11 +1084,7 @@ public static class Merge
             }
             outb.Append("}\n");
             var mt = System.Text.RegularExpressions.Regex.Match(outb.ToString(), "\"targetname\" \"([^\"]+)\"");
-            // a room's character slots (mp/uiViewerScenes.csv: s<scene>_place<1..9> and their _target): kept for the
-            // donors named by slots= (0.0.2.2, whose rooms Kernel33 can show: vlobby_env.c VlFindEntHook)
-            bool slot = mt.Success && SlotPrefixes.Contains(d.Prefix)
-                && System.Text.RegularExpressions.Regex.IsMatch(mt.Groups[1].Value[d.Prefix.Length..], "^s[0-9]+_place[1-9](_target)?$");
-            if (wanted is not null && !slot && (!mt.Success || !wanted.Contains(mt.Groups[1].Value))) continue;
+            if (wanted is not null && (!mt.Success || !wanted.Contains(mt.Groups[1].Value))) continue;
             sb.Append(outb);
             added++;
         }

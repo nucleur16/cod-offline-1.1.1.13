@@ -78,8 +78,3 @@ character_loadout_v3_reward,*,v3_daily_reward_char_pos,v3_frame_reward,397,ui_vi
 character_loadout_v2_lobby,*,v2_player_pos_center,v2_frame_lobby,397,ui_viewer,1.5,-28.4,96.9,255_252_230,0.185,1,2.5,20,2.5,1.5,0,0,6,512,1024,10
 character_loadout_v2_team,*,v2_s1_place1,v2_frame_team,397,ui_viewer,1,-24,130,255_241_210,0.2,2,0.125,20,2.5,1.5,0,0,6,50,900,1
 character_loadout_v0_menu,*,v0_player_pos_urb,v0_player_camera_urb,195,ui_viewer,1,-24,141,255_241_210,0.185,2,0.125,75,2.5,1.5,0,0,6,5000,5000,1.8
-team_v0_urb,*,v0_player_pos_urb,v0_team_camera_urb,173,ui_viewer,1,-24,141,255_241_210,0.07,2,0.125,52,2.5,1.5,0,0,6,5000,5000,1.8
-team_v0_woo,*,v0_player_pos_woo,v0_team_camera_woo,116,ui_viewer,1,-24,141,255_252_244,0.07,2,0.125,52,2.5,1,0,0,6,5000,5000,1.8
-team_v0_des,*,v0_player_pos_des,v0_team_camera_des,165,ui_viewer,1,-24,141,255_241_210,0.07,2,0.125,52,2.12473,1.2,0,0,6,5000,5000,1.8
-team_v0_arc,*,v0_player_pos_arc,v0_team_camera_arc,155,ui_viewer,1,-24,141,255_241_210,0.07,2,0.125,52,2.5,1.5,0,0,6,5000,5000,1.8
-team_v0_zm,*,v0_player_pos_zm,v0_team_camera_zm,155,ui_viewer_cyborg,0.9,-24,-140,158_204_242,0.07,2,0.125,52,2.5,1.5,0,0,6,5000,5000,1.8

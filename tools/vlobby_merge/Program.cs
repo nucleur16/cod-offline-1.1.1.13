@@ -305,8 +305,6 @@ if (args.Length >= 4 && args[0] == "merge")
         if (spec.StartsWith("table=")) { table = spec[6..]; continue; }
         // frame=<file>: cameras at the stock menu's offset from donor stands (Framing.cs)
         if (spec.StartsWith("frame=")) { Framing.File = spec[6..]; continue; }
-        // slots=<prefix>: that donor's room character slots are appended too (Merge.AppendEntities)
-        if (spec.StartsWith("slots=")) { Merge.SlotPrefixes.Add(spec[6..]); continue; }
         // iwd=<iw_image_18.iwd>: the later builds' ported images, written again with the 0.0.2.2 files next to <out.ff>
         if (spec.StartsWith("iwd=")) { V0FileImages.IwdIn = spec[4..]; continue; }
         // earlier=<zone.ff>: a zone C1 loads before ui_viewer_mp (repeatable)

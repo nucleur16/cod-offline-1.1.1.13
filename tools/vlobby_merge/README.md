@@ -2,10 +2,9 @@
 
 The lobby's 3D scene is the map `mp_ui_viewer` (zone `ui_viewer_mp`). Each scene is a place in that one map; a row
 of `mp/cameraPosTable.csv` names its character stand and camera (script_origin targetnames), vision and light.
-`src/vlobby_env.c` has two switches. `vlobby_env` / `ui_vlobbyEnv` picks the menu scene (the main menu's and the
-Multiplayer lobby's character view: center and the merged menu scenes). `vlobby_roomenv` / `ui_vlobbyRoomEnv` picks the
-scene a room (the game lobby) shows instead of its map's environment: a stock environment, a 0.0.2.2 one (`v0_urb` ..),
-or `v0` (the 0.0.2.2 version of whatever environment the room's map has).
+`src/vlobby_env.c` is the switch: `vlobby_env` / `ui_vlobbyEnv` picks the menu scene (the main menu's and the
+Multiplayer lobby's character view: center and the merged menu scenes). Rooms (the game lobby) keep their map's stock
+environment scene.
 
 This tool builds `client_shipRetail\chinese\ui_viewer_vlobby_mp.ff`, which Kernel33 opens for `ui_viewer_mp` when it
 is there (`VlobbyZoneOpen`): every stock asset of `ui_viewer_mp`, its `mp_ui_viewer` GfxWorld and MapEnts with the
@@ -15,11 +14,11 @@ does not carry go in `main_shared\iw_image_18.iwd` (a name no stock or map pack 
 
 The zone and iwd are build outputs (31 MB and 50 MB, made from the other builds' files), not checked in.
 
-| build | menu scenes (`vlobby_env`) | room scenes (`vlobby_roomenv`) | moved by |
-|---|---|---|---|
-| 3.19.26.22 (3.5.2.6 has the same lobby) | `v3_lobby`, `v3_champion`, `v3_team`, `v3_zchamp`, `v3_dmz`, `v3_depot`, `v3_reward` | | x -32768 |
-| 2.6.9.7 | `v2_lobby`, `v2_team` | | x -16384 |
-| 0.0.2.2 | `v0_menu` (its main menu: the urban stand from player_camera_urb) | `v0_urb`, `v0_woo`, `v0_des`, `v0_arc`, `v0_zm`, or `v0` | x -44032 |
+| build | menu scenes (`vlobby_env`) | moved by |
+|---|---|---|
+| 3.19.26.22 (3.5.2.6 has the same lobby) | `v3_lobby`, `v3_champion`, `v3_team`, `v3_zchamp`, `v3_dmz`, `v3_depot`, `v3_reward` | x -32768 |
+| 2.6.9.7 | `v2_lobby`, `v2_team` | x -16384 |
+| 0.0.2.2 | `v0_menu` (its main menu: the urban stand from player_camera_urb); only its urban area is merged (keep box) | x -44032 |
 
 The 3.x / 2.x menu scenes are framed like 1.1.1.13's own menu (`character_loadout_center`): `Framing.cs` places a
 camera at the stock camera's offset from each donor stand (turned with the stand), and the row takes the stock
@@ -47,15 +46,14 @@ the lobby stand under other cameras).
 
         vlobby_merge merge "<1.1.1.13>\client_shipRetail\chinese\ui_viewer_mp.ff" "<1.1.1.13>\codoMP_client_shipRetail.exe" ui_viewer_vlobby_mp.ff ^
           v31926\ui_mp.ff=-32768,0,0,v3_,3.19.26.22 v2697\ui_mp.ff=-16384,0,0,v2_,2.6.9.7 ^
-          "<0.0.2.2>\client_shipRetail\chinese\ui_viewer_mp.ff=-44032,0,0,v0_,0.0.2.2,-2500:-12500:-2000:3500:2500:4000,stockgrid" ^
-          table=camerapostable_vlobby.csv frame=framing_vlobby.txt slots=v0_ iwd=iwd\iw_image_18.iwd
+          "<0.0.2.2>\client_shipRetail\chinese\ui_viewer_mp.ff=-44032,0,0,v0_,0.0.2.2,-2500:-1900:-2000:3500:2500:4000,stockgrid" ^
+          table=camerapostable_vlobby.csv frame=framing_vlobby.txt iwd=iwd\iw_image_18.iwd
 
    It writes `iw_image_18.iwd` next to the zone: the `iwd=` entries and the 0.0.2.2 image files 1.1.1.13 lacks
    (`V0FileImages.cs`). It installs as `main_shared\iw_image_18.iwd`. `VLOBBY_EXTRA_IWDS` (folders, `;`) adds iwds
    installed next to the stock ones (a map pack's `main`) to the name collision check.
 
-   `frame=` adds the framing cameras (`Framing.cs`); `slots=v0_` appends 0.0.2.2's room character slots
-   (`s<n>_place<1..9>` and their `_target`s, as `v0_*`). A donor is `<ff>=<dx>,<dy>,<dz>,<prefix>,<tag>[,<keep box x0:y0:z0:x1:y1:z1>[,stockgrid]]` (offsets in whole light
+   `frame=` adds the framing cameras (`Framing.cs`). A donor is `<ff>=<dx>,<dy>,<dz>,<prefix>,<tag>[,<keep box x0:y0:z0:x1:y1:z1>[,stockgrid]]` (offsets in whole light
    grid cells: x, y multiples of 32, z of 64). Leave a donor out to build without it.
 
    Diagnostics: `probe`, `scenes` (static models and surfaces around each stand, any build), `images`, `imgcat`
@@ -76,20 +74,21 @@ index into them (sorted lists, sky surfaces, shadow geometry, brush model 0) is 
 indices, lightmaps, reflection probes and material memory are appended; light grid rows are re-based
 (`LightGridMerge.cs`; a donor moves along the grid's row axis, x, far enough that no row holds two scenes; identical
 colour sets are kept once). The donors' lightmaps and probe images are renamed (`*lightmapN_*`, `*reflection_probeN`).
-Their primary lights are left out (their light is in their lightmaps and grid colours). The donors' stand and camera
+Their primary lights are left out (their light is in their lightmaps and grid colours). A donor's material memory
+entries are kept only for the materials its kept surfaces use, and donor render assets nothing written leads to leave
+the asset list, so what a keep box leaves out does not ship. The donors' stand and camera
 entities (the ones the camera table names) are appended to the MapEnts, moved, their targetnames prefixed, without
 their preview model and lineup pose keys. Assets named alike in another case are joined (C1 links names
 case-insensitively; a second image of a name in one zone made C1 release a texture that was never created).
 
 ## Findings
 
-- **Rooms.** A room's camera row is `team_<environment>` (the map's arena `environment`), but its characters stand in
-  the slots of that environment's row of `mp/uiViewerScenes.csv` (urban: `s1_place4`, `s1_place2` ..), read once into
-  the slot arrays by 0x005E8830 through the lobby server's G_Find (0x00572320). Changing only the row showed the new
-  scene with the character still in the stock one. `vlobby_roomenv` therefore also sets the environment index for a
-  forced scene (0x00611A30) and, for 0.0.2.2 scenes, has the slot names looked up with the `v0_` prefix and the slots
-  read again. 0.0.2.2's main menu is its home page in character-loadout mode with terrain `urb`
-  (`PageNavigationController` / `CharacterLoadoutService.TERRAIN_NAME` in its codo.gfx), hence `v0_menu`.
+- **0.0.2.2's main menu** is its home page in character-loadout mode with terrain `urb`
+  (`PageNavigationController` / `CharacterLoadoutService.TERRAIN_NAME` in its codo.gfx), hence `v0_menu`; the keep
+  box takes 0.0.2.2's urban area only (y -1900 .. 2500: its desert, forest, zombies and arctic areas lie south of it),
+  and the iwd ships only the 0.0.2.2 images the written zone holds.
+- **Rooms** show `team_<environment>`, their map's arena environment; their characters stand in the slots of that
+  environment's row of `mp/uiViewerScenes.csv` (urban: `s1_place4`, `s1_place2` ..), not at the row's stand.
 - **The 3.19.26.22 lobby backdrop is meant to be blue.** Its studio is a black box with a flat panel wall behind the
   stand; the panel textures (`mtl_ui_bg_01/02_col`, `mtl_ui_softround_02/04_col`, `mtl_ui_dot_01_col`) are soft blues,
   and its rows add strong depth of field (512 .. 1024, 10). Its rows' 11 extra columns (colour grading: lift / gamma /
