@@ -106,8 +106,17 @@ ZONES = {
                            # stock_edits: every zombies map offers endless (Asylum and Prototype first, then the Der Riese, Shi No Numa and Kino backports) (column 23; Cam's
                            # codol_zombies_endless zone, folded in here: two zones with mp/comaplist.csv replace each other)
                            maps=dict(table=("mp/comaplist.csv", 4, "patch_code_post_gfx_mp"),
-                                     survival_levels=['mp_fav_tropical', 'mp_abandon_sh', 'mp_ambush_sh', 'mp_crash_tropical', 'mp_cross_fire', 'mp_firingrange', 'mp_hardhat_sh', 'mp_highrise', 'mp_qadeem_sh', 'mp_seatown', 'mp_storm_spring', 'mp_strike_sh', 'mp_subbase_sh', 'mp_terminal_cls'],
-                                     stock_edits={"coop_survival_mp_fav_tropical": list(range(32)), "zm_asylum_sh": [23], "zm_prototype_sh": [23], "zm_factory_sh": [23], "zm_sumpf_sh": [23], "zm_theater_sh": [23]},
+                                     # Survival levels: authored placements (maps/mp/survival/<level>.gsc) or the generic ones
+                                     # derived at run time (maps/mp/survival/_generic.gsc). Left out: mp_hunger, mp_vacant (dev
+                                     # maps, in no map pack), mp_shipment (no zone in any install), the co-op mission bases
+                                     # (mp_bridge, mp_crash_intro, ...: no MP row).
+                                     survival_levels=['mp_fav_tropical', 'mp_abandon_sh', 'mp_ambush_sh', 'mp_crash_tropical', 'mp_cross_fire', 'mp_firingrange', 'mp_hardhat_sh', 'mp_highrise', 'mp_qadeem_sh', 'mp_seatown', 'mp_storm_spring', 'mp_strike_sh', 'mp_subbase_sh', 'mp_terminal_cls',
+                                                      # stock levels on generic placements
+                                                      'mp_afghan', 'mp_bloc_sh', 'mp_bog_sh', 'mp_cargoship_sh', 'mp_estate_tropical', 'mp_killhouse_sh', 'mp_nuked', 'mp_overgrown', 'mp_rust', 'mp_underpass',
+                                                      # map pack levels on generic placements
+                                                      'mp_abandon_sh_mk', 'mp_arkaden_sh', 'mp_awp_arena', 'mp_backlot_sh', 'mp_boomtown', 'mp_bootleg_sh', 'mp_carbon_sh', 'mp_cha_quad', 'mp_derail_sh', 'mp_district', 'mp_dome', 'mp_fallen_sh', 'mp_foundation_sh', 'mp_interchange_sh', 'mp_invasion_sh', 'mp_italy_sh', 'mp_liberation_sh', 'mp_lockdown_sh', 'mp_mideast', 'mp_mission_sh', 'mp_mogadishu_sh', 'mp_nightshift_sh', 'mp_offshore', 'mp_overwatch_sh', 'mp_radiation_sh', 'mp_resistance_sh', 'mp_rust_long', 'mp_sd_jardin', 'mp_shipment_long', 'mp_showdown', 'mp_tunisia', 'mp_village', 'mp_wasteland_sh'],
+                                     # the stock coop_survival_mp_afghan row gets its name, description, image and lists
+                                     stock_edits={"coop_survival_mp_afghan": [1, 2, 3, 18], "coop_survival_mp_fav_tropical": list(range(32)), "zm_asylum_sh": [23], "zm_prototype_sh": [23], "zm_factory_sh": [23], "zm_sumpf_sh": [23], "zm_theater_sh": [23]},
                                      arena=("mp/basemaps.arena", "code_post_gfx_mp"),
                                      # stock arena entries of maps no install has and no comaplist row names (and a stock
                                      # duplicate): C1 reads only 128 entries (shipping.ARENA_MAX_ENTRIES), so they make room
