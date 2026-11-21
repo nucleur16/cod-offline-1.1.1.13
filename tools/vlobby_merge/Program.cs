@@ -3,6 +3,7 @@ using VlobbyMerge;
 
 // vlobby_merge probe <zone.ff> <exe>
 // vlobby_merge merge <stock ui_viewer_mp.ff> <exe> <out patch_ui_viewer_mp.ff> <donor.ff>=<dx>,<dy>,<dz>,<prefix>,<tag> ... [table=<camera table csv>]
+if (args.Length >= 2 && args[0] == "v0img") return V0FileImages.Cli(args);
 if (args.Length >= 3 && args[0] == "probe")
 {
     var z = LoadedZone.Read(args[1], args[2], anyBuild: true);
@@ -279,6 +280,8 @@ if (args.Length >= 4 && args[0] == "merge")
         if (spec.StartsWith("frame=")) { Framing.File = spec[6..]; continue; }
         // slots=<prefix>: that donor's room character slots are appended too (Merge.AppendEntities)
         if (spec.StartsWith("slots=")) { Merge.SlotPrefixes.Add(spec[6..]); continue; }
+        // iwd=<iw_image_18.iwd>: the later builds' ported images, written again with the 0.0.2.2 files next to <out.ff>
+        if (spec.StartsWith("iwd=")) { V0FileImages.IwdIn = spec[4..]; continue; }
         // earlier=<zone.ff>: a zone C1 loads before ui_viewer_mp (repeatable)
         if (spec.StartsWith("earlier=")) { earlier.Add(LoadedZone.Read(spec[8..], args[2])); continue; }
         int eq = spec.LastIndexOf('=');
