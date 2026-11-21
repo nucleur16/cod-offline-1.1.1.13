@@ -573,10 +573,15 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         /* fs_game carries the category for exactly the next spawn (server filesystem.c FS_NormalizeGameDir,
          * sv_main.c SV_ResolveAssetCategory), as the lobby dispatches a match. sv_zoneType alone only
          * counts while it differs from the running value: a second co-op or survival match in a row would
-         * otherwise resolve as mp from its mp_* level name. */
+         * otherwise resolve as mp from its mp_* level name.
+         * The reused server keeps its dvars, so the match-scoped serverinfo dvars the last match's scripts left
+         * are cleared here as well. scr_gameended is 1/2 after a multiplayer match ended, and C1's HUD menus
+         * (ammo, score, compass, the Zombies points and round) draw only while it is 0: Zombies and co-op, which
+         * do not run the multiplayer _gamelogic reset, had no HUD after one (the scripts reset it too,
+         * scripts/gsc maps/_zombiemode.gsc resetMatchHudDvars; this covers a mode script that does not). */
         _snprintf(g_piRetarget, sizeof(g_piRetarget),
                   "set fs_game %s\nset sv_zoneType %s\nset sv_sessionMap %s\nset g_gametype %s\nset g_difficulty %d\n"
-                  "set zombiesEndlessEnabled %d\nmap %s\n",
+                  "set zombiesEndlessEnabled %d\nset scr_gameended 0\nset ui_bomb_timer 0\nmap %s\n",
                   c.zoneType, c.zoneType, session, c.gametype, difficulty, difficulty == 3, c.map);
         g_piRetarget[sizeof(g_piRetarget) - 1] = 0;
         Log("p2p in-process: reusing the match server started %lu s ago (match %ld): %s %s on %s:%d",

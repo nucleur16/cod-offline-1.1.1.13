@@ -1003,6 +1003,22 @@ respawnPlayer()
 	self spawnPlayer();
 }
 
+// The offline match server keeps its dvars from one match to the next.  A
+// multiplayer match that ended left the serverinfo dvar scr_gameended at 1 or
+// 2, and C1's HUD menus draw only while it is 0, so a later co-op match had no
+// HUD.  The multiplayer chain resets these in _gamelogic / _globallogic, which
+// this mode does not run (the same reset as _zombiemode.gsc
+// resetMatchHudDvars).
+resetMatchHudDvars()
+{
+	makeDvarServerInfo( "scr_gameended", 0 );
+	makeDvarServerInfo( "ui_bomb_timer", 0 );
+	makeDvarServerInfo( "ui_danger_team", "" );
+	setDvar( "scr_gameended", 0 );
+	setDvar( "ui_bomb_timer", 0 );
+	setDvar( "ui_danger_team", "" );
+}
+
 // --------------------------------------------------------------------------
 // Callbacks
 // --------------------------------------------------------------------------
@@ -1022,6 +1038,9 @@ Callback_StartGameType()
 	}
 
 	level.isSP = false;
+
+	// A finished multiplayer match must not hide this match's HUD.
+	resetMatchHudDvars();
 
 	if ( !isDefined( level.players ) )
 		level.players = [];

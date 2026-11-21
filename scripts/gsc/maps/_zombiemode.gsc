@@ -466,6 +466,25 @@ resolveLethalGrenade()
 	return undefined;
 }
 
+// The offline match server stays up from one match to the next, and its dvars
+// with it.  A multiplayer match that ended left scr_gameended at 1 or 2, and it
+// is a serverinfo dvar, so every client of a later match on the same server got
+// it too.  C1's HUD menus (ammo, points, round, compass, the HUD style items)
+// draw only while it is 0: every later Zombies match had no HUD, while the GSC
+// hud elems (perks) and the scoreboard still drew.  The multiplayer chain
+// resets these in _gamelogic / _globallogic, which this mode does not run.
+// makeDvarServerInfo first: it creates and flags the dvar on a server that
+// never ran a multiplayer match, so a client that still holds an old 1 gets 0.
+resetMatchHudDvars()
+{
+	makeDvarServerInfo( "scr_gameended", 0 );
+	makeDvarServerInfo( "ui_bomb_timer", 0 );
+	makeDvarServerInfo( "ui_danger_team", "" );
+	setDvar( "scr_gameended", 0 );
+	setDvar( "ui_bomb_timer", 0 );
+	setDvar( "ui_danger_team", "" );
+}
+
 // --------------------------------------------------------------------------
 // Callbacks
 // --------------------------------------------------------------------------
@@ -479,6 +498,9 @@ Callback_StartGameType()
 	{}
 
 	level.isSP = false;
+
+	// A finished multiplayer match must not hide this match's HUD.
+	resetMatchHudDvars();
 
 	if ( !isDefined( level.players ) )
 		level.players = [];
