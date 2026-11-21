@@ -69,6 +69,33 @@ if (args.Length >= 4 && args[0] == "matimages")
     }
     return 0;
 }
+if (args.Length >= 3 && args[0] == "vstats")
+{
+    // vstats <zone.ff> <exe>: the world vertices' colour, texture and lightmap coordinates (GfxWorldVertex: xyz, binormal
+    // sign, colour +16, texCoord +20, lmapCoord +28, normal +36, tangent +40), and per surface lightmap index
+    var z = LoadedZone.Read(args[1], args[2], anyBuild: true);
+    var I = z.Image; var m = z.M;
+    uint w = z.Find(AssetTypes.GfxWorld), draw = w + 0x50;
+    int nv = (int)m.U32(draw + 0x28);
+    uint v = I.Pointer(draw + 0x2C);
+    float[] mn = Enumerable.Repeat(float.MaxValue, 4).ToArray(), mx = Enumerable.Repeat(float.MinValue, 4).ToArray();
+    var cols = new Dictionary<uint, int>();
+    int bad = 0;
+    for (int i = 0; i < nv; i++)
+    {
+        uint b = v + (uint)(44 * i);
+        float[] f = { m.F32(b + 20), m.F32(b + 24), m.F32(b + 28), m.F32(b + 32) };
+        for (int k = 0; k < 4; k++) { if (float.IsNaN(f[k])) { bad++; continue; } mn[k] = Math.Min(mn[k], f[k]); mx[k] = Math.Max(mx[k], f[k]); }
+        uint c = m.U32(b + 16); cols[c] = cols.GetValueOrDefault(c) + 1;
+    }
+    Console.WriteLine($"{nv} vertices; tex u {mn[0]:0.###}..{mx[0]:0.###} v {mn[1]:0.###}..{mx[1]:0.###}; lmap u {mn[2]:0.###}..{mx[2]:0.###} v {mn[3]:0.###}..{mx[3]:0.###}; NaN {bad}");
+    Console.WriteLine("colours: " + string.Join(", ", cols.OrderByDescending(kv => kv.Value).Take(6).Select(kv => $"{kv.Key:X8} x{kv.Value}")));
+    uint dp = w + 0x1C8; int n = (int)m.U32(dp + 4); uint surfs = I.Pointer(dp + 84);
+    var lms = new Dictionary<int, int>();
+    for (int i = 0; i < n; i++) { int l = m.U8(surfs + (uint)(24 * i) + 20); lms[l] = lms.GetValueOrDefault(l) + 1; }
+    Console.WriteLine("surface lightmaps: " + string.Join(", ", lms.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key} x{kv.Value}")) + $"; lightmaps {m.U32(draw + 0x10)}");
+    return 0;
+}
 if (args.Length >= 7 && args[0] == "near")
 {
     // near <zone.ff> <exe> <x> <y> <z> <radius>: world surfaces whose bounds come within radius of the point

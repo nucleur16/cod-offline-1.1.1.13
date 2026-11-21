@@ -314,7 +314,8 @@ public static class Merge
             byte cat = m.U8(nh + 6);
             string? iname = I.Pointer(h + 0x1C) is uint np and not 0 ? m.CString(np, 128) : null;
             bool probe = cat == 1 && iname is not null && iname.StartsWith("*reflection_probe", StringComparison.OrdinalIgnoreCase);
-            uint def = I.Pointer(nh);
+            uint def = I.Pointer(h);   // the source header's: nh's pointer is only set below (read from nh it was 0, and
+                                       // the lightmaps kept 0.0.2.2's flags 2: C1 made them black textures)
             uint? flags = cat == 2 ? 0x08000003u : probe ? 0x08010301u : cat == 1 ? 3u : null;
             if (cat == 2) m.WU8(nh + 6, 10);
             else if (probe) m.WU8(nh + 6, 9);
