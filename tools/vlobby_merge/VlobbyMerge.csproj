@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Merges other CODOL builds' virtual lobby scenes into 1.1.1.13's mp_ui_viewer world (README in this folder).
+       It links the CODOL AssetExplorer's libraries: AeBin is the folder holding its built Codol.*.dll. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AeBin Condition="'$(AeBin)' == ''">D:\CoD\ae_port31926_wt\src\Codol.SoundDumper\bin\Release\net9.0</AeBin>
+    <AssemblyName>vlobby_merge</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Codol.FastFiles"><HintPath>$(AeBin)\Codol.FastFiles.dll</HintPath></Reference>
+    <Reference Include="Codol.Assets"><HintPath>$(AeBin)\Codol.Assets.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

@@ -959,8 +959,12 @@ static int PatchZonesIn(int stage)
 
 /* Called on the DB thread with the name DB_TryLoadXFileInternal is about to open from disk.
  * Returns the open patch file, or INVALID_HANDLE_VALUE when the name is not a patch zone. */
+static HANDLE VlobbyZoneOpen(const char *name); /* vlobby_env.c: ui_viewer_mp with the other builds' lobby scenes */
+
 __attribute__((used)) HANDLE __cdecl PatchDirOpen(const char *name)
 {
+    HANDLE vl = VlobbyZoneOpen(name);
+    if (vl != INVALID_HANDLE_VALUE) return vl;
     for (int i = 0; i < g_patchZoneCount; i++) {
         if (lstrcmpiA(g_patchZones[i].name, name) != 0) continue;
         HANDLE f = CreateFileA(g_patchZones[i].path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
@@ -1660,6 +1664,7 @@ static void PatchGbkInput(void)
 /* The THEATRE screen (codol-classic's theatre playback): see theatre.c. */
 #include "theatre.c"
 #include "hud_style.c"   /* cg_hudStyle / cg_hudStyleList: the selectable HUD style (docs/HUD_STYLES_20261112.md) */
+#include "vlobby_env.c"     /* ui_vlobbyEnv / vlobby_env: the lobby environment switch (after maplist_filter.c, hud_style.c) */
 /* UTF-8 player names: see name_display.c. */
 #if !K33_KERNEL_NAME_DISPLAY
 #include "name_display.c"
@@ -1825,6 +1830,7 @@ static void __cdecl TakeOver(void)
 #endif
     InstallP2PHost();
     InstallMapListFilter();
+    InstallVlobbyEnv();
     InstallLocaleSwitch();
 #if K33_LOCAL_TESTING
     if (!K33OnMainTick(VoiceCmdFile))

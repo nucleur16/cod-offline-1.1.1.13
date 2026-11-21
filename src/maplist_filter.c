@@ -210,9 +210,11 @@ static const BYTE kMlFindPrologue[6] = { 0x55, 0x8B, 0xEC, 0x83, 0xE4, 0xF8 };
 typedef void *(__cdecl *MlFindFn)(int type, const char *name);
 static MlFindFn g_mlFindOriginal;
 
+static void *VlobbyFindSubstitute(int type, const char *name, void *h); /* vlobby_env.c: the merged camera table */
+
 static void *__cdecl MlFindHook(int type, const char *name)
 {
-    void *h = g_mlFindOriginal(type, name);
+    void *h = VlobbyFindSubstitute(type, name, g_mlFindOriginal(type, name));
     if (type == (int)ML_ASSET_STRINGTABLE && h && name && Readable(name, 1) && MlNameEq(name, "mp/comaplist.csv") &&
         Readable(h, 16) && !(h == g_mlTable && *(const int *)((BYTE *)h + 8) == g_mlRows))
         MlTakeTable((BYTE *)h, (DWORD)(DWORD_PTR)__builtin_return_address(0));
