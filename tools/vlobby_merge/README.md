@@ -73,7 +73,7 @@ stay grouped by the dpvs ranges (lit opaque, lit translucent, shadow caster, emi
 index into them (sorted lists, sky surfaces, shadow geometry, brush model 0) is renumbered; static models, vertices,
 indices, lightmaps, reflection probes and material memory are appended; light grid rows are re-based
 (`LightGridMerge.cs`; a donor moves along the grid's row axis, x, far enough that no row holds two scenes; identical
-colour sets are kept once). The donors' lightmaps and probe images are renamed (`*lightmapN_*`, `*reflection_probeN`).
+colour sets are kept once). The appended static models are not in C1's material order, so C1's load-time static model sort (0x00AA1F50) moves blocks of them; it renumbers only the cell's first tree node, which after the merge is the new root, and left the stock tree's leaves naming the wrong models (the vanishing vehicles): Kernel33 repairs every node's references after the sort (`src/smodel_sort.c`), so the merge needs no static model budget. The donors' lightmaps and probe images are renamed (`*lightmapN_*`, `*reflection_probeN`).
 Their primary lights are left out (their light is in their lightmaps and grid colours). A donor's material memory
 entries are kept only for the materials its kept surfaces use, and donor render assets nothing written leads to leave
 the asset list, so what a keep box leaves out does not ship. The donors' stand and camera
