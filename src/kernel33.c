@@ -1300,6 +1300,144 @@ static void PatchLocalizePool(void)
     Log("localize pool: %d entries at %p (C1's: 12000)", newSize, block);
 }
 
+/* Image asset pool. C1 holds images (asset type 10, GfxImage, 0x24 bytes) in a static pool of 7100: g_poolSize[10] =
+ * 7100 @ 0xCD4D90, DB_XAssetPool[10] = 0x01DABD58 @ 0xCD5050 ({freeHead, entries[7100]}, init 0x4CEA90). The frontend,
+ * the merged lobby zone (ui_viewer_vlobby_mp.ff: the 3.19.26.22, 2.6.9.7 and 0.0.2.2 scenes) and the map zones the
+ * in-process match server keeps for the next match came to more than 7100 on the way back to the menus after a match:
+ * "Exceeded limit of 7100 'image' assets" (DB_AllocXAssetHeader 0x4CB180), a fatal error. The pool is enlarged like
+ * the localize one. Nothing in C1 indexes images by their pool slot (no code reads the image pool or its table entry
+ * directly; the DB code reaches it only through the two tables), but three image lists have their own size:
+ *   0x4CB3D0, called once per zone load (0x4B61F6), collects the images the load marked (+0x1A) on the stack,
+ *     {count, image[7100]} (frame 0x6EF4), from DB_EnumXAssets(10) plus the deferred entry list (0x1DA7D58, at most
+ *     0x1000), then loads each (0xA92750). It is replaced by the same walk into a list sized to the new pool.
+ *   imagelist (R_ImageList_f 0xA937E0) has {count, image[0x2000]} on the stack and C1's callback 0xA92150 appends
+ *     without a check; its 21 built-in images are bounded by 0x2000. The callback pushed at 0xA93839 is replaced by
+ *     one that stops at 0x2000.
+ *   0x61D230 (the image release / reload walks 0xA92C3B, 0xA92C59) gathers into the global 0x2AAEB70, which ends at
+ *     0x2AB87B0 (the next global): 10000 entries, also what the pixel shader pool (type 6) has. IMAGE_POOL may not
+ *     exceed it. Every image entry holds a pool slot, so the walk never sees more than the pool holds.
+ * The asset entry table (0x1C402C8, 59,999 entries, uint16 links) is shared by all types and stays as it is. */
+#define IMAGE_TYPE              10
+#define IMAGE_STOCK_POOL        0x01DABD58u
+#define IMAGE_STOCK_SIZE        7100
+#define IMAGE_POOL              10000
+#define IMAGE_LIST_MAX          0x2000      /* R_ImageList_f's list */
+#define DB_ENUM_XASSETS_VA      0x004CAA80u /* (type, callback(header, data), data, includeOverride) */
+#define IMAGE_MARKED_FN_VA      0x004CB3D0u
+#define IMAGE_MARKED_CALL_VA    0x004B61F6u
+#define IMAGE_MARKED_CB_VA      0x004CB3B0u /* if (image[+0x1A]) { image[+0x1A] = 0; list->image[list->count++] = image } */
+#define IMAGE_LOAD_VA           0x00A92750u /* (image, 0) */
+#define DB_DEFERRED_COUNT_VA    0x01878264u
+#define DB_DEFERRED_LIST_VA     0x01DA7D58u /* XAssetEntry *[0x1000]: type +0, header +8 */
+#define DB_DEFERRED_MAX         0x1000u
+#define IMAGELIST_PUSH_CB_VA    0x00A93839u /* push 0xA92150 */
+#define IMAGELIST_CB_VA         0x00A92150u
+#define ASSET_COUNT_TABLE_VA    0x018FCFC0u /* int[44]: assets of each type that hold a pool slot */
+
+typedef void (__cdecl *DbEnumXAssetsFn)(int type, void (__cdecl *cb)(void *, void *), void *data, int includeOverride);
+typedef void (__cdecl *ImageLoadFn)(void *image, int arg);
+
+static int g_imagePoolSize = IMAGE_STOCK_SIZE;
+
+static void __cdecl LoadMarkedImagesHook(void)
+{
+    /* One zone load at a time comes here; the static list is only the fallback if the heap has nothing left. */
+    static DWORD s_fallback[1 + IMAGE_POOL + DB_DEFERRED_MAX];
+    DWORD cap = (DWORD)g_imagePoolSize + DB_DEFERRED_MAX;
+    DWORD *list = (DWORD *)HeapAlloc(GetProcessHeap(), 0, 4 + (SIZE_T)cap * 4);
+    BOOL heap = list != NULL;
+    if (!heap) list = s_fallback;
+    list[0] = 0;
+    ((DbEnumXAssetsFn)(DWORD_PTR)DB_ENUM_XASSETS_VA)(IMAGE_TYPE, (void (__cdecl *)(void *, void *))(DWORD_PTR)IMAGE_MARKED_CB_VA,
+                                                     list, 0);
+    DWORD deferred = *(volatile DWORD *)(DWORD_PTR)DB_DEFERRED_COUNT_VA;
+    for (DWORD i = 0; i < deferred && i < DB_DEFERRED_MAX; i++) {
+        const DWORD *entry = (const DWORD *)(DWORD_PTR)((const DWORD *)(DWORD_PTR)DB_DEFERRED_LIST_VA)[i];
+        if (entry[0] != IMAGE_TYPE) continue;
+        BYTE *image = (BYTE *)(DWORD_PTR)entry[2];
+        if (!image[0x1A]) continue;
+        image[0x1A] = 0;
+        if (list[0] < cap) list[1 + list[0]++] = (DWORD)(DWORD_PTR)image;
+    }
+    for (DWORD i = 0; i < list[0]; i++) {
+        BYTE *image = (BYTE *)(DWORD_PTR)list[1 + i];
+        BYTE flags = image[0x1B];
+        if (!(flags & 1) || (flags & 2))
+            ((ImageLoadFn)(DWORD_PTR)IMAGE_LOAD_VA)(image, 0);
+    }
+    if (heap) HeapFree(GetProcessHeap(), 0, list);
+}
+
+static void __cdecl ImageListAddCapped(void *image, void *data)
+{
+    DWORD *list = (DWORD *)data;
+    if (list[0] < IMAGE_LIST_MAX) list[1 + list[0]++] = (DWORD)(DWORD_PTR)image;
+}
+
+static void PatchImagePool(void)
+{
+    static const BYTE kListPush[] = { 0x68, 0x50, 0x21, 0xA9, 0x00 };
+    int *size = (int *)(DWORD_PTR)(POOL_SIZE_TABLE_VA + 4 * IMAGE_TYPE);
+    DWORD *pool = (DWORD *)(DWORD_PTR)(POOL_TABLE_VA + 4 * IMAGE_TYPE);
+    const BYTE *listPush = (const BYTE *)(DWORD_PTR)IMAGELIST_PUSH_CB_VA;
+    const BYTE *marked = (const BYTE *)(DWORD_PTR)IMAGE_MARKED_FN_VA;
+    /* 0x4CB3D0: push ebp ; mov ebp, esp ; mov eax, 0x6EF4 (the 7100-entry frame) */
+    static const BYTE kMarked[] = { 0x55, 0x8B, 0xEC, 0xB8, 0xF4, 0x6E, 0x00, 0x00 };
+    if (!Readable(size, 4) || !Readable(pool, 4) || *size != IMAGE_STOCK_SIZE || *pool != IMAGE_STOCK_POOL ||
+        !CallsTarget(IMAGE_MARKED_CALL_VA, IMAGE_MARKED_FN_VA) || !Readable(marked, sizeof(kMarked)) ||
+        memcmp(marked, kMarked, sizeof(kMarked)) != 0 || !Readable(listPush, sizeof(kListPush)) ||
+        memcmp(listPush, kListPush, sizeof(kListPush)) != 0) {
+        Log("image pool: tables or code at 0x%08X / 0x%08X / 0x%08X / 0x%08X do not match, the pool stays at %d",
+            (unsigned)(DWORD_PTR)size, (unsigned)(DWORD_PTR)pool, IMAGE_MARKED_CALL_VA, IMAGELIST_PUSH_CB_VA,
+            IMAGE_STOCK_SIZE);
+        return;
+    }
+    void *block = VirtualAlloc(NULL, 4 + (SIZE_T)IMAGE_POOL * 0x24, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    if (!block) {
+        Log("image pool: VirtualAlloc failed (%lu), the pool stays at %d", GetLastError(), IMAGE_STOCK_SIZE);
+        return;
+    }
+    g_imagePoolSize = IMAGE_POOL;
+    RedirectCall(IMAGE_MARKED_CALL_VA, (void *)LoadMarkedImagesHook);
+    DWORD cb = (DWORD)(DWORD_PTR)ImageListAddCapped;
+    WriteCode((BYTE *)(DWORD_PTR)IMAGELIST_PUSH_CB_VA + 1, &cb, 4);
+    DWORD newPool = (DWORD)(DWORD_PTR)block;
+    int newSize = IMAGE_POOL;
+    WriteCode(pool, &newPool, 4);
+    WriteCode(size, &newSize, 4);
+    Log("image pool: %d entries at %p (C1's: %d); marked image list and imagelist sized to it", newSize, block,
+        IMAGE_STOCK_SIZE);
+}
+
+#if K33_DIAGNOSTICS
+/* Image pool use over time: one line each time the count has held for 2 s at a new value, with the peak and the
+ * asset entries in use (the sum of every type's count). */
+static DWORD WINAPI ImagePoolSampler(LPVOID arg)
+{
+    (void)arg;
+    const volatile int *counts = (const volatile int *)(DWORD_PTR)ASSET_COUNT_TABLE_VA;
+    int last = -1, logged = -1, peak = 0, stable = 0;
+    for (;;) {
+        Sleep(250);
+        int now = counts[IMAGE_TYPE];
+        if (now > peak) peak = now;
+        if (now != last) { last = now; stable = 0; continue; }
+        if (++stable != 8 || now == logged) continue;
+        int entries = 0;
+        for (int t = 0; t < 44; t++) entries += counts[t];
+        logged = now;
+        Log("image pool: %d of %d in use (peak %d); asset entries %d of 59999", now, g_imagePoolSize, peak, entries);
+    }
+    return 0;
+}
+
+static void InstallImagePoolSampler(void)
+{
+    HANDLE h = CreateThread(NULL, 0, ImagePoolSampler, NULL, 0, NULL);
+    if (h) CloseHandle(h);
+}
+#endif
+
 static void PatchGpuRating(void)
 {
     /* push desc ; push 1 (archive) ; push 20000 ; push ebx ; push ebx ; push "2658" */
@@ -1796,6 +1934,10 @@ static void __cdecl TakeOver(void)
     PatchLoopFxCatchUp();
     PatchPatchDir();
     PatchLocalizePool();
+    PatchImagePool();
+#if K33_DIAGNOSTICS
+    InstallImagePoolSampler();
+#endif
     PatchUserMaps();
     PatchSurvivalCategory();
     InstallSoundDiag();
