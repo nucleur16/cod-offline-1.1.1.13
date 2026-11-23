@@ -137,7 +137,7 @@ package codo.k33
       }
 
       // k33 offline: the Max Players of the multiplayer room this player owns, for Kernel33's host, which fills the
-      // match with bots to twice that (p2p.c P2PBotFill); "0" for any other room or none.
+      // match with bots up to it (p2p.c P2PBotFill); "0" for any other room or none.
       private function publishMaxPlayers(value:Object):void
       {
          var max:String="0";
