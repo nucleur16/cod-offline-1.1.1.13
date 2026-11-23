@@ -1,4 +1,4 @@
-"""Run the actual C1 scanner and shipping compiled Survival predicate in Unicorn.
+"""Run the actual C1 scanner and shipping compiled Survival/zombies predicate in Unicorn.
 Only CG_LocationalTrace is a boundary double. Positions use C1's own encoded
 centity origin representation (decoded by443d90); no flag/timer/math doubles.
 """
@@ -56,7 +56,7 @@ def run(mode,patched,etype=18,team=1,distance=200,slot=0,eflags=0,fx_blocked=Fal
 
 class Tests(unittest.TestCase):
  def test_original_modes_unchanged(self):
-  for mode in ['coop','mp','war','zm','combat','','survival_extra']:
+  for mode in ['coop','mp','war','combat','','survival_extra','z','xzm']:
    for team in [1,2]:
     with self.subTest(mode=mode,team=team):self.assertEqual(run(mode,False,team=team),run(mode,True,team=team))
  def test_survival_actual_enemy_flags_target_and_settle(self):
@@ -65,6 +65,15 @@ class Tests(unittest.TestCase):
   self.assertEqual(expected,(16,821,1000,1000))
   for mode in ['survival','SURVIVAL']:
    self.assertEqual(run(mode,True),expected)
+ def test_zombies_actual_enemy_flags_target_and_settle(self):
+  # zombies and hellhounds are axis actors, zombies players allies: C1's own coop arm makes them enemies
+  self.assertEqual(run('zm',False),(0,0,0,0))
+  expected=run('coop',False)
+  for mode in ['zm','ZM','zm_x']:
+   self.assertEqual(run(mode,True),expected)
+  for kw in [dict(team=2),dict(team=0),dict(distance=1000),dict(etype=0),dict(etype=20),dict(slot=255),dict(eflags=0x20000)]:
+   with self.subTest(**kw):
+    self.assertEqual(run('zm',True,**kw),run('coop',False,**kw))
  def test_original_actor_filters_preserved(self):
   for kw in [dict(team=2),dict(team=0),dict(distance=1000),dict(etype=0),dict(etype=20),dict(slot=255),dict(eflags=0x20000)]:
    with self.subTest(**kw):

@@ -80,7 +80,7 @@ static void PatchSurvivalCategory(void)
         }
     SurvivalJump(K33_SURV_ZONE_HOOK_VA, K33SurvivalZoneHook, 6);
     SurvivalJump(K33_SURV_CROSSHAIR_HOOK_VA, K33SurvivalCrosshairHook, 7);
-    Log("survival category: native actor crosshair mode predicate enabled; team/range/dead/FX filters retained");
+    Log("survival category: native actor crosshair mode predicate enabled for survival and zm; team/range/dead/FX filters retained");
     Log("survival category: \"%s\" loads %s (+patch_, localized_) ahead of the mp gametype zones",
         K33_SURVIVAL_CATEGORY, K33_SURVIVAL_GAMETYPE_ZONE);
 }

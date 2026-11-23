@@ -64,8 +64,13 @@ __asm__(
     "    jmp *_g_k33SurvZoneMp\n");         /* then C1's mp branch, as for any category that is not zm/coop */
 
 
-/* C1 scanner's mode result: stock is (category == coop). Survival uses the
- * same real actor classification; do not change the authoritative category. */
+/* C1's crosshair scan (entry 0x439940, mutated into .tvm0) looks at actors (eType 18) only when its mode
+ * predicate at 0x8458F2A is true, and stock that is (category == coop): in every other category an actor under
+ * the crosshair is skipped before the team test, so the crosshair never turns red (ps weapFlags 0x10) or
+ * friendly (0x08) over one. Survival and zombies run their AI as the same ET_ACTOR, with the actor's sentient
+ * team in actorInfo +14 (cg+0x168528+slot*0x29C; the server's actor_state.cpp), so C1's own actor arm, with its
+ * team/range/dead/FX filters, runs there too. Zombies and hellhounds are axis and zombies players allies, so they
+ * classify as enemies, never friendlies (0x08 is also C1's fire lock, 0x41DAAE). The category is not changed. */
 #define K33_SURV_CROSSHAIR_HOOK_VA 0x08458F2Au
 #define K33_SURV_CROSSHAIR_RESUME_VA 0x08458F31u
 __attribute__((used)) unsigned g_k33SurvCrosshairResume=K33_SURV_CROSSHAIR_RESUME_VA;
@@ -75,7 +80,7 @@ __attribute__((used)) int __cdecl K33SurvivalCrosshairMode(void)
     const char *cgs;
     if(!Readable((const void *)(0x016D3B58u+index*4),4))return 0;
     cgs=(const char *)(*(const unsigned *)(0x016D3B58u+index*4)^0x3958BEADu);
-    return Readable(cgs+0x20,9) && K33IsSurvivalCategory(cgs+0x20);
+    return Readable(cgs+0x20,9) && K33IsActorCrosshairCategory(cgs+0x20);
 }
 void K33SurvivalCrosshairHook(void);
 __asm__(

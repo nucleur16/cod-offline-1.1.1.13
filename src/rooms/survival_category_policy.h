@@ -42,4 +42,13 @@ static int K33IsSurvivalCategory(const char *category)
     return K33SurvEqualI(category, K33_SURVIVAL_CATEGORY);
 }
 
+/* Categories whose AI (ET_ACTOR) C1's crosshair scan should classify, besides coop (which C1 does itself):
+ * survival, and zombies, matched as C1 matches it (Q_strnicmp(cat, "zm", 2), 0x4CCDF0). */
+static int K33IsActorCrosshairCategory(const char *category)
+{
+    if (!category) return 0;
+    if (K33IsSurvivalCategory(category)) return 1;
+    return K33SurvLower((unsigned char)category[0]) == 'z' && K33SurvLower((unsigned char)category[1]) == 'm';
+}
+
 #endif
