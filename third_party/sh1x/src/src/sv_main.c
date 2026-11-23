@@ -5449,6 +5449,9 @@ __optimize3 __regparm1 qboolean SV_Frame( unsigned int usec ) {
          * "E <client> <score>" command; without it the readout is whatever
          * the last whole scoreboard said. See scoreboard_sender.c. */
         PublishPlayerScores();
+        /* Kills, deaths and assists have no incremental command: a changed
+         * row gets the whole board, at most every 500 ms. */
+        PublishPlayerStats();
         RefreshWeaponHud();
         /* In-match rank/XP reaches the C1 client's own secure-profile copy
          * only through its 'K' command; see profile_push.h. */

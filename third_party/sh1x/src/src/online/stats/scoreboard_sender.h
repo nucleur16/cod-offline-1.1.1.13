@@ -29,6 +29,13 @@ void ResetScoreboardSkillWarning(unsigned client);
  * only changes when the whole board arrives, i.e. while TAB is held. Called
  * once per server frame; sends nothing when no score moved. */
 void PublishPlayerScores(void);
+/* Keep the kills, deaths and assists of the client's cached scoreboard row in
+ * step as well. C1 has no incremental command for them ("E" carries the score
+ * only), so the whole board is sent, as the TAB poll would, when the viewer's
+ * own row or the row of the player it follows changed: at most once per
+ * 500 ms per client, nothing while no one's stats move. Called once per
+ * server frame, after PublishPlayerScores. */
+void PublishPlayerStats(void);
 #ifdef __cplusplus
 }
 #endif
