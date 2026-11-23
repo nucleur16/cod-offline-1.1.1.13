@@ -609,9 +609,11 @@ scorePopup( amount, bonus, hudColor, glowAlpha )
 	self notify( "scorePopup" );
 	self endon( "scorePopup" );
 
-	// Each popup displays this award, never a previous kill/challenge total.
-	self.xpUpdateTotal = amount;
-	self.bonusUpdateTotal = bonus;
+	// Awards stack while the popup is up (IW4): two kills inside the window
+	// read +50 then +100. The total resets when the popup fades below, or in
+	// removeRankHUD when a team change ends this thread first.
+	self.xpUpdateTotal += amount;
+	self.bonusUpdateTotal += bonus;
 
 	wait ( 0.05 );
 
@@ -656,6 +658,10 @@ scorePopup( amount, bonus, hudColor, glowAlpha )
 removeRankHUD()
 {
 	self.hud_scorePopup.alpha = 0;
+	// joined_team / joined_spectators end scorePopup before its reset, so a
+	// stale total must not carry into the next popup.
+	self.xpUpdateTotal = 0;
+	self.bonusUpdateTotal = 0;
 }
 
 getRank()
