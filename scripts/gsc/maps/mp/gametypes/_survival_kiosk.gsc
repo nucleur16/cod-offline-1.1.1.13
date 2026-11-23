@@ -44,13 +44,12 @@ init()
 		level.class = ::class_menu_response;
 	}
 	level.survival_kiosk_table = "mp/kiosks.csv";
-	// Original CoDOL kiosk icons (table column 6, rows 0/3/10). The locker
-	// sells both ammunition and perks; the support case sells killstreaks.
+	// Original CoDOL kiosk icons (table column 6, rows 0/10): one per kiosk
+	// type, the locker's (ammunition, its default purchase) and the support
+	// case's (air support). Each kiosk shows only its own type's icon.
 	level.survival_kiosk_ammo_icon = item_icon( 0 );
-	level.survival_kiosk_perk_icon = item_icon( 3 );
 	level.survival_kiosk_support_icon = item_icon( 10 );
 	precacheShader( level.survival_kiosk_ammo_icon );
-	precacheShader( level.survival_kiosk_perk_icon );
 	precacheShader( level.survival_kiosk_support_icon );
 	level.survival_menus = ( getDvar( "scr_survival_menus" ) == "" || getDvarInt( "scr_survival_menus" ) != 0 );
 	if ( level.survival_menus )
@@ -192,9 +191,11 @@ main()
 		level thread test_purchases();
 }
 
-// IW5 _so_survival_armory::armory_use_monitor: an archived world HUD
-// shader with the native waypoint icon flags. The compass objective uses
-// the same original CoDOL service icon, at the actual authored crate origin.
+// IW5 _so_survival_armory::armory_use_monitor: one archived world HUD shader
+// with the native waypoint icon flags per kiosk (IW5's crateworldicon). The
+// compass objective uses the same icon, at the actual authored crate origin.
+// Exactly one icon each: the locker used to stack a second (perk) waypoint
+// above its ammo one and flip its compass icon between the two every 2 s.
 create_markers()
 {
 	icon = level.survival_kiosk_support_icon;
@@ -204,27 +205,6 @@ create_markers()
 	objective_add( self.survival_objective, "active", self.origin );
 	objective_icon( self.survival_objective, icon );
 	self.survival_world_icon = world_icon( self.origin, icon, 48 );
-	// CoDOL has two physical kiosks, not IW5's three armories. Advertise the
-	// locker's perk service above the same crate without inventing a placement.
-	if ( self.survival_kind == "kiosk_locker" )
-	{
-		self.survival_perk_icon = world_icon( self.origin, level.survival_kiosk_perk_icon, 72 );
-		self thread marker_rotation();
-	}
-}
-
-marker_rotation()
-{
-	level endon( "survival_over" );
-	// One real compass anchor advertises the two services of the same locker.
-	// Each update changes only that objective's material, never its position.
-	for ( ;; )
-	{
-		wait( 2 );
-		objective_icon( self.survival_objective, level.survival_kiosk_perk_icon );
-		wait( 2 );
-		objective_icon( self.survival_objective, level.survival_kiosk_ammo_icon );
-	}
 }
 
 world_icon( origin, material, height )
@@ -250,8 +230,6 @@ markers_lifecycle()
 			continue;
 		objective_delete( kiosk.survival_objective );
 		kiosk.survival_world_icon destroy();
-		if ( isDefined( kiosk.survival_perk_icon ) )
-			kiosk.survival_perk_icon destroy();
 	}
 }
 
