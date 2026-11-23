@@ -24,11 +24,12 @@ GAME = Path(os.environ.get("K33_GAME", r"D:\CoD\CODOL Builds\Call of Duty Online
 # --parts .ff build_zones.py writes. A .menu that compiles to anything else changes these. They were the main build's
 # (c7822d8, from the menu/*.bin and menufile/*.json the .menu files replaced) until the HUD menus' style dvar became
 # cg_hudStyle; hud_styles_postgfx_mp and survival_hud_postgfx_mp were re-pinned then (their trees are the old ones
-# with that one name changed).
+# with that one name changed). survival_hud_postgfx_mp again on 2026-11-22: v33's killstreak flash at alpha 0 and the
+# v26 / v33 team bars with WINDOW_FLAG_NON_DEFAULT_FORECOLOR (fix/hud-killstreak-teamcolors).
 PINNED = {
     "field_orders_postgfx_mp": ("a4af57c1970eba3cae93e0bd05c72278", "7b583c6a32f93d22398aeab60a39575a"),
     "hud_styles_postgfx_mp": ("068721d21b30aea502656605644e62a4", "2bf644b4a4c9b6a437dfb1be20898f28"),
-    "survival_hud_postgfx_mp": ("7422ba6df0d23ee9d05d7dc7ef6c5705", "749e896bb69fb91d40680cc60d55dda4"),
+    "survival_hud_postgfx_mp": ("ee8c343e43558dd06a47009e5fbd9718", "539cd76c39f03a9d6c194c47db1cb47a"),
     "patch_common_gametype_survival": ("b9ba3d8084447ce644ce0583946482ec", "68a52c64bb2cf51dd7996a6cf2955bea"),
     "survival_menus": ("223e58ab1ebddc12a3c075fd5a0293ad", "44d8224f89d7d96b6ab256eac11818ae"),
 }
