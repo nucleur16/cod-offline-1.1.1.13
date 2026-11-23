@@ -78,14 +78,22 @@ onStartGameType()
 	setObjectiveHintText( "allies", &"MPUI_TAR_MAP_SURVIVAL_GLOBAL_OBJ" );
 	setObjectiveHintText( "axis", &"MPUI_TAR_MAP_SURVIVAL_GLOBAL_OBJ" );
 
-	// The level's survival entities (player starts, squads, kiosks, paths).
-	if ( !maps\mp\gametypes\_survival_levels::data( getDvar( "mapname" ) ) )
+	// The level's survival entities (player starts, squads, kiosks, paths):
+	// authored (maps/mp/survival/<level>.gsc), else derived from the level's
+	// AI graph, MP spawns and helicopter path (maps/mp/survival/_generic.gsc).
+	if ( !maps\mp\gametypes\_survival_levels::data( getDvar( "mapname" ) ) &&
+	     !maps\mp\survival\_generic::data() )
 		println( "CoDOL survival: " + getDvar( "mapname" ) + " has no survival data (maps/mp/survival/)" );
 
+	// The MP spawns are the fallback start (getSpawnPoint). Some levels have
+	// no war starts (mp_tunisia), and placeSpawnPoints aborts the level on a
+	// classname with none: place only those the level has.
 	level.spawnMins = ( 0, 0, 0 );
 	level.spawnMaxs = ( 0, 0, 0 );
-	maps\mp\gametypes\_spawnlogic::placeSpawnPoints( "mp_tdm_spawn_allies_start" );
-	maps\mp\gametypes\_spawnlogic::placeSpawnPoints( "mp_tdm_spawn_axis_start" );
+	if ( getEntArray( "mp_tdm_spawn_allies_start", "classname" ).size )
+		maps\mp\gametypes\_spawnlogic::placeSpawnPoints( "mp_tdm_spawn_allies_start" );
+	if ( getEntArray( "mp_tdm_spawn_axis_start", "classname" ).size )
+		maps\mp\gametypes\_spawnlogic::placeSpawnPoints( "mp_tdm_spawn_axis_start" );
 	maps\mp\gametypes\_spawnlogic::addSpawnPoints( "allies", "mp_tdm_spawn" );
 	maps\mp\gametypes\_spawnlogic::addSpawnPoints( "axis", "mp_tdm_spawn" );
 	level.mapCenter = maps\mp\gametypes\_spawnlogic::findBoxCenter( level.spawnMins, level.spawnMaxs );
