@@ -578,11 +578,15 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
          * are cleared here as well. scr_gameended is 1/2 after a multiplayer match ended, and C1's HUD menus
          * (ammo, score, compass, the Zombies points and round) draw only while it is 0: Zombies and co-op, which
          * do not run the multiplayer _gamelogic reset, had no HUD after one (the scripts reset it too,
-         * scripts/gsc maps/_zombiemode.gsc resetMatchHudDvars; this covers a mode script that does not). */
+         * scripts/gsc maps/_zombiemode.gsc resetMatchHudDvars; this covers a mode script that does not).
+         * Bots (p2p.c P2PBotFill): a multiplayer room's fill; any other match gets the scripts' defaults back
+         * (no fill, scr_botmax 11), so no fill carries over. */
         _snprintf(g_piRetarget, sizeof(g_piRetarget),
                   "set fs_game %s\nset sv_zoneType %s\nset sv_sessionMap %s\nset g_gametype %s\nset g_difficulty %d\n"
-                  "set zombiesEndlessEnabled %d\nset scr_gameended 0\nset ui_bomb_timer 0\nmap %s\n",
-                  c.zoneType, c.zoneType, session, c.gametype, difficulty, difficulty == 3, c.map);
+                  "set zombiesEndlessEnabled %d\nset scr_gameended 0\nset ui_bomb_timer 0\n"
+                  "set scr_botfill %d\nset scr_botmax %d\nmap %s\n",
+                  c.zoneType, c.zoneType, session, c.gametype, difficulty, difficulty == 3,
+                  c.botFill > 0 ? c.botFill : 0, c.botFill > 0 ? c.botMax : 11, c.map);
         g_piRetarget[sizeof(g_piRetarget) - 1] = 0;
         Log("p2p in-process: reusing the match server started %lu s ago (match %ld): %s %s on %s:%d",
             (GetTickCount() - g_piServerStartTick) / 1000, n, c.map, c.gametype, c.netIp, c.port);

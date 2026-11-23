@@ -33,6 +33,7 @@
 #include "p2p_local_play_api.h"
 
 #define P2P_DEFAULT_PORT 17760
+#define P2P_MAX_CLIENTS  18     /* the match server's client slots: sh1x MAX_GAME_CLIENTS (C1's sv_maxclients 1..18) */
 #define P2P_STATUS_MS    2000
 
 enum { P2P_IDLE, P2P_STARTING, P2P_READY, P2P_STOPPING, P2P_EXITED, P2P_FAILED };
@@ -57,6 +58,7 @@ typedef struct P2PConfig {
     int c1Preload;               /* in-process: preloadmap when C1 is not loading a hosted map (default 0) */
     int c1Zones;                 /* in-process: map zones C1 holds are C1-backed, mounted only on demand (default 1) */
     int difficultyPresent,difficulty; /* the Zombies room's difficulty (K33LocalPlayAuto) */
+    int maxPlayers, botFill, botMax;  /* a multiplayer room's Max Players and the bot fill from it (P2PBotFill); 0 = none */
 } P2PConfig;
 
 static DWORD g_p2pMainThread;
@@ -545,6 +547,15 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
     if (OfflineLobbyActive())
         _snprintf(pmem + strlen(pmem), sizeof(pmem) - strlen(pmem), " +set oneShotMatch 1 +set exitToLobby 1");
     pmem[sizeof(pmem) - 1] = 0;
+    /* Bots: the server runs for the rest of the client run (p2p_inproc.c), and sv_maxclients can only be set on its
+     * command line (CVAR_INIT), so it starts with every client slot the engine has (P2P_MAX_CLIENTS) whatever this
+     * first match is: a later multiplayer room's bot fill then has room. A multiplayer room's fill (P2PBotFill) goes
+     * with it; a later match sets its own before its `map` (p2p_inproc.c). */
+    char bots[96];
+    _snprintf(bots, sizeof(bots), "+set sv_maxclients %d", P2P_MAX_CLIENTS);
+    if (c.botFill > 0)
+        _snprintf(bots + strlen(bots), sizeof(bots) - strlen(bots), " +set scr_botfill %d +set scr_botmax %d", c.botFill, c.botMax);
+    bots[sizeof(bots) - 1] = 0;
     /* The explicit local Host/Guest trial arms this short-lived file before
      * forwarding any Guest packet. Normal solo hosting leaves it absent. */
     _snprintf(relayPath, sizeof(relayPath), "%s\\p2p_relay_identity.txt", c.state);
@@ -568,11 +579,11 @@ static DWORD WINAPI P2PHostThread(LPVOID unused)
         "+set scriptPath \"%s\" +set scriptOverlay \"%s\" +set scriptNativeOverlay \"%s\" "
         "+set securityKeyPath \"%s\\securitykey.bin\" +set admissionPath \"%s\\game_admissions.txt\" "
         "+set admissionRequired %d %s %s +set profilePath \"%s\" +set sv_zoneType %s +set sv_sessionMap %s "
-        "+set g_gametype %s +set hostParentPid %lu %s "
+        "+set g_gametype %s +set hostParentPid %lu %s %s "
         "+scriptPath +scriptOverlay +scriptNativeOverlay +map %s %s",
         c.exe, c.basepath, c.home, c.netIp, c.port, password, c.developer, c.scripts, overlay, overlay,
         c.state, c.state, c.admission ? 1 : 0, relayArg, keysArg, c.profile, c.zoneType, c.sessionMap[0] ? c.sessionMap : c.map,
-        c.gametype, inproc ? 0ul : GetCurrentProcessId(), pmem, c.map, c.extra);
+        c.gametype, inproc ? 0ul : GetCurrentProcessId(), pmem, bots, c.map, c.extra);
     cmd[sizeof(cmd) - 1] = 0;
     if (inproc) {
         /* The same command line without the exe: Sh1xHost_Init takes what follows it. */
@@ -969,6 +980,26 @@ static void P2PLobbyTick(void)
     done=C1QueueSet("ui_p2p_request",number) && done;
     if (done) lstrcpynA(previous,snapshot,sizeof(previous));
 }
+/* Main thread, at a match launch: the bots of a multiplayer room. Its Max Players is what the room view publishes
+ * (LocalMatchControls.as, ui_p2p_maxplayers: the owned multiplayer room's currentMaxPlayers, "0" otherwise). The
+ * match fills to twice that: scr_botfill counts every player, the human too (_codol_bots.gsc maintainBots), and
+ * scr_botmax (botfill - 1) must not cut it back. The server has P2P_MAX_CLIENTS slots (sh1x MAX_GAME_CLIENTS),
+ * so the fill is at most that. Any other match, or a multiplayer room with no Max Players, gets no fill. */
+static void P2PBotFill(P2PConfig *c)
+{
+    char value[16];
+    c->maxPlayers = c->botFill = c->botMax = 0;
+    if (strcmp(c->zoneType, "mp") || !C1DvarString("ui_p2p_maxplayers", value, sizeof(value))) return;
+    int n = atoi(value);
+    if (n < 1 || n > 64) return;
+    int fill = 2 * n;
+    if (fill > P2P_MAX_CLIENTS) fill = P2P_MAX_CLIENTS;
+    c->maxPlayers = n;
+    c->botFill = fill;
+    c->botMax = fill - 1;
+    Log("bots: Max Players %d -> scr_botfill %d, scr_botmax %d%s", n, c->botFill, c->botMax,
+        fill < 2 * n ? " (2 x Max Players is more than the server's clients: capped)" : "");
+}
 static void P2PHostCurrentRoom(void)
 {
     P2PConfig c;
@@ -983,6 +1014,7 @@ static void P2PHostCurrentRoom(void)
     lstrcpyA(c.gametype,g_p2pRoom.gametype);lstrcpyA(c.zoneType,g_p2pRoom.category);
     c.difficultyPresent=g_p2pRoom.difficultyPresent;c.difficulty=g_p2pRoom.difficulty;
     lstrcpyA(c.netIp,"127.0.0.1");
+    P2PBotFill(&c);
     /* Verified scripts are installed into the same-process host before its
      * first frame. The child path cannot receive this immutable inventory. */
     lstrcpyA(c.mode,"inprocess");g_p2pIntentConfig=c;

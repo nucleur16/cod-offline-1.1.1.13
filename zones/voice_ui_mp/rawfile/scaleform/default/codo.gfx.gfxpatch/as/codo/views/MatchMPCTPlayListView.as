@@ -22,6 +22,7 @@ package codo.views
    import flash.geom.Matrix;
    import flash.text.TextField;
    import flash.utils.Timer;
+   import flash.utils.setTimeout;
    
    public class MatchMPCTPlayListView extends BaseView
    {
@@ -83,6 +84,8 @@ package codo.views
       
       private var _originMatrix:Matrix;
       
+      private var _k33Redirect:Boolean = false;
+      
       public function MatchMPCTPlayListView()
       {
          super();
@@ -137,10 +140,27 @@ package codo.views
          });
          this.addSyncDP(SyncDataID.MATCH_MPCT_PLAYLIST_SELECTED_DATA,this.getCurrentPlayListSelectedDat);
          this._showImgTimer.start();
+         // k33 offline: there is no Matchmaking. Whatever opens this page (the Multiplayer entry, the Start button,
+         // closing a room) goes on to Create Room a frame later, as Create Room's own button does; the page's
+         // 0.3 s fade-in never starts.
+         this._k33Redirect = true;
+         setTimeout(this.k33GotoRoomCreator,1);
+      }
+      
+      private function k33GotoRoomCreator() : void
+      {
+         if(!this._k33Redirect)
+         {
+            return;
+         }
+         this._k33Redirect = false;
+         this.setBindData(AsyncTaskID.MATCH_MPCT_ENABLE_START_BUTTON,{"enable":true});
+         this.broadcast(BCEvent.EVT_GOTO_MATCH_MPCT_ROOM_CREATOR);
       }
       
       override protected function hideView() : void
       {
+         this._k33Redirect = false;
          this.myList.removeEventListener(CodoList.EVT_LINE_CLICK,this.onListItemClickHandle);
          this.myList.removeEventListener(CodoList.EVT_LINE_ROLLOVER,this.onListRollOverHandle);
          this.myList.removeEventListener(CodoList.EVT_LINE_ROLLOUT,this.onListRollOutHandle);

@@ -75,6 +75,12 @@ package codo.views
          this.myPlayListBtn.label = LocalizationRoom.LIST_LABEL_PLAYLIST;
          this.myRoomListBtn.label = LocalizationRoom.ROOM_LIST;
          this.myRoomCreatorBtn.label = LocalizationRoom.CREATE;
+         // k33 offline: no online channel. The "Channel" header, Matchmaking (the playlists) and Rooms (the room
+         // browser) are hidden; Create Room is the only entry and moves up to the first button's place.
+         this.k33OfflineHide(this.myHeader);
+         this.k33OfflineHide(this.myPlayListBtn);
+         this.k33OfflineHide(this.myRoomListBtn);
+         this.myRoomCreatorBtn.y = this.myPlayListBtn.y;
          this.x = POS_X_ORIGIN;
          this.y = POS_Y_ORIGIN;
          this._originMatrix = this.transform.matrix;
@@ -93,10 +99,17 @@ package codo.views
             this.myRoomCreatorBtn.addEventListener(BaseButton.EVT_CLICK,this.theatreFilter);
             return;
          }
-         this.myPlayListBtn.addEventListener(BaseButton.EVT_CLICK,this.onMenuBtnClickHandle);
-         this.myRoomListBtn.addEventListener(BaseButton.EVT_CLICK,this.onMenuBtnClickHandle);
          this.myRoomCreatorBtn.addEventListener(BaseButton.EVT_CLICK,this.onMenuBtnClickHandle);
          this.bind(AsyncTaskID.GROUP_COUNTS,this.bind_groupCounts);
+      }
+
+      private function k33OfflineHide(item:Object) : void
+      {
+         item.visible = false;
+         item.mouseEnabled = false;
+         item.mouseChildren = false;
+         item.tabEnabled = false;
+         item.tabChildren = false;
       }
       
       override protected function showView() : void
@@ -135,7 +148,8 @@ package codo.views
             this.theatreSelect("all");
             return;
          }
-         this.changeCurrentMenu(this.myPlayListBtn,false);
+         // k33 offline: the Matchmaking page sends the player on to Create Room (MatchMPCTPlayListView)
+         this.changeCurrentMenu(this.myRoomCreatorBtn,false);
       }
       
       private function bind_groupCounts(cRes:Object) : void
