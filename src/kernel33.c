@@ -1974,6 +1974,9 @@ static void __cdecl TakeOver(void)
     InstallMapListFilter();
     InstallVlobbyEnv();
     InstallLocaleSwitch();
+    /* r_noborder's registration and Options toggle, and the window titles' language tick: on the dispatcher, since
+     * voice.c's own tick is not hooked when its send bytes differ (this exe) */
+    if (!K33OnMainTick(BorderlessTick)) Log("r_noborder: no main-thread tick left; r_noborder is read by name only");
 #if K33_LOCAL_TESTING
     if (!K33OnMainTick(VoiceCmdFile))
         Fatal("Local command-file tick could not be installed.");
