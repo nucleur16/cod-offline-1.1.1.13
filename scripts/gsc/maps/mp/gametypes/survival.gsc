@@ -103,6 +103,8 @@ onStartGameType()
 	allowed[1] = "airdrop_pallet";
 	maps\mp\gametypes\_gameobjects::main( allowed );
 
+	// IW5's slam zoom from overhead instead of the MP prematch countdown.
+	maps\mp\gametypes\_survival_intro::init();
 	maps\mp\gametypes\_survival::init();
 	level thread maps\mp\gametypes\_survival::main();
 }
