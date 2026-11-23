@@ -23,6 +23,9 @@ package codo.views
    import components.CodoGrowButton;
    import components.CodoGrowButtonNoTint;
    import flash.display.Bitmap;
+   import flash.display.DisplayObject;
+   import flash.display.DisplayObjectContainer;
+   import flash.display.InteractiveObject;
    import flash.display.Sprite;
    import flash.events.Event;
    import flash.text.TextField;
@@ -39,7 +42,9 @@ package codo.views
       
       private static const POS_X_ORIGIN:int = 870;
       
-      private static const POS_X_OPEN:int = GameInfo.PANEL_GAP;
+      // k33 offline: with no room list beside it (MatchRoomListView / CyborgMatchRoomListView stay hidden) the panel
+      // opens in the middle of the screen, where the multiplayer Create Room panel is, instead of at the left edge.
+      private static const POS_X_OPEN:int = GameInfo.PANEL_MiDLEFT_ALIGN;
       
       private static const POS_Y_ORIGIN:int = GameInfo.PANEL_TOP_ALIGN;
       
@@ -131,6 +136,42 @@ package codo.views
                   fitFieldPassword.setTextFormat(fitFormatPassword);
                }
             }
+         }
+         this.k33OfflineLayout();
+      }
+      
+      // k33 offline: the Room Name and Room Password rows are hidden and the rows under them (Spec Ops: Story/Challenge,
+      // Difficulty, Map; Zombies: Map and the difficulty) move up into their place; the Create Room button stays. The room is still named after the
+      // profile (DEFAULT_ROOM_NAME, set in enableData) and has no password.
+      private function k33OfflineLayout() : void
+      {
+         var shift:Number = this.myOptionLabelTF_0.y - this.myRoomNameLabelTF.y;
+         var top:Number = this.myOptionBg_0.y - 1;
+         var from:Number = top - shift - 1;
+         var bottom:Number = this.myCreateBtn.y - 1;
+         var i:int = 0;
+         while(i < this.numChildren)
+         {
+            var child:DisplayObject = this.getChildAt(i);
+            if(child.y >= from && child.y < top)
+            {
+               child.visible = false;
+               if(child is InteractiveObject)
+               {
+                  InteractiveObject(child).mouseEnabled = false;
+                  InteractiveObject(child).tabEnabled = false;
+               }
+               if(child is DisplayObjectContainer)
+               {
+                  DisplayObjectContainer(child).mouseChildren = false;
+                  DisplayObjectContainer(child).tabChildren = false;
+               }
+            }
+            else if(child.y >= top && child.y < bottom)
+            {
+               child.y -= shift;
+            }
+            i++;
          }
       }
       
