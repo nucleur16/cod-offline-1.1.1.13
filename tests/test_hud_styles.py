@@ -550,6 +550,8 @@ class HudStyles(unittest.TestCase):
                 tinted += 1
                 colour = tuple(round(v, 3) for v in struct.unpack_from("<4f", bytes.fromhex(it["raw"]), 0x50))
                 self.assertIn(colour, stock_colours)
+                # C1 ignores the forecolor of an item without WINDOW_FLAG_NON_DEFAULT_FORECOLOR: the bar draws white
+                self.assertTrue(struct.unpack_from("<I", bytes.fromhex(it["raw"]), 0x48)[0] & hs.NON_DEFAULT_FORECOLOR)
         # v26: the two bars' top and bottom (4); v33: its six (two own-team pairs and the other team's pair)
         self.assertEqual(tinted, 4 + 6)
 

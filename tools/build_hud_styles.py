@@ -111,6 +111,7 @@ STOCK_OTHER_TEAM = (0.78, 0.278, 0.239, 1.0)
 TEAM_TINT = {"1score_bar_bar1_bottom": STOCK_OWN_TEAM, "1score_bar_bar1": STOCK_OWN_TEAM,
              "1score_bar_bar2_bottom": STOCK_OTHER_TEAM, "1score_bar_bar2": STOCK_OTHER_TEAM}
 WHITE = "_white"
+NON_DEFAULT_FORECOLOR = 0x10000     # windowDef_t.dynamicFlags @0x48 (zonekit/menu_source.py DYN_FORECOLOR)
 FIRE_DVAR = "cg_hudFireType"   # hud_style.c: "@SF_WEAPON_*_NAME" of the weapon in hand (getweaponfiretype)
 ASSISTS_DVAR = "cg_hudAssists" # hud_style.c: the local player's assists from the score records (player("assists"))
 MODE_CONSTANTS = {"istrain": 0, "isevac": 0}       # modes 1.1.1.13 does not have
@@ -573,8 +574,12 @@ def check_item(conv, style, src_menu, item, owner_draws):
             if tint:
                 # the team bars in 1.1.1.13's colours: a white version of the art, tinted by the item's colour
                 new += WHITE
+                # C1 draws a shader item in its forecolor only while its dynamic flags have
+                # WINDOW_FLAG_NON_DEFAULT_FORECOLOR (what IW's compiler sets for a "forecolor" line). The later
+                # builds' bars are drawn white, so they do not have it: without it the tint is ignored
                 raw = bytearray(bytes.fromhex(item["raw"]))
                 struct.pack_into("<4f", raw, 0x50, *tint)
+                struct.pack_into("<I", raw, 0x48, struct.unpack_from("<I", raw, 0x48)[0] | NON_DEFAULT_FORECOLOR)
                 item["raw"] = raw.hex().upper()
             conv.used_materials.add(new)
         elif how["action"] == "stock":
