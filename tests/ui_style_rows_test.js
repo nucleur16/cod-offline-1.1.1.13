@@ -80,8 +80,9 @@ for(const which of ['pause','video']){
  global.K33_STYLE_POLL=Number(/K33_STYLE_POLL:int = (\d+)/.exec(text)[1]);
  global.K33_STYLE_HOLD=Number(/K33_STYLE_HOLD:int = (\d+)/.exec(text)[1]);
  assert.deepStrictEqual(K33_GLYPH_NAMES,['AUTO','XBOX','PS','NINTENDO','GENERIC','TEXT','KBM'],'gpad_glyphs 0..6 in the contract order');
- assert.deepStrictEqual(K33_STYLE_DVARS,{lang:'loc_languageName',glyph:'gpad_glyphs',hud:'cg_hudStyle',sway:'cg_hudSway'},'the contract dvars');
- assert.deepStrictEqual(K33_STYLE_KINDS,['lang','glyph','hud','sway'],'row order');
+ assert.deepStrictEqual(K33_STYLE_DVARS,{lang:'loc_languageName',glyph:'gpad_glyphs',hud:'cg_hudStyle',sway:'cg_hudSway',scene:'ui_vlobbyEnv'},'the contract dvars');
+ // the Lobby scene row is the Options Game tab's only (the pause menu shows no lobby)
+ assert.deepStrictEqual(K33_STYLE_KINDS,which=='video'?['lang','glyph','hud','sway','scene']:['lang','glyph','hud','sway'],'row order');
  const L=logic(which);
  const vs=o=>o.map(x=>x.v),keys=o=>o.map(x=>x.key);
 
@@ -98,6 +99,15 @@ for(const which of ['pause','video']){
  assert.deepStrictEqual(reads,['cg_hudStyleList'],'the sway row reads only the style list to decide (never cg_hudSway as a string)');
  assert.strictEqual(L.k33StyleIndex(L.k33StyleOptions('sway'),L.k33StyleCurrent('sway')),1);
  assert.strictEqual(L.k33StyleSet('sway',L.k33StyleOptions('sway'),0),true);assert.deepStrictEqual(sets,[['cg_hudSway','0']]);
+ // Lobby scene: ui_vlobbyEnvList (vlobby_env.c, comma separated), ui_vlobbyEnv a string ("" = center); one scene alone is no row
+ engine({ui_vlobbyEnvList:'center, v0_menu ,V3_Lobby,,bad;id,center,v2_team',ui_vlobbyEnv:''});
+ assert.deepStrictEqual(L.k33StyleOptions('scene'),[{v:'center',key:'K33UI_VLOBBY_CENTER',raw:'center'},{v:'v0_menu',key:'K33UI_VLOBBY_V0_MENU',raw:'v0_menu'},
+  {v:'v3_lobby',key:'K33UI_VLOBBY_V3_LOBBY',raw:'v3_lobby'},{v:'v2_team',key:'K33UI_VLOBBY_V2_TEAM',raw:'v2_team'}]);
+ assert.strictEqual(L.k33StyleCurrent('scene'),'center','"" is the stock scene');
+ assert.strictEqual(L.k33StyleIndex(L.k33StyleOptions('scene'),L.k33StyleCurrent('scene')),0);
+ sets=[];assert.strictEqual(L.k33StyleSet('scene',L.k33StyleOptions('scene'),2),true);assert.deepStrictEqual(sets,[['ui_vlobbyEnv','v3_lobby']]);
+ engine({ui_vlobbyEnvList:'center',ui_vlobbyEnv:''});assert.deepStrictEqual(L.k33StyleOptions('scene'),[],'only the stock scene (no merged lobby zone): no row');
+ engine({ui_vlobbyEnvList:'center,v3_dmz',ui_vlobbyEnv:'V3_DMZ'});assert.strictEqual(L.k33StyleIndex(L.k33StyleOptions('scene'),L.k33StyleCurrent('scene')),1);
  engine({cg_hudStyleList:''});assert.deepStrictEqual(L.k33StyleOptions('sway'),[],'no HUD styles in the DLL: no sway row');
  engine({loc_languageList:' en ;; zh;en;pt-br; ',cg_hudStyleList:'0:stock; 2 : v26 ;x:bad;3;:v33;4:;02:dup;12:v35;1234567:big;-1:neg'});
  assert.deepStrictEqual(vs(L.k33StyleOptions('lang')),['en','zh','pt-br'],'blank and repeated ids dropped, ids trimmed');

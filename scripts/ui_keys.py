@@ -183,6 +183,18 @@ NAMED = {
     "K33UI_HUD_SWAY_OFF": ("Off", "关", "codo.gfx"),
     "K33UI_HUD_SWAY_ON": ("On", "开", "codo.gfx"),
     "K33UI_GAME_TAB": ("Game", "游戏", "codo.gfx"),
+    "K33UI_LOBBY_SCENE": ("Lobby scene", "大厅场景", "codo.gfx"),
+    "K33UI_VLOBBY_CENTER": ("Default", "默认", "codo.gfx"),
+    "K33UI_VLOBBY_V0_MENU": ("Alpha menu", "早期主菜单", "codo.gfx"),
+    "K33UI_VLOBBY_V3_LOBBY": ("Lobby 3.19", "大厅 3.19", "codo.gfx"),
+    "K33UI_VLOBBY_V3_CHAMPION": ("Champion select", "英雄选择", "codo.gfx"),
+    "K33UI_VLOBBY_V3_TEAM": ("Team lobby 3.19", "组队大厅 3.19", "codo.gfx"),
+    "K33UI_VLOBBY_V3_ZCHAMP": ("Zombie select", "僵尸英雄选择", "codo.gfx"),
+    "K33UI_VLOBBY_V3_DMZ": ("DMZ lobby", "DMZ 大厅", "codo.gfx"),
+    "K33UI_VLOBBY_V3_DEPOT": ("Supply depot", "补给站", "codo.gfx"),
+    "K33UI_VLOBBY_V3_REWARD": ("Daily reward", "每日奖励", "codo.gfx"),
+    "K33UI_VLOBBY_V2_LOBBY": ("Lobby 2.6", "大厅 2.6", "codo.gfx"),
+    "K33UI_VLOBBY_V2_TEAM": ("Team lobby 2.6", "组队大厅 2.6", "codo.gfx"),
 }
 
 
