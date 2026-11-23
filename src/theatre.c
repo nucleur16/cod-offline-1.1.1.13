@@ -31,6 +31,31 @@
  *
  * Exe patch (codol-classic shipped it as a one-byte change to the exe): 0x4933D9 jz -> jmp, so Escape opens the
  * native pause menu during a replay ("Allow native pause menu during replay").
+ *
+ * Replay weapon sync (ThWeaponSyncGuard): every frame of a replay the film player (0x72C4C0) points the viewer's
+ * weapon selection at the recorded player's weapon, cl+0x344, which it takes from the newest snapshot it has parsed:
+ * at 0x72C507 it calls CG's select-weapon function 0x483870 (eax = weapon) whenever cg.weaponSelect (cg+0xBF0A8)
+ * differs. Weapons are numbered by the configstrings 5362 + n (CG_ConfigStringModified 0x4673C7 -> 0x483600 ->
+ * BG_GetWeaponIndexForName 0x41F7A0, which appends to bg_weaponDefs 0x150D720, count at 0x6C3D28C). An offline match
+ * creates a weapon for each player's class as it spawns ("*a <base> <attachments>" configstrings, weapons 120 on),
+ * and the server sends that configstring in the same message as the first snapshot holding the weapon. The film
+ * player reads that snapshot before CG has run the message's server commands, so for a moment the recorded weapon is
+ * past the end of bg_weaponDefs; 0x483770 then reads NULL+0x34C (C1 crashes, "ShipRetail Crash": measured 6.8 s into
+ * the mp_cha_quad film, where weapons 130/131 arrive). The guard lets the call through only for a registered weapon
+ * (n <= count, defs[n] set) and otherwise skips it and the notify after it (resuming at 0x72C51B); CG registers the
+ * weapon a few frames later and the next frame's sync selects it. Live play never runs this code.
+ *
+ * Effects with no FxEffectDef (ThFx*Guard): CG's effect table cgs.fxs[320] (0x16D9C88) is filled from configstrings
+ * 3651 + n (DB_FindXAssetHeader type 0x1E, 0x4674E8); an index with no configstring stays NULL. An ET_FX entity
+ * (0x442510 -> 0x4423D0) loads fxs[entity effect] at 0x44242D and spawns it (0x4FE430 or, bone-attached, 0x4FE550,
+ * both -> 0x4FE0A0, which reads def+0x18). C1 skips effect index 0 itself, but only during a replay (0x442405..). A
+ * replay that decodes an entity with an unregistered effect index crashed there (AV read 0x18 at 0x4FE0AD, a
+ * killhouse TDM film about 35 s in, with smoke and grenades), as live play did before the server's flag-8 base rules
+ * (third_party/sh1x .../ol_sv_snapshot.c, select_snapshot_base). Every effect a film's server uses is already in its
+ * gamestate (no effect configstring changes mid-match in any recorded film), so the index is not one still on its
+ * way: it is a stale or wrong entity state. So C1's own skip is widened: the ET_FX path treats an index >= 320 or a
+ * NULL def like index 0 (resumes at 0x44241B, "no effect"), and the two spawn entries return 0 ("not spawned", what
+ * they return with effects off) for a NULL def from any caller. A few skips are logged.
  */
 
 #include <time.h>
@@ -441,6 +466,198 @@ static void TheatreTick(void)
     ThLocalCatalogue();
 }
 
+/* ---- replay weapon sync guard (see the top of this file) -------------------------------------------------------- */
+
+#define TH_SYNC_CALL_VA      0x0072C507u   /* push esi / call 0x483870 / add esp, 4 / mov eax, 1 */
+#define TH_SYNC_SELECT_VA    0x00483870u
+#define TH_SYNC_RESUME_VA    0x0072C51Bu   /* after the notify call: mov ecx, [0x6C267DC] */
+#define TH_WEAPON_COUNT_VA   0x06C3D28Cu
+
+DWORD g_thSyncSelect = TH_SYNC_SELECT_VA, g_thSyncResume = TH_SYNC_RESUME_VA;
+static volatile LONG g_thSyncSkips;
+
+__attribute__((used)) void __cdecl ThWeaponSyncSkipped(DWORD weapon)
+{
+    if (InterlockedIncrement(&g_thSyncSkips) <= 3)
+        Log("theatre: replay weapon %lu is not registered yet (%lu weapons); its selection waits a frame",
+            (unsigned long)weapon, (unsigned long)*(volatile DWORD *)(DWORD_PTR)TH_WEAPON_COUNT_VA);
+}
+
+/* Replaces the call at 0x72C507: [esp] = 0x72C50C, [esp+4] = the pushed esi, eax = the weapon. A registered weapon goes
+ * on to 0x483870 with the stack untouched; any other drops both words and resumes at 0x72C51B (ebx, esi, edi kept). */
+void ThWeaponSyncGuard(void);
+__asm__(
+    ".text\n"
+    ".globl _ThWeaponSyncGuard\n"
+    "_ThWeaponSyncGuard:\n"
+    "    cmpl $700, %eax\n"
+    "    jae 1f\n"
+    "    cmpl 0x06C3D28C, %eax\n"
+    "    ja 1f\n"
+    "    cmpl $0, 0x0150D720(,%eax,4)\n"
+    "    je 1f\n"
+    "    jmp *_g_thSyncSelect\n"
+    "1:\n"
+    "    pushal\n"
+    "    pushfl\n"
+    "    pushl %eax\n"
+    "    call _ThWeaponSyncSkipped\n"
+    "    addl $4, %esp\n"
+    "    popfl\n"
+    "    popal\n"
+    "    addl $8, %esp\n"
+    "    jmp *_g_thSyncResume\n");
+
+static void InstallReplayWeaponGuard(void)
+{
+    /* 56 / E8 rel32 (0x483870) / 83 C4 04 / B8 01 00 00 00 ... 0x72C51B: 8B 0D DC 67 C2 06 */
+    static const BYTE kAfter[] = { 0x83, 0xC4, 0x04, 0xB8, 0x01, 0x00, 0x00, 0x00 };
+    static const BYTE kResume[] = { 0x8B, 0x0D, 0xDC, 0x67, 0xC2, 0x06 };
+    BYTE *site = (BYTE *)(DWORD_PTR)TH_SYNC_CALL_VA;
+    if (!Readable(site - 1, 14) || site[-1] != 0x56 || site[0] != 0xE8 ||
+        (DWORD)(TH_SYNC_CALL_VA + 5 + *(const LONG *)(site + 1)) != TH_SYNC_SELECT_VA ||
+        memcmp(site + 5, kAfter, sizeof(kAfter)) || !Readable((void *)(DWORD_PTR)TH_SYNC_RESUME_VA, sizeof(kResume)) ||
+        memcmp((void *)(DWORD_PTR)TH_SYNC_RESUME_VA, kResume, sizeof(kResume))) {
+        Log("theatre: the replay weapon sync at 0x%08X differs; left alone", TH_SYNC_CALL_VA);
+        return;
+    }
+    LONG rel = (LONG)((DWORD_PTR)ThWeaponSyncGuard - (TH_SYNC_CALL_VA + 5));
+    WriteCode(site + 1, &rel, 4);
+    Log("theatre: a replay selects the recorded weapon only once it is registered (0x%08X)", TH_SYNC_CALL_VA);
+}
+
+/* ---- effects with no FxEffectDef (see the top of this file) ----------------------------------------------------- */
+
+#define TH_FX_LOAD_VA        0x0044242Du   /* ET_FX: mov esi, [ecx*4 + 0x16D9C88] (ecx = the entity's effect) */
+#define TH_FX_LOADED_VA      0x00442434u
+#define TH_FX_NONE_VA        0x0044241Bu   /* C1's own "no effect" return: xor eax, eax / pop esi / pop ebx ... */
+#define TH_FX_SPAWN_VA       0x004FE0A0u   /* FX spawn core (system, params; params[0] = the def) */
+#define TH_FX_ATTACH_VA      0x004FE550u   /* bone-attached spawn, esi = the def */
+#define TH_FX_TABLE_VA       0x016D9C88u
+#define TH_FX_MAX            320           /* configstrings 3651..3970; 0x44E950 clears 0x500 bytes */
+
+DWORD g_thFxLoaded = TH_FX_LOADED_VA, g_thFxNone = TH_FX_NONE_VA;
+DWORD g_thFxSpawnBody = TH_FX_SPAWN_VA + 6, g_thFxAttachBody = TH_FX_ATTACH_VA + 9;
+static volatile LONG g_thFxSkips[3];
+
+__attribute__((used)) void __cdecl ThFxSkipped(DWORD kind, DWORD value, DWORD from)
+{
+    static const char *const kWhere[] = { "an effect entity", "an effect spawn", "a bone-attached effect" };
+    if (kind > 2 || InterlockedIncrement(&g_thFxSkips[kind]) > 3) return;
+    int registered = 0;
+    for (int i = 0; i < TH_FX_MAX; i++)
+        if (*(volatile DWORD *)(DWORD_PTR)(TH_FX_TABLE_VA + i * 4)) registered++;
+    Log("theatre: %s with no effect def was skipped (%s %lu, from 0x%08lX; %d of %d effects registered)", kWhere[kind],
+        kind ? "def" : "index", (unsigned long)value, (unsigned long)from, registered, TH_FX_MAX);
+}
+
+void ThFxIndexGuard(void), ThFxSpawnGuard(void), ThFxAttachGuard(void);
+__asm__(
+    ".text\n"
+    /* at 0x44242D (jmp, nop nop): edi = the centity, ecx = its effect, ebx/esi pushed by 0x4423D0 */
+    ".globl _ThFxIndexGuard\n"
+    "_ThFxIndexGuard:\n"
+    "    cmpl $320, %ecx\n"
+    "    jae 1f\n"
+    "    movl 0x016D9C88(,%ecx,4), %esi\n"
+    "    testl %esi, %esi\n"
+    "    je 1f\n"
+    "    jmp *_g_thFxLoaded\n"
+    "1:\n"
+    "    pushal\n"
+    "    pushfl\n"
+    "    pushl $0x00442542\n"
+    "    pushl %ecx\n"
+    "    pushl $0\n"
+    "    call _ThFxSkipped\n"
+    "    addl $12, %esp\n"
+    "    popfl\n"
+    "    popal\n"
+    "    jmp *_g_thFxNone\n"
+    /* at 0x4FE0A0 (jmp, nop): [esp] = return, [esp+8] = params; eax is not an input */
+    ".globl _ThFxSpawnGuard\n"
+    "_ThFxSpawnGuard:\n"
+    "    movl 8(%esp), %eax\n"
+    "    testl %eax, %eax\n"
+    "    je 2f\n"
+    "    cmpl $0, (%eax)\n"
+    "    je 2f\n"
+    "    pushl %ebp\n"
+    "    movl %esp, %ebp\n"
+    "    subl $0x14, %esp\n"
+    "    jmp *_g_thFxSpawnBody\n"
+    "2:\n"
+    "    pushal\n"
+    "    pushfl\n"
+    "    pushl 36(%esp)\n"
+    "    pushl $0\n"
+    "    pushl $1\n"
+    "    call _ThFxSkipped\n"
+    "    addl $12, %esp\n"
+    "    popfl\n"
+    "    popal\n"
+    "    xorl %eax, %eax\n"
+    "    ret\n"
+    /* at 0x4FE550 (jmp, 4 x nop): esi = the def */
+    ".globl _ThFxAttachGuard\n"
+    "_ThFxAttachGuard:\n"
+    "    testl %esi, %esi\n"
+    "    je 3f\n"
+    "    pushl %ebp\n"
+    "    movl %esp, %ebp\n"
+    "    subl $0x9C, %esp\n"
+    "    jmp *_g_thFxAttachBody\n"
+    "3:\n"
+    "    pushal\n"
+    "    pushfl\n"
+    "    pushl 36(%esp)\n"
+    "    pushl $0\n"
+    "    pushl $2\n"
+    "    call _ThFxSkipped\n"
+    "    addl $12, %esp\n"
+    "    popfl\n"
+    "    popal\n"
+    "    xorl %eax, %eax\n"
+    "    ret\n");
+
+/* jmp rel32 to `to` at `va`, padded with nops to `len` bytes, if the `len` bytes there are still `expect`. */
+static BOOL ThDetour(DWORD va, const BYTE *expect, int len, void (*to)(void), const char *what)
+{
+    BYTE *site = (BYTE *)(DWORD_PTR)va, code[16];
+    if (len < 5 || len > (int)sizeof(code) || !Readable(site, (SIZE_T)len) || memcmp(site, expect, (size_t)len)) {
+        Log("theatre: %s at 0x%08lX differs; left alone", what, (unsigned long)va);
+        return FALSE;
+    }
+    code[0] = 0xE9;
+    *(LONG *)(code + 1) = (LONG)((DWORD_PTR)to - (va + 5));
+    memset(code + 5, 0x90, (size_t)len - 5);
+    WriteCode(site, code, (SIZE_T)len);
+    return TRUE;
+}
+
+static void InstallReplayFxGuard(void)
+{
+    static const BYTE kLoad[] = { 0x8B, 0x34, 0x8D, 0x88, 0x9C, 0x6D, 0x01 };
+    static const BYTE kNone[] = { 0x33, 0xC0, 0x5E, 0x5B };
+    static const BYTE kSpawn[] = { 0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x14 };
+    static const BYTE kSpawnNext[] = { 0x56, 0x57, 0x8B, 0x7D, 0x0C };
+    static const BYTE kAttach[] = { 0x55, 0x8B, 0xEC, 0x81, 0xEC, 0x9C, 0x00, 0x00, 0x00 };
+    static const BYTE kAttachNext[] = { 0xA1, 0x50, 0xDE, 0xCB, 0x00 };
+    if (!Readable((void *)(DWORD_PTR)TH_FX_NONE_VA, sizeof(kNone)) ||
+        memcmp((void *)(DWORD_PTR)TH_FX_NONE_VA, kNone, sizeof(kNone)) ||
+        !Readable((void *)(DWORD_PTR)(TH_FX_SPAWN_VA + 6), sizeof(kSpawnNext)) ||
+        memcmp((void *)(DWORD_PTR)(TH_FX_SPAWN_VA + 6), kSpawnNext, sizeof(kSpawnNext)) ||
+        !Readable((void *)(DWORD_PTR)(TH_FX_ATTACH_VA + 9), sizeof(kAttachNext)) ||
+        memcmp((void *)(DWORD_PTR)(TH_FX_ATTACH_VA + 9), kAttachNext, sizeof(kAttachNext))) {
+        Log("theatre: C1's effect spawn differs; effects with no def are left alone");
+        return;
+    }
+    int n = ThDetour(TH_FX_LOAD_VA, kLoad, sizeof(kLoad), ThFxIndexGuard, "the effect entity's def load") +
+            ThDetour(TH_FX_SPAWN_VA, kSpawn, sizeof(kSpawn), ThFxSpawnGuard, "the effect spawn") +
+            ThDetour(TH_FX_ATTACH_VA, kAttach, sizeof(kAttach), ThFxAttachGuard, "the bone-attached effect spawn");
+    Log("theatre: effects with no def are skipped (%d of 3 sites)", n);
+}
+
 static void InstallTheatre(void)
 {
     static const BYTE kEscape[] = { 0x84, 0xC0, 0x74, 0x1B, 0x8B, 0x4D };
@@ -450,6 +667,8 @@ static void InstallTheatre(void)
                                   0x8B, 0x0E, 0x83, 0x4C, 0x88, 0x48, 0x04 };
     C1GameInit();
     InstallTheatreRecorder();
+    InstallReplayWeaponGuard();
+    InstallReplayFxGuard();
     if (!g_c1CbufOk || !g_c1DvarOk) {
         Log("theatre: Cbuf_AddText or Dvar_RegisterInt differs; THEATRE screen stays inert");
         return;
