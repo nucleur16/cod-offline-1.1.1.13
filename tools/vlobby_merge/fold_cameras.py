@@ -12,6 +12,7 @@ and each group goes where C1 reads it from:
 - cam: a new script_origin k33cam_<row> at that origin and angles (a "place" line of the framing file, Framing.cs),
   named by the row's camera column (3); a new entity, because rows share cameras (weapon_camera, player_camera_urb).
 - stand: likewise k33stand_<row> (angles 0 <yaw> 0) in the stand column (2).
+- Yaws are written within 0 .. 360 (wrap_yaw: C1 refuses a camera or stand yaw outside it); the rest as saved.
 - dist, fov, dof: the row's columns 4, 13 and 19-21.
 
 A room row's (team_*) camera can be aimed by C1 at a room character instead of standing at its entity (the editor
@@ -24,6 +25,13 @@ import sys
 
 GROUPS = {"cam": 5, "dist": 1, "fov": 1, "stand": 4, "dof": 3}
 COL_STAND, COL_CAMERA, COL_DIST, COL_FOV, COL_DOF = 2, 3, 4, 13, 19
+
+
+def wrap_yaw(v):
+    """A yaw as C1 takes it from an entity: its camera and stand yaw dvars hold 0 .. 360, and a value outside (the
+    editor saves -7.9, 360.25: it sets the dvars directly) was refused, so the view kept the previous scene's yaw.
+    The same direction within 0 .. 360."""
+    return float(v) % 360.0
 
 
 def num(v):
@@ -64,12 +72,12 @@ def fold(cameras, rows, framing):
         if "cam" in groups:
             x, y, z, pitch, yaw = groups["cam"]
             ent = "k33cam_" + name
-            places[ent] = "place %s %s %s %s %s %s 0" % (ent, num(x), num(y), num(z), num(pitch), num(yaw))
+            places[ent] = "place %s %s %s %s %s %s 0" % (ent, num(x), num(y), num(z), num(pitch), num(wrap_yaw(yaw)))
             r[COL_CAMERA] = ent
         if "stand" in groups:
             x, y, z, yaw = groups["stand"]
             ent = "k33stand_" + name
-            places[ent] = "place %s %s %s %s 0 %s 0" % (ent, num(x), num(y), num(z), num(yaw))
+            places[ent] = "place %s %s %s %s 0 %s 0" % (ent, num(x), num(y), num(z), num(wrap_yaw(yaw)))
             r[COL_STAND] = ent
         if "dist" in groups:
             r[COL_DIST] = num(groups["dist"][0])
