@@ -146,6 +146,25 @@ package codo.views.matchmpctroomcreator_sub
          }
       }
       
+      // k33 offline: Max Players starts at 12 (C1 starts at the list's first entry, 6); the room fills to it with bots
+      // (p2p.c P2PBotFill, P2P_DEFAULT_MAX_PLAYERS). The modes that force a value keep theirs (gun / oic / shrp 6,
+      // infect the list's last, 18: onMapChangedHandle). A list without 12 starts at its first entry, as C1 does.
+      private static const K33_MAX_PLAYERS_DEFAULT:int = 12;
+      
+      private function k33MaxPlayersIndex(list:Array) : int
+      {
+         var i:int = 0;
+         while(list != null && i < list.length)
+         {
+            if(list[i] != null && int(list[i].id) == K33_MAX_PLAYERS_DEFAULT)
+            {
+               return i;
+            }
+            i++;
+         }
+         return 0;
+      }
+      
       // k33 offline: the description of the selected multiplayer map, for the room creator's description text
       // (the Combat Training panel's, the only part of that panel still shown).
       public function k33MapDescription() : String
@@ -270,7 +289,7 @@ package codo.views.matchmpctroomcreator_sub
             else if(maxPlayers != null && this.myOptionCB_1.dataProvider.length != maxPlayers.length)
             {
                this.myOptionCB_1.dataProvider = maxPlayers;
-               this.myOptionCB_1.selectedDataIndex = 0;
+               this.myOptionCB_1.selectedDataIndex = this.k33MaxPlayersIndex(maxPlayers);
                this.myOptionCB_1.enabled = true;
             }
          }
@@ -355,7 +374,7 @@ package codo.views.matchmpctroomcreator_sub
          {
             this.myOptionCB_1.enabled = true;
             this.myOptionCB_1.dataProvider = maxPlayers;
-            this.myOptionCB_1.selectedDataIndex = 0;
+            this.myOptionCB_1.selectedDataIndex = this.k33MaxPlayersIndex(maxPlayers);
          }
          var modeDP:Array = super.getSyncDP(SyncDataID.LIST_MODE,[MatchType.PVP]);
          if(modeDP != null && modeDP.length > 0)

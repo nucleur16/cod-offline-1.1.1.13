@@ -982,23 +982,32 @@ static void P2PLobbyTick(void)
 }
 /* Main thread, at a match launch: the bots of a multiplayer room. Its Max Players is what the room view publishes
  * (LocalMatchControls.as, ui_p2p_maxplayers: the owned multiplayer room's currentMaxPlayers, "0" otherwise). The
- * match fills to twice that: scr_botfill counts every player, the human too (_codol_bots.gsc maintainBots), and
- * scr_botmax (botfill - 1) must not cut it back. The server has P2P_MAX_CLIENTS slots (sh1x MAX_GAME_CLIENTS),
+ * match fills to Max Players: scr_botfill counts every player, the human too (_codol_bots.gsc maintainBots), and
+ * scr_botmax (Max Players - 1) must not cut it back. The server has P2P_MAX_CLIENTS slots (sh1x MAX_GAME_CLIENTS),
  * so the fill is at most that. Any other match, or a multiplayer room with no Max Players, gets no fill. */
+#define P2P_DEFAULT_MAX_PLAYERS 12   /* the Create Room default (MatchMPCTRoomCreatorView_mpcreator k33MaxPlayersIndex) */
+/* devmap / map from the menu make their room with C1's own room.create, whose Max Players is C1's, not the Create
+ * Room page's: a launch within a minute of their Ready press fills to P2P_DEFAULT_MAX_PLAYERS instead. */
+static DWORD g_dmReadyTick;
 static void P2PBotFill(P2PConfig *c)
 {
     char value[16];
+    BOOL devmap = g_dmReadyTick && GetTickCount() - g_dmReadyTick < 60000u;
+    g_dmReadyTick = 0;
     c->maxPlayers = c->botFill = c->botMax = 0;
-    if (strcmp(c->zoneType, "mp") || !C1DvarString("ui_p2p_maxplayers", value, sizeof(value))) return;
+    if (strcmp(c->zoneType, "mp")) return;
+    if (devmap) _snprintf(value, sizeof(value), "%d", P2P_DEFAULT_MAX_PLAYERS);
+    else if (!C1DvarString("ui_p2p_maxplayers", value, sizeof(value))) return;
+    value[sizeof(value) - 1] = 0;
     int n = atoi(value);
     if (n < 1 || n > 64) return;
-    int fill = 2 * n;
+    int fill = n;
     if (fill > P2P_MAX_CLIENTS) fill = P2P_MAX_CLIENTS;
     c->maxPlayers = n;
     c->botFill = fill;
     c->botMax = fill - 1;
-    Log("bots: Max Players %d -> scr_botfill %d, scr_botmax %d%s", n, c->botFill, c->botMax,
-        fill < 2 * n ? " (2 x Max Players is more than the server's clients: capped)" : "");
+    Log("bots: Max Players %d%s -> scr_botfill %d, scr_botmax %d%s", n, devmap ? " (devmap / map room: the Create Room default)" : "",
+        c->botFill, c->botMax, fill < n ? " (Max Players is more than the server's clients: capped)" : "");
 }
 static void P2PHostCurrentRoom(void)
 {
@@ -1397,6 +1406,7 @@ static void P2PDevmapTick(void)
             return;
         }
         Log("p2p: devmap: Ready pressed for %s %s (%s)", g_dm.room.session, g_dm.room.gametype, g_dm.room.category);
+        g_dmReadyTick = now ? now : 1; /* its launch fills to the Create Room default Max Players (P2PBotFill) */
         g_dm.step = g_dm.cheats ? DM_WAIT : DM_IDLE;
         g_dm.since = now;
         return;

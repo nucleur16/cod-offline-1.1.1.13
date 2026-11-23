@@ -39,7 +39,7 @@
     },
     "codo.k33.LocalMatchControls": {
       "source": "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/k33/LocalMatchControls.as",
-      "source_sha256": "601609722b477cc78882ffdc8fa54f67582c756588afba8b7c8a9d35d73f7768"
+      "source_sha256": "90daae5459f0386814728fd0ec10dca0048836eaaaf05af47466b90efee19d4d"
     },
     "codo.k33.PadSnap": {
       "source_sha256": "df4f4df2a054e7a1a3d0c205461906a852d62374488f4b8e7c2d8fac58890a6d",
@@ -126,7 +126,7 @@
       "source": "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/matchmpctroomcreator_sub/MatchMPCTRoomCreatorView_ctcreator.as"
     },
     "codo.views.matchmpctroomcreator_sub.MatchMPCTRoomCreatorView_mpcreator": {
-      "source_sha256": "13476a4fdfac3c782119cca0b67e45ee4665fc59f44db4996beef766357c5654",
+      "source_sha256": "3e35f2821e155e5c5af2402ef3e2e6d0a76f17e1f75e8e41be60cacbf5d86d5a",
       "source": "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/matchmpctroomcreator_sub/MatchMPCTRoomCreatorView_mpcreator.as"
     },
     "codo.views.option_sub.OptionView_audio": {
@@ -243,7 +243,7 @@
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/PartyController.as": "4e7a5943db9ab688bd0d2ad8e03dbad6fffdd7f9b055e5752c567607f7c33ec0",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/controllers/RightClickMenuController.as": "6025ec44b21edf6eabcd53ba41ff41a19fe8fd876c12c53dc98d9f743ba9f01f",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/k33/LocalCreateRoomOption.as": "c4f59c3eeb858a3a8c4fa191b47879522a172759932a77ae253fe8b25fa29c8a",
-    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/k33/LocalMatchControls.as": "601609722b477cc78882ffdc8fa54f67582c756588afba8b7c8a9d35d73f7768",
+    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/k33/LocalMatchControls.as": "90daae5459f0386814728fd0ec10dca0048836eaaaf05af47466b90efee19d4d",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/k33/PadSnap.as": "df4f4df2a054e7a1a3d0c205461906a852d62374488f4b8e7c2d8fac58890a6d",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/objects/ScoreboardObj.as": "996f50a4f9ec373b465d7fab6a678e49fd3b27f76e87d50382ab6da9e5262238",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/CyborgInRoomView.as": "a7c76fd9fd752cd5c1d005c57340e7647de5ebcb072ff4f672fbd590a251542d",
@@ -263,7 +263,7 @@
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/SummaryView.as": "0e2866e484e085be128c14dc7b58e3180b1d739fe900e04762f12148430c73b1",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/TipView.as": "2a462eff264d2a25a9f6be0739941875830a9d95a6434ee641781975539cdc26",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/matchmpctroomcreator_sub/MatchMPCTRoomCreatorView_ctcreator.as": "8c5fb04506cf9f60bf8edc14983b2bba8d66f4e3a3c30792f78eef6744b8390e",
-    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/matchmpctroomcreator_sub/MatchMPCTRoomCreatorView_mpcreator.as": "13476a4fdfac3c782119cca0b67e45ee4665fc59f44db4996beef766357c5654",
+    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/matchmpctroomcreator_sub/MatchMPCTRoomCreatorView_mpcreator.as": "3e35f2821e155e5c5af2402ef3e2e6d0a76f17e1f75e8e41be60cacbf5d86d5a",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/option_sub/OptionView_audio.as": "15a0cfc829f28572fefec530622f2c1a6c9aafdd81525c89688c63499915521b",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/codo/views/option_sub/OptionView_video.as": "71edd0a451ce4199796d9bd7a4d1a369d101eb5c4718e8b7995dcbb6791d8042",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/components/CodoButton.as": "dedcc37aff499b1a1123657f95c9f33f9187764429e45bf17750d0bc53628528",
@@ -273,11 +273,11 @@
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/components/list_part/InviteItemRenderer.as": "fe66635e5071b2e466203a4dd89eecee1700648ae3185627cbc9f64236848e2f",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/components/list_part/ListItemRendererBase8.as": "a5be0b9947efdad8b3194940eb09ef1b66c0bbd21e4d80d0ceb9125ef5ec3c7a",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/as/components/room_part/RoomInfo.as": "a95a87efbf9f18d884a70f3a9c1ccfc034c838008b65b18965277ea60f76d08a",
-    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/patch.txt": "2da6f1fb96ddd7f759aac55c5efbe11b4e9d061b31d3ed340e3b3423fe91f5eb",
+    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/patch.txt": "29c394667273f7a5ccd11aba2a0f2dbdc095e9b5c63cc44fab82f883eba8c9ea",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/4554_82_components_CodoButton.bin": "e08d065b1e5144ada8b638b932567670435191ec20e103807d03f58d9d277102",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/4589_82_components_list_part_ListItemRendererBase8.bin": "3fae8bcfc36295756b838cbcd9e09fe50bcb4912d9bbcb9b3bbccacc5ff9ec6b",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/4633_82_codo_views_MatchRoomListView.bin": "897852a6997ce6177ef1ddc0ad57a07e8ca816d68ffbef000c87acbd42f39f6b",
-    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/4709_82_codo_views_matchmpctroomcreator_sub_MatchMPCTRoomCreatorView_mpcreator.bin": "3923e2d45b6da364f1a5f8f24db01c040a1e0d6e207d23ff3abe0c3b8e79dd63",
+    "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/4709_82_codo_views_matchmpctroomcreator_sub_MatchMPCTRoomCreatorView_mpcreator.bin": "1383f2243a24dbbd18c78088a8875fcc0318614b8389b780ad08f1309ec87509",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/4774_82_components_combobox_part_ComboBoxBtn.bin": "ff3f7c8fb06d308030508aa2e9102582c34dc12deba8efefb7a0054eba0a7a60",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/4812_82_codo_views_MatchMiniRoomCreatorView.bin": "ae1a3f2e31c857d8dd4534f6ecbf5c9a5b07018cce7af198a1c2161593696945",
     "zones/voice_ui_mp/rawfile/scaleform/default/codo.gfx.gfxpatch/tags/5082_82_codo_views_MatchMPCTMenuView.bin": "b30dcf43e9d4ec36d7107007957211119ca8f61e5ecea3824a48eaa22e76734b",
