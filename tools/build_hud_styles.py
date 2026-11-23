@@ -137,7 +137,8 @@ def _ops_3333():
 OPS_3333 = _ops_3333()
 # 3.3.3.3's own operators, as read from their cases in its evaluator (0x00575DF1, table 0x00578090), and what
 # they become here: (number of arguments, the 1.1.1.13 value). Every one is exact in 1.1.1.13 because the state it
-# tests does not exist there (the case reads a gametype or map prefix 1.1.1.13 never has), except 255 (below).
+# tests does not exist there (the case reads a gametype or map prefix 1.1.1.13 never has), except 255 (below: its
+# resting value, without the animation).
 V33_OPS = {
     253: (0, 0),    # 0x00577C0D: mapname starts with "coop_gun_" (3.x co-op gunner maps)
     257: (0, 0),    # 0x00574C60: only for gametypes "asym*" / "borg*" (ui_asym_robot_axis), else 0
@@ -149,9 +150,12 @@ V33_OPS = {
     273: (0, 0),    # 0x00575910: weaponDef + 0x47C of the weapon in hand; its one use is "|| ui_gametype is not
                     # clash", so any value gives the same result in 1.1.1.13 (no "clash" mode)
     # 256 is not a constant: (V33_KILLSTREAK_BAR, rewritten in StyleConverter.statement)
-    255: (1, 100),  # 0x00570BC0: killstreak slot N's glow, 0..100, rising while the slot has just become usable
-                    # and falling back after (a per-frame animation); 100 is its resting value. The glow
-                    # animation is not reproduced: the slot is drawn at its resting brightness
+    255: (1, 0),    # 0x00570BC0: killstreak slot N's glow, 0..100: when the slot becomes usable it rises by 1
+                    # a frame to 100 and falls back to 0 (up to three pulses; state 0x07837FA4, value 0x07837FD4
+                    # per slot), and it is 0 at rest and while the slot is empty. Its one use is the alpha of a
+                    # white 29x29 flash over the slot (exp forecolor A ( op255(N) / 100 )), so the resting value
+                    # 0 leaves the flash clear; 100 drew an opaque white square over every slot. The flash
+                    # animation is not reproduced
 }
 # 3.3.3.3 operator 256 (case 0x00577153 -> 0x00573440): two arguments (each to int: a string through atoi, a float
 # through ftol), the name of the killstreak bar segment material: the first argument is the streak's kill count,

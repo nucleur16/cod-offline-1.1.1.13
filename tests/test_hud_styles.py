@@ -447,6 +447,10 @@ class HudStyles(unittest.TestCase):
         for kind in ("empty", "full"):
             self.assertIn('<= 3 , "k33hud33_hud_killstreak_bar_%s_2" , "k33hud33_hud_killstreak_bar_%s_1" )' % (kind, kind),
                           listing)
+        # operator 255: the slot's white flash rests at 0 (an opaque white square over every slot at 100)
+        self.assertEqual(hs.V33_OPS[255], (1, 0))
+        self.assertNotIn("exp float[8] ( 100 / 100", listing)
+        self.assertEqual(listing.count("exp float[8] ( 0 / 100"), 5)
         self.assertRegex(text, r"v33 scorebar_hd\[45\] -> scorebar_hd: dropped: only on 3\.x co-op gunner maps")
         self.assertRegex(text, r'v33 killstreaks_hd2\[121\] -> killstreaks_hd: dropped: getplayerdata\("acestreak"\)')
         for line in ("v33 weaponbar_hd -> weaponbar_hd: 26 of 26 items", "v33 killstreaks_hd2 -> killstreaks_hd: 121 of 124 items",

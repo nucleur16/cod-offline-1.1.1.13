@@ -118,7 +118,7 @@ v33 rewrite: 3.3.3.3 operator 265 -> 1 (read from its case in 3.3.3.3)
 v33 rewrite: player("assists") -> dvarint("cg_hudAssists") (hud_style.c, from the score records)
 v33 rewrite: 3.3.3.3 operator 253 -> 0 (read from its case in 3.3.3.3)
 v33 rewrite: 3.3.3.3 operator 267 -> '' (read from its case in 3.3.3.3)
-v33 rewrite: 3.3.3.3 operator 255 -> 100 (read from its case in 3.3.3.3)
+v33 rewrite: 3.3.3.3 operator 255 -> 0 (read from its case in 3.3.3.3)
 v33 rewrite: 3.3.3.3 operator 256 -> select((A) <= 3, ..._2, ..._1) of empty / full by B (the killstreak bar segment material, read from its case 0x00573440)
 sm2 weaponbar_hd -> weaponbar_hd: 14 items authored in sm2.menu, 1 of 1.1.1.13's own items kept (2)
 sm2 minimap_fullscreen -> minimap_fullscreen: 14 items authored in sm2.menu, 0 of 1.1.1.13's own items kept
