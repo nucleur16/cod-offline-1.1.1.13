@@ -162,4 +162,55 @@ void PublishPlayerScores(void)
             SV_GameSendServerCommand(i,0,va("%c %i %i",'E',leader,leader_score));
     }
 }
+/* The HUD styles' kills / deaths / assists readout (player("kills"),
+ * player("deaths") and Kernel33's cg_hudAssists) reads row+0x14, row+0x0c and
+ * row+0x1c of the same cached row table, and nothing but a whole board writes
+ * those: C1's own HUD never showed them, so 1.1.1.13 has no carrier for them
+ * and the readout froze between TAB presses. A board is what TAB itself asks
+ * for, so it is safe to send unasked: the parsers (0x465130, zm 0x4655e0)
+ * only fill the row table and its copy for the menus (0x465020); they never
+ * open the scoreboard. */
+static unsigned RowStats(int slot)
+{
+    const gclient_t *c=&level.clients[slot];
+    unsigned key=2166136261u;
+    key=(key^(unsigned)ScoreInteger(c->sess.kills))*16777619u;
+    key=(key^(unsigned)c->sess.deaths)*16777619u;
+    key=(key^(unsigned)c->sess.assists)*16777619u;
+    return key;
+}
+void PublishPlayerStats(void)
+{
+    static unsigned last_key[MAX_CLIENTS];
+    static int next_send[MAX_CLIENTS];
+    static unsigned char primed[MAX_CLIENTS];
+    int i,limit;
+    if(!level.clients || !sv_maxclients) return;
+    limit=sv_maxclients->integer;
+    if(limit>level.maxclients) limit=level.maxclients;
+    if(limit>MAX_CLIENTS) limit=MAX_CLIENTS;
+    for(i=0;i<limit;++i) {
+        client_t *client=&svs.clients[i];
+        unsigned key;
+        int viewed;
+        if(client->state!=CS_ACTIVE || !client->gamestateSent ||
+           client->netchan.remoteAddress.type==NA_BOT) { primed[i]=0; continue; }
+        /* ps.clientNum is the followed player while spectating, else i */
+        viewed=level.clients[i].ps.clientNum;
+        key=RowStats(i);
+        if(viewed!=i && viewed>=0 && viewed<limit &&
+           level.clients[viewed].sess.connected==CON_CONNECTED)
+            key=(key^RowStats(viewed)^(unsigned)viewed)*16777619u;
+        /* The first look only records: a joining client gets the board on
+         * its own, since C1 asks for it ("s", 0x465990 / 0x45fe10) while its
+         * row is missing from the table. */
+        if(!primed[i]) { primed[i]=1; last_key[i]=key; next_send[i]=svs.time; continue; }
+        if(key==last_key[i]) continue;
+        /* Kills come in bursts (a grenade, a killstreak, a zm horde):
+         * coalesce at 500 ms. Retested next frame, so only delayed. */
+        if(svs.time-next_send[i]<0) continue;
+        last_key[i]=key; next_send[i]=svs.time+500;
+        OL_SendScoreboard(&g_entities[i]);
+    }
+}
 #endif
