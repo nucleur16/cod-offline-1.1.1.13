@@ -602,13 +602,14 @@ package codo.views.option_sub
       }
 
       // k33 style rows (Button icons, HUD style, HUD sway, and Language when it is switched on): see the header comment
-      private static const K33_STYLE_KINDS:Array = ["lang","glyph","hud","sway"];
+      private static const K33_STYLE_KINDS:Array = ["lang","glyph","hud","sway","scene"];
 
       private static const K33_STYLE_LABELS:Object = {
          "lang":"@K33UI_LANGUAGE",
          "glyph":"@K33UI_GLYPHS",
          "hud":"@K33UI_HUD_STYLE",
-         "sway":"@K33UI_HUD_SWAY"
+         "sway":"@K33UI_HUD_SWAY",
+         "scene":"@K33UI_LOBBY_SCENE"
       };
 
       private static const K33_STYLE_HOLD:int = 12; // frames a new choice stays on show before the dvar is read back
@@ -679,7 +680,8 @@ package codo.views.option_sub
          "lang":"loc_languageName",
          "glyph":"gpad_glyphs",
          "hud":"cg_hudStyle",
-         "sway":"cg_hudSway"
+         "sway":"cg_hudSway",
+         "scene":"ui_vlobbyEnv"
       };
 
       // k33: the Language row is switched off here, in one place for both movies: with false the row and its
@@ -772,6 +774,41 @@ package codo.views.option_sub
             });
             return out;
          }
+         if(kind == "scene")
+         {
+            // ui_vlobbyEnvList (vlobby_env.c): the lobby scenes, "center,v0_menu,v3_lobby,..." (comma separated: a queued
+            // set drops ';'). With only C1's own scene (no merged lobby zone, ui_viewer_vlobby_mp.ff) there is no row.
+            list = CFunctionContainerCommon.Dvar_GetString("ui_vlobbyEnvList");
+            if(list == null || list == "")
+            {
+               return out;
+            }
+            parts = String(list).split(",");
+            while(i < parts.length)
+            {
+               v = this.k33StyleTrim(parts[i]).toLowerCase();
+               i++;
+               if(v == "" || v.length > 40 || !/^[a-z0-9_]+$/.test(v))
+               {
+                  continue;
+               }
+               j = 0;
+               while(j < out.length && out[j].v != v)
+               {
+                  j++;
+               }
+               if(j < out.length)
+               {
+                  continue;
+               }
+               out.push({
+                  "v":v,
+                  "key":"K33UI_VLOBBY_" + v.toUpperCase(),
+                  "raw":v
+               });
+            }
+            return out.length > 1 ? out : [];
+         }
          if(kind == "glyph")
          {
             list = CFunctionContainerCommon.Dvar_GetString("gpad_info");
@@ -861,6 +898,13 @@ package codo.views.option_sub
          {
             s = CFunctionContainerCommon.Dvar_GetString(K33_STYLE_DVARS[kind]);
             return s == null ? "" : this.k33StyleTrim(s);
+         }
+         if(kind == "scene")
+         {
+            // a string dvar; "" (or "default") is C1's own scene, "center"
+            s = CFunctionContainerCommon.Dvar_GetString(K33_STYLE_DVARS[kind]);
+            s = s == null ? "" : this.k33StyleTrim(s).toLowerCase();
+            return s == "" || s == "default" ? "center" : s;
          }
          return String(CFunctionContainerCommon.Dvar_GetInt(K33_STYLE_DVARS[kind]));
       }

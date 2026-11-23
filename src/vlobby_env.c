@@ -237,6 +237,33 @@ static void VlWidenDomains(void)
     }
 }
 
+/* The Options window's Game tab has a Lobby Scene row (OptionView_video.as, kind "scene"): it lists the menu scenes
+ * of ui_vlobbyEnvList ("center,v0_menu,v3_lobby,...": VlEnvironments, comma separated because a queued set drops
+ * ';') and sets ui_vlobbyEnv. Without the merged zone the table has only C1's own scene (center) and the row is not
+ * shown. Published once a second while it changes (the table appears when the lobby zone has loaded). */
+#define VL_LIST_DVAR       "ui_vlobbyEnvList"
+static void VlPublishList(void)
+{
+    static DWORD last;
+    static char published[1024];
+    static BOOL done;
+    DWORD now = GetTickCount();
+    if (now - last < 1000u || *(volatile const DWORD *)(DWORD_PTR)ML_DB_BUSY_VA) return;
+    last = now;
+    char envs[64][64], list[1024];
+    int n = VlEnvironments(envs, 64), at = 0;
+    list[0] = 0;
+    for (int i = 0; i < n && at < (int)sizeof(list) - 66; i++)
+        at += _snprintf(list + at, sizeof(list) - at, "%s%s", i ? "," : "", envs[i]);
+    list[sizeof(list) - 1] = 0;
+    if (done && !strcmp(list, published)) return;
+    if (C1QueueSet(VL_LIST_DVAR, list)) {
+        lstrcpynA(published, list, sizeof(published));
+        done = TRUE;
+        Log("vlobby: %s \"%s\"", VL_LIST_DVAR, list);
+    }
+}
+
 static void VlobbyTick(void)
 {
     if (!g_vlReady) {
@@ -281,6 +308,7 @@ static void VlobbyTick(void)
         Log("vlobby: environment %s", g_vlEnv[0] ? g_vlEnv : "center (stock)");
         VlApply();
     }
+    VlPublishList();
 }
 
 #if K33_DIAGNOSTICS
