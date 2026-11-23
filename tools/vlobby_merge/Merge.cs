@@ -102,6 +102,9 @@ public static class Merge
         HashSet<string>? wanted = tableCsv is null ? null : File.ReadAllLines(tableCsv, Encoding.Latin1)
             .Select(l => l.Split(',')).Where(c => c.Length > 3).SelectMany(c => new[] { c[2], c[3] })
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        // and the donor stands the framing file places cameras from (a row whose stand the camera editor moved keeps
+        // the camera framed from the scene's own stand: fold_cameras.py)
+        if (wanted is not null) foreach (string st in Framing.DonorStands()) wanted.Add(st);
         foreach (var dn in donors)
         {
             if (dn.Zone.Build == GameBuild.V0_0_2_2) V0Images(dn.Zone, log);

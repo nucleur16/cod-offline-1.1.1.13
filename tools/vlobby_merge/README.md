@@ -147,3 +147,36 @@ each scene's probe and its build's.
   lobby_sit_*, cyborg_menu_*) whatever the scene; its stands name no pose. The later lobbies' character stands name
   lobby_stand_05 (1.1.1.13 has it) and their lineup slots menu_lobby_slotN_rifle / _riot_idle (1.1.1.13 does not).
   No animation is ported: the character keeps its 1.1.1.13 class pose in every scene.
+
+## Baking the camera editor's cameras
+
+The camera editor build (`feat/vlobby-camera-ui`, not in the release: `src/vlobby_camui.c`, F8 or `vlobby_camui` in
+the lobby) saves `main\vlobby_cameras.txt` in its install, one line per camera row it changes. The release shows those
+cameras without the editor once they are baked into the zone:
+
+1. Copy the saved file here as `cameras_vlobby.txt` (checked in, so the chosen cameras stay with the tool; drop the
+   lines of rows the table no longer has). The one checked in is the editor's save of 2026-11-22 for v0_menu, v2_lobby,
+   v2_team, v3_dmz and v3_lobby.
+2. After step 2 of the rebuild (`camera_rows.py`, which writes the table and the framing file anew), run
+
+        python fold_cameras.py cameras_vlobby.txt
+
+   It rewrites `camerapostable_vlobby.csv` and `framing_vlobby.txt` in place (other paths: `fold_cameras.py <cameras>
+   <table.csv> <framing.txt>`). A row's `cam` becomes a new camera entity `k33cam_<row>` (a `place` line of the framing
+   file, which `Framing.cs` adds to the MapEnts with the numbers as saved) named in the row's camera column, and the
+   framing camera the row named before goes; `stand` likewise `k33stand_<row>` in the stand column; `dist`, `fov` and
+   `dof` go to columns 4, 13 and 19-21. New entities, because rows share cameras and stands (`weapon_camera`,
+   `player_pos_urb`). A row whose stand moved but whose camera did not keeps its framing camera, framed from the
+   scene's own stand as the editor showed it (the merge keeps the stands the framing file names). Running it twice
+   changes nothing.
+3. Merge (step 3) with `frame=framing_vlobby.txt` as before. An install with the new zone no longer needs its
+   `main\vlobby_cameras.txt` (its lines would apply over the baked values, which are the same). `vlobby_merge ents
+   <zone> <exe> k33` lists the placed entities as the zone has them.
+
+The file's format (`#` starts a comment; the groups a line names replace what the zone's row gives):
+
+    cam <x> <y> <z> <pitch> <yaw>     dist <d>     fov <f>     stand <x> <y> <z> <yaw>     dof <near> <far> <blur>
+
+A room row's (`team_*`) camera can be aimed by C1 at a room character rather than standing at its entity (the editor
+then says so); baked, such a camera is where its entity is, which frames the room as the editor showed only when C1
+does not aim it.

@@ -1,5 +1,11 @@
 # <new camera> <donor stand> <stock stand> <stock camera> (camera_rows.py; Framing.cs)
-v3_frame_lobby v3_player_pos_center player_pos_center player_camera_center
 v3_frame_dmz v3_s1_dmz_place1 player_pos_center player_camera_center
-v2_frame_lobby v2_player_pos_center player_pos_center player_camera_center
 v2_frame_team v2_s1_place1 player_pos_center player_camera_center
+place k33cam_character_loadout_v0_menu -43729.5 134 35 12.2 -7.9 0
+place k33cam_character_loadout_v2_lobby -16230.2 -805.9 37.5 9.8 -0.5 0
+place k33cam_character_loadout_v3_lobby -32614.1 -806.924 37.5 5.4 360.25 0
+place k33stand_character_loadout_v0_menu -43759.5 137.5 7 0 180 0
+place k33stand_character_loadout_v2_lobby -16219.5 -807 0 0 180 0
+place k33stand_character_loadout_v2_team -16219.7 -92.8 0.5 0 125.2 0
+place k33stand_character_loadout_v3_dmz -30244 -1532.6 1 0 170.14 0
+place k33stand_character_loadout_v3_lobby -32580 -809 0 0 170 0
