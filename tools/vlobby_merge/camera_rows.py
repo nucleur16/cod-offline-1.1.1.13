@@ -8,7 +8,9 @@ The tables are AssetExplorer dumps: CodolSoundDumper zone-stringtables --input <
 
 The scenes are menu scenes:
 - Menu scenes (character_loadout_<name>, the main menu's and the Multiplayer lobby's character view, ui_vlobbyEnv):
-  the later builds' lobby, team lobby, champion select, depot and reward scenes, and 0.0.2.2's main menu (v0_menu).
+  3.19.26.22's lobby and DMZ lobby, 2.6.9.7's lobby and team lobby, and 0.0.2.2's main menu (v0_menu). (3.19.26.22's
+  champion select, team lobby, zombies champion select, supply depot and daily reward were taken out; vlobby_merge
+  keeps only the 3.19.26.22 cells of the two kept scenes, cells:6:2.)
   The 3.x / 2.x ones are framed like 1.1.1.13's own menu (character_loadout_center): a camera at the stock camera's
   offset from the stand (Framing.cs, framing_vlobby.txt), the stock row's distance and field of view; the scene's own
   row gives the rest (vision, light, depth of field). Rows of one stand frame alike, so one row per stand is kept.
@@ -28,12 +30,7 @@ import sys
 FRAMED = {
     "v3": [  # CODOL 3.19.26.22 (the same lobby as 3.5.2.6)
         ("v3_lobby", "character_loadout_center", "player_pos_center"),
-        ("v3_champion", "champion_select", "champion_select_place1"),
-        ("v3_team", "team_lobby", "s1_place1"),
-        ("v3_zchamp", "team_lobby_zchamp", "s1_zchamp_place1"),
         ("v3_dmz", "team_lobby_dmz", "s1_dmz_place1"),
-        ("v3_depot", "supply_depot", "supply_depot_char_pos"),
-        ("v3_reward", "daily_reward", "daily_reward_char_pos"),
     ],
     "v2": [  # CODOL 2.6.9.7
         ("v2_lobby", "character_loadout_center", "player_pos_center"),

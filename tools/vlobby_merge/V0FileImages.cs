@@ -220,10 +220,15 @@ public static class V0FileImages
         foreach (var (h, t) in image.AssetHeaders)
             if (t == AssetTypes.Image && image.Pointer(h + G_Name) is uint np and not 0 && image.Memory.CString(np, 256) is { } n) held.Add(n);
         var ship = p.Ship.Where(s => held.Contains(s.Image)).Select(s => s.Entry).ToList();
-        IwdWriter.Write(p.Path, p.Keep.Concat(ship), p.Key);
+        // the iwd= entries too: an image no asset of the written zone names (the 3.19.26.22 rooms the merge leaves out,
+        // Donor.KeepCells) does not ship
+        static string? ImageOf(string entry) => entry.Replace('\\', '/') is var e && e.StartsWith("images/", StringComparison.OrdinalIgnoreCase)
+            && e.EndsWith(".iwi", StringComparison.OrdinalIgnoreCase) ? e[7..^4] : null;
+        var keep = p.Keep.Where(e => ImageOf(e.Name) is not { } n || held.Contains(n)).ToList();
+        IwdWriter.Write(p.Path, keep.Concat(ship), p.Key);
         using (var check = IwdArchive.Open(p.Path, p.Key))
             foreach (var e in check.Entries.Where(e => !e.Name.EndsWith('/'))) check.Read(e);
-        log($"wrote {p.Path}: {p.Keep.Count} entries of {IwdIn ?? "(no iwd=)"} and {ship.Count} 0.0.2.2 images " +
+        log($"wrote {p.Path}: {keep.Count} entries of {IwdIn ?? "(no iwd=)"} ({p.Keep.Count - keep.Count} no image of the zone names left out) and {ship.Count} 0.0.2.2 images " +
             $"({p.Ship.Count - ship.Count} more only left-out static models use: not shipped), {new FileInfo(p.Path).Length} bytes (read back, CRCs match)");
     }
 

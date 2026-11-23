@@ -13,6 +13,7 @@
  *
  *   ui_vlobbyEnv    string, archived: the scene the main menu's and the Multiplayer lobby's character view shows,
  *                   a row character_loadout_<name> of the table ("" or "center": C1's own). Read on the main tick.
+ *                   A saved name that is no menu scene (a scene taken out of the merged zone) is set back to "".
  *   vlobby_env      console command: no argument lists the menu scenes (the character_loadout_* rows but the
  *                   environment scenes urb, woo, des, arc, zombie, which are the rooms': a room shows its map's
  *                   environment, team_<environment>) and the current one; <name>, "next", "prev" or "default" sets
@@ -264,6 +265,23 @@ static void VlPublishList(void)
     }
 }
 
+/* A saved ui_vlobbyEnv that is no menu scene: one of the scenes taken out of the merged zone (tools/vlobby_merge:
+ * 3.19.26.22's champion select, team lobby, zombies champion select, supply depot and daily reward), or, once the
+ * merged zone's table is loaded, any name it has no menu scene of. The camera row hook would fall back to C1's own row
+ * for it anyway; the dvar goes back to "" (center) so the Options row and vlobby_env show the scene on view. */
+static BOOL VlGoneEnv(const char *name)
+{
+    static const char *const kGone[] = { "v3_champion", "v3_team", "v3_zchamp", "v3_depot", "v3_reward" };
+    for (int i = 0; i < (int)(sizeof(kGone) / sizeof(kGone[0])); i++)
+        if (!_stricmp(name, kGone[i])) return TRUE;
+    if (!MlFindTable(VL_TABLE_MERGED)) return FALSE;
+    char envs[64][64];
+    int n = VlEnvironments(envs, 64);
+    for (int i = 0; i < n; i++)
+        if (!_stricmp(envs[i], name)) return FALSE;
+    return n > 0;
+}
+
 static void VlobbyTick(void)
 {
     if (!g_vlReady) {
@@ -303,6 +321,26 @@ static void VlobbyTick(void)
     char want[64] = "";
     if (v && Readable(v, 1)) lstrcpynA(want, v, sizeof(want));
     if (!_stricmp(want, "center") || !_stricmp(want, "default")) want[0] = 0;
+    /* checked once per value, and again when the merged table appears (the archived value is read before the lobby
+     * zone loads); a dropped value reads as "" until the queued set has replaced it */
+    static char s_checked[64], s_dropped[64];
+    static BOOL s_checkedTable;
+    if (s_dropped[0] && _stricmp(want, s_dropped)) s_dropped[0] = 0;   /* the set has landed (or another value came) */
+    if (want[0] && !_stricmp(want, s_dropped)) want[0] = 0;
+    else if (want[0] && !*(volatile const DWORD *)(DWORD_PTR)ML_DB_BUSY_VA) {
+        BOOL table = MlFindTable(VL_TABLE_MERGED) != NULL;
+        if (strcmp(want, s_checked) || (table && !s_checkedTable)) {
+            lstrcpynA(s_checked, want, sizeof(s_checked));
+            s_checkedTable = table;
+            if (VlGoneEnv(want)) {
+                Log("vlobby: ui_vlobbyEnv \"%s\" is no lobby scene (any more); back to center", want);
+                lstrcpynA(s_dropped, want, sizeof(s_dropped));
+                s_checked[0] = 0;
+                C1QueueSet(VL_DVAR, "");
+                want[0] = 0;
+            }
+        }
+    }
     if (strcmp(want, g_vlEnv)) {
         lstrcpynA(g_vlEnv, want, sizeof(g_vlEnv));
         Log("vlobby: environment %s", g_vlEnv[0] ? g_vlEnv : "center (stock)");

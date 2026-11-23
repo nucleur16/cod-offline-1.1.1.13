@@ -23,7 +23,7 @@ public static class Compact
     static readonly int MaxTris = int.TryParse(Environment.GetEnvironmentVariable("VLOBBY_COMPACT_MAXT"), out int mt) ? mt : 0xFFFF;
     static readonly bool KeepLayered = Environment.GetEnvironmentVariable("VLOBBY_COMPACT_JOIN_LAYERED") != "1";
 
-    public static void World(PortContext ctx, uint h, Action<string> log, string tag, float[]? keep)
+    public static void World(PortContext ctx, uint h, Action<string> log, string tag, float[]? keep, HashSet<int>? keepSurfaces = null)
     {
         var T = ctx.T; var img = ctx.Target;
         uint dp = h + W_Dpvs, draw = h + W_Draw;
@@ -49,6 +49,7 @@ public static class Compact
             {
                 uint s = surfs + (uint)(SurfSize * i);
                 if (T.U16(s + 10) == 0) continue;
+                if (keepSurfaces is not null && !keepSurfaces.Contains(i)) continue;   // a cell left out (Cells.cs)
                 if (T.U32(s + 4) + T.U16(s + 8) > totalVerts || T.U32(s + 12) + 3u * T.U16(s + 10) > totalIdx) { bad++; continue; }
                 if (keep is not null)
                 {
@@ -62,9 +63,10 @@ public static class Compact
                     }
                     if (!inside) continue;
                 }
-                // material, lightmap and flags (the merge clears the primary light; the reflection probe of a joined
-                // surface is its first member's: the probes of one small scene are much alike)
-                string key = $"{img.Pointer(s + 16):X8}/{T.U8(s + 20)}/{T.U8(s + 23)}";
+                // material, lightmap, reflection probe and flags (the merge clears the primary light). The probe is part
+                // of the key: a donor world holds several scenes (3.19.26.22 its lobby, team rooms, depot ..), and joined
+                // across them a surface took its first member's probe, another room's or the default cube (probe 0)
+                string key = $"{img.Pointer(s + 16):X8}/{T.U8(s + 20)}/{T.U8(s + 21)}/{T.U8(s + 23)}";
                 if (T.U32(s) != 0 && KeepLayered) key += $"/vld{i}";
                 if (!byKey.TryGetValue(key, out int g)) { byKey[key] = g = groups.Count; groups.Add((key, [])); }
                 groups[g].Members.Add(i);
@@ -195,7 +197,7 @@ public static class Compact
         for (int a = 0; a < 6; a++) T.WI32(h + 0xD8 + (uint)(4 * a), T.I32(node + (uint)(4 * a)));
         uint counts = ctx.NewObject(4); T.WU32(counts, 1);
         uint trees = ctx.NewObject(4, 128); img.SetPointer(trees, node);
-        // the cell: the first cell's fields, every probe of the donor
+        // the cell: the first cell's fields; its probe list is the donor cells' lists (Cells.ApplyProbes)
         uint oldCells = img.Pointer(h + W_Cells);
         uint cell = ctx.NewObject(CellSize);
         T.Write(cell, T.ReadBytes(oldCells, CellSize));
@@ -212,6 +214,6 @@ public static class Compact
         img.SetPointer(h + W_Trees, trees);
         img.SetPointer(h + W_Cells, cell);
         T.WU32(h + W_CellCount, 1);
-        log($"{tag}: {n} surfaces joined into {m} (one per material and lightmap in each dpvs range){(bad > 0 ? $", {bad} with vertex or index ranges past the arrays left out" : "")}; {newVerts.Count / VertexSize} vertices, {newIdx.Count / 2} indices; {layered} with vertex layer data kept whole; largest {maxV} vertices, {maxT} triangles");
+        log($"{tag}: {n} surfaces joined into {m} (one per material, lightmap and probe in each dpvs range){(bad > 0 ? $", {bad} with vertex or index ranges past the arrays left out" : "")}; {newVerts.Count / VertexSize} vertices, {newIdx.Count / 2} indices; {layered} with vertex layer data kept whole; largest {maxV} vertices, {maxT} triangles");
     }
 }

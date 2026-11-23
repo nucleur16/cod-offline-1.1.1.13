@@ -1,0 +1,14 @@
+# Lobby camera overrides, written by the Kernel33 camera editor (vlobby_camui; src/vlobby_camui.c).
+# One line per camera row of mp/cameraPosTable.csv; each group replaces what the zone's row gives:
+#   cam <x> <y> <z> <pitch> <yaw>   the camera (column 3's entity: origin, angles)
+#   dist <d>   fov <f>   dof <near> <far> <blur>   (columns 4, 13, 19-21)
+#   stand <x> <y> <z> <yaw>          the character's stand (column 2's entity; menu scenes)
+# tools/vlobby_merge/fold_cameras.py bakes this file into the merged zone's camera table.
+# Saved in the lobby camera editor on 2026-11-22 (k33-camera-edit main\vlobby_cameras.txt); the lines of the scenes
+# taken out of the merge (v3_team, v3_zchamp) are left out. Baked by fold_cameras.py into camerapostable_vlobby.csv
+# and framing_vlobby.txt.
+character_loadout_v0_menu cam -43729.5 134 35 12.2 -7.9 dist 132 fov 73.5 stand -43759.5 137.5 7 180
+character_loadout_v2_lobby cam -16230.2 -805.9 37.5 9.8 -0.5 dist 326 stand -16219.5 -807 0 180
+character_loadout_v2_team stand -16219.7 -92.8 0.5 125.2
+character_loadout_v3_dmz dist 353 stand -30244 -1532.6 1 170.14
+character_loadout_v3_lobby cam -32614.1 -806.924 37.5 5.4 360.25 dist 322 stand -32580 -809 0 170

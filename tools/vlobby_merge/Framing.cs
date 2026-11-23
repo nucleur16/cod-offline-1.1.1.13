@@ -17,6 +17,10 @@ namespace VlobbyMerge;
 /// the difference of the two stands' yaws, with the stock camera's angles turned the same way. The row that names it
 /// takes the stock row's distance and field of view (camera_rows.py), so the character stands where it stands in the
 /// stock menu.
+///
+/// A line "place <name> <x> <y> <z> <pitch> <yaw> <roll>" adds a script_origin <name> there, the numbers written as the
+/// line gives them: the cameras and stands the lobby camera editor saved (main\vlobby_cameras.txt), which
+/// fold_cameras.py writes in.
 public static class Framing
 {
     public static string? File { get; set; }
@@ -25,12 +29,24 @@ public static class Framing
     {
         if (File is null) return;
         var ents = Parse(entText.ToString());
-        int n = 0;
+        int n = 0, placed = 0;
         foreach (string raw in System.IO.File.ReadAllLines(File))
         {
             string line = raw.Trim();
             if (line.Length == 0 || line.StartsWith('#')) continue;
             string[] p = line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+            if (p[0] == "place")
+            {
+                if (p.Length != 8 || p.Skip(2).Any(v => !float.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out _)))
+                    throw new InvalidDataException($"{File}: \"{line}\": place <name> <x> <y> <z> <pitch> <yaw> <roll>");
+                if (ents.ContainsKey(p[1])) throw new InvalidDataException($"{File}: \"{line}\": {p[1]} is already in the MapEnts");
+                entText.Append("{\n\"targetname\" \"").Append(p[1]).Append("\"\n\"classname\" \"script_origin\"\n")
+                    .Append("\"angles\" \"").Append(p[5]).Append(' ').Append(p[6]).Append(' ').Append(p[7]).Append("\"\n")
+                    .Append("\"origin\" \"").Append(p[2]).Append(' ').Append(p[3]).Append(' ').Append(p[4]).Append("\"\n}\n");
+                ents[p[1]] = new Dictionary<string, string> { ["targetname"] = p[1], ["origin"] = $"{p[2]} {p[3]} {p[4]}", ["angles"] = $"{p[5]} {p[6]} {p[7]}" };
+                placed++;
+                continue;
+            }
             if (p.Length < 4) throw new InvalidDataException($"{File}: \"{line}\": <new camera> <stand> <stock stand> <stock camera>");
             var stand = Get(ents, p[1]); var sStand = Get(ents, p[2]); var sCam = Get(ents, p[3]);
             float yaw = Vec(stand, "angles")[1], sYaw = Vec(sStand, "angles")[1];
@@ -45,12 +61,23 @@ public static class Framing
                 .Append("\"origin\" \"").Append(F(x)).Append(' ').Append(F(y)).Append(' ').Append(F(z)).Append("\"\n}\n");
             n++;
         }
-        log($"framing: {n} cameras placed at the stock menu's offset from their stands ({Path.GetFileName(File)})");
+        log($"framing: {n} cameras placed at the stock menu's offset from their stands, {placed} entities placed as saved ({Path.GetFileName(File)})");
+    }
+
+    /// the donor stands the framing lines place cameras from (they must be in the MapEnts)
+    public static IEnumerable<string> DonorStands()
+    {
+        if (File is null) yield break;
+        foreach (string raw in System.IO.File.ReadAllLines(File))
+        {
+            string[] p = raw.Trim().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+            if (p.Length >= 4 && !p[0].StartsWith('#') && p[0] != "place") yield return p[1];
+        }
     }
 
     static string F(float v) => v.ToString("0.###", CultureInfo.InvariantCulture);
 
-    static Dictionary<string, Dictionary<string, string>> Parse(string text)
+    public static Dictionary<string, Dictionary<string, string>> Parse(string text)
     {
         var all = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
         foreach (Match m in Regex.Matches(text, "[{]([^{}]*)[}]"))
