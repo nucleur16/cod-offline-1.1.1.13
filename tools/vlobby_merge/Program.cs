@@ -215,6 +215,16 @@ if (args.Length >= 3 && args[0] == "bsp")
     }
     return 0;
 }
+if (args.Length >= 3 && args[0] == "ents")
+{
+    // ents <zone.ff> <exe> [filter]: the MapEnts entities whose targetname contains the filter, as the zone has them
+    var z = LoadedZone.Read(args[1], args[2], anyBuild: true);
+    uint me = z.Image.Pointer(z.Find(AssetTypes.ClipMapMp) + 0x9C);
+    foreach (var (name, kv) in Framing.Parse(z.M.CString(z.Image.Pointer(me + 4), 1 << 24) ?? ""))
+        if (args.Length < 4 || name.Contains(args[3], StringComparison.OrdinalIgnoreCase))
+            Console.WriteLine($"{name}: origin {kv.GetValueOrDefault("origin")} angles {kv.GetValueOrDefault("angles")}");
+    return 0;
+}
 if (args.Length >= 3 && args[0] == "check")
 {
     // every surface's material and every static model's model must be an asset of that type
@@ -337,9 +347,16 @@ if (args.Length >= 4 && args[0] == "merge")
         int eq = spec.LastIndexOf('=');
         string[] p = spec[(eq + 1)..].Split(',');
         float F(string s) => float.Parse(s, CultureInfo.InvariantCulture);
-        // optional sixth field: the keep box x0:y0:z0:x1:y1:z1 (donor coordinates); seventh: stockgrid
-        float[]? keep = p.Length > 5 ? p[5].Split(':').Select(F).ToArray() : null;
-        donors.Add(new Donor(LoadedZone.Read(spec[..eq], args[2], anyBuild: true), F(p[0]), F(p[1]), F(p[2]), p[3], p[4]) { Keep = keep, StockGrid = p.Length > 6 && p[6] == "stockgrid" });
+        // optional further fields: the keep box x0:y0:z0:x1:y1:z1 (donor coordinates), "stockgrid", and
+        // "cells:<i>:<j>..", the donor world's cells to keep (Cells.cs; the others' geometry and probes stay out)
+        float[]? keep = null; bool stockGrid = false; int[]? keepCells = null;
+        foreach (string f in p.Skip(5))
+        {
+            if (f == "stockgrid") stockGrid = true;
+            else if (f.StartsWith("cells:")) keepCells = f[6..].Split(':').Select(int.Parse).ToArray();
+            else keep = f.Split(':').Select(F).ToArray();
+        }
+        donors.Add(new Donor(LoadedZone.Read(spec[..eq], args[2], anyBuild: true), F(p[0]), F(p[1]), F(p[2]), p[3], p[4]) { Keep = keep, StockGrid = stockGrid, KeepCells = keepCells });
     }
     Merge.Run(stock, donors, args[2], args[3], table, earlier, Console.WriteLine);
     return 0;

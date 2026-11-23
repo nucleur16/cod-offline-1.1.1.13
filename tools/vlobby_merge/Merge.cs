@@ -17,6 +17,10 @@ public sealed record Donor(LoadedZone Zone, float Dx, float Dy, float Dz, string
 
     /// the scene's light grid is the stock one of the same place (LightGridMerge)
     public bool StockGrid { get; init; }
+
+    /// the donor world's cells to keep (its own cell indices, Cells.cs): the surfaces and static models of the others,
+    /// and the reflection probes only they use, stay out. null: every cell
+    public int[]? KeepCells { get; init; }
 }
 
 /// Builds ui_viewer_vlobby_mp: every asset of 1.1.1.13's ui_viewer_mp, its mp_ui_viewer GfxWorld and MapEnts with the
@@ -56,6 +60,9 @@ public static class Merge
         public bool StockGrid;
         public bool NoProbes, NoLightmaps;
         public bool OldLayoutModels;
+        public HashSet<int>? KeepSmodels;    // the static models of the kept cells (null: all)
+        public LoadedZone? Zone;              // the world as its build has it (Cells.SelectProbes)
+        public int[] ProbeMap = [];           // the zone's probe -> this world's
         public int VertexBase, IndexBase, VldBase, LightmapBase, ProbeBase, SmodelBase;
         public int[] SmodelMap = [];      // static model -> merged index, -1 when left out
         public void SetBases(int v, int i, int vld, int lm, int probe)
@@ -83,6 +90,8 @@ public static class Merge
         uint aw = ctx.ConvertAsset(stockWorld);
         uint ae = ctx.ConvertAsset(stockEnts);
         var a = Describe(T, img, aw, "stock", false, 0, 0, 0);
+        a.Zone = stock;
+        a.ProbeMap = Enumerable.Range(0, a.Probes).ToArray();
         var worlds = new List<World> { a };
         var entText = new StringBuilder(T.CString(img.Pointer(ae + 4), 1 << 24));
         if (entText.Length > 0 && entText[^1] != '\n') entText.Append('\n');
@@ -96,7 +105,9 @@ public static class Merge
         foreach (var dn in donors)
         {
             if (dn.Zone.Build == GameBuild.V0_0_2_2) V0Images(dn.Zone, log);
-            RenameSceneImages(dn.Zone, lmBase, probeBase, log);
+            var cells = Cells.Analyze(dn.Zone, dn.KeepCells);
+            if (cells.Note.Length > 0) log($"{dn.Tag}: kept {cells.Note}");
+            RenameSceneImages(dn.Zone, lmBase, probeBase, cells.ProbeMap, dn.Prefix, log);
             if (dn.Zone.Build != GameBuild.V0_0_2_2 && Environment.GetEnvironmentVariable("VLOBBY_RENAME_RENDER") == "1")
                 RenameRenderAssets(dn.Zone, "_" + dn.Prefix.TrimEnd('_'), log);
             var known = new HashSet<uint>(img.AssetHeaders.Keys);
@@ -107,9 +118,17 @@ public static class Merge
             if (Environment.GetEnvironmentVariable("VLOBBY_LIST_ADDED") == "1")
                 foreach (var kv in img.AssetHeaders.Where(kv => !known.Contains(kv.Key)))
                     log($"  added {kv.Value} {ZoneImageDiff.AssetName(img, kv.Key)}");
-            if (Environment.GetEnvironmentVariable("VLOBBY_NO_COMPACT") != "1") Compact.World(ctx, dw, log, dn.Tag, dn.Keep);
+            if (Environment.GetEnvironmentVariable("VLOBBY_NO_COMPACT") != "1")
+            {
+                Compact.World(ctx, dw, log, dn.Tag, dn.Keep, cells.Surfaces);
+                Cells.ApplyProbes(ctx, dw, cells);
+            }
+            else if (dn.KeepCells is not null) throw new NotSupportedException("kept cells need the compacted donor (VLOBBY_NO_COMPACT)");
             var w = Describe(T, img, dw, dn.Tag, true, dn.Dx, dn.Dy, dn.Dz);
             w.Keep = dn.Keep;
+            w.KeepSmodels = cells.Smodels;
+            w.Zone = dn.Zone;
+            w.ProbeMap = cells.ProbeMap;
             if (Environment.GetEnvironmentVariable("VLOBBY_TEST_NO_DONOR_PROBES") == "1") { w.Probes = 0; w.NoProbes = true; }
             if (Environment.GetEnvironmentVariable("VLOBBY_TEST_NO_DONOR_LIGHTMAPS") == "1") { w.Lightmaps = 0; w.NoLightmaps = true; }
             w.StockGrid = dn.StockGrid;
@@ -136,6 +155,9 @@ public static class Merge
         }
 
         Framing.Apply(entText, log);
+        if (_mergedWorld != 0 && tableCsv is not null)
+            Cells.SelectProbes(ctx, _mergedWorld, worlds.Select(w => (w.IsDonor ? donors[worlds.IndexOf(w) - 1].Prefix : "", w.Zone!,
+                new[] { w.Dx, w.Dy, w.Dz }, w.ProbeBase, w.ProbeMap)).ToList(), entText.ToString(), tableCsv, log);
         // MapEnts: the stock copy with the longer entity string
         byte[] text = Encoding.Latin1.GetBytes(entText.ToString());
         uint str = ctx.NewObject((uint)text.Length + 1, 1);
@@ -261,7 +283,7 @@ public static class Merge
 
     /// the donor's lightmaps and reflection probe images are named like the stock ones (*lightmap0_primary,
     /// *reflection_probe0): renamed after the merged world's numbering, so that neither stands for the other
-    static void RenameSceneImages(LoadedZone z, int lmBase, int probeBase, Action<string> log)
+    static void RenameSceneImages(LoadedZone z, int lmBase, int probeBase, int[] probeMap, string prefix, Action<string> log)
     {
         var m = z.M; var I = z.Image;
         uint w = z.Find(AssetTypes.GfxWorld), draw = w + W_Draw;
@@ -280,7 +302,10 @@ public static class Merge
             Rename(I.Pointer(e + 4), $"*lightmap{lmBase + i}_secondary");
         }
         int probes = (int)m.U32(draw + D_ProbeCount);
-        for (int i = 0; i < probes; i++) Rename(I.Pointer(I.Pointer(draw + D_Probes) + (uint)(4 * i)), $"*reflection_probe{probeBase + i}");
+        // a probe the merge leaves out (Cells.Analyze) gets a name of its own; nothing written leads to it
+        for (int i = 0; i < probes; i++)
+            Rename(I.Pointer(I.Pointer(draw + D_Probes) + (uint)(4 * i)),
+                probeMap[i] >= 0 ? $"*reflection_probe{probeBase + probeMap[i]}" : $"*reflection_probe_{prefix}unused{i}");
     }
 
     /// C1 links a zone's assets by name, case-insensitively; a second asset of one type and name in the same zone makes it
@@ -524,7 +549,7 @@ public static class Merge
             }
             int at = 0, left = 0;
             var dropNames = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
-            int outsideKeep = 0;
+            int outsideKeep = 0, outsideCells = 0;
             var v0Missing = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
             var stockModelHeaders = new Dictionary<string, uint>(StringComparer.OrdinalIgnoreCase);
             foreach (uint x in _stockAssets)
@@ -543,6 +568,8 @@ public static class Merge
                     bool drop = w.IsDonor && stockModels.Contains(model) && !stockPlaced.Contains(model);
                     if (w.IsDonor && Environment.GetEnvironmentVariable("VLOBBY_TEST_NO_DONOR_SMODELS") == "1") drop = true;
                     if (w.OldLayoutModels && Environment.GetEnvironmentVariable("VLOBBY_TEST_NO_V0_SMODELS") == "1") drop = true;
+                    // a static model of a cell the merge leaves out (Donor.KeepCells)
+                    if (w.IsDonor && w.KeepSmodels is { } ks && !ks.Contains(i)) { w.SmodelMap[i] = -1; outsideCells++; continue; }
                     if (w.IsDonor && w.Keep is { } kb)
                     {
                         // a static model outside the keep box (0.0.2.2's sky shell props) stays out: moved with the
@@ -575,7 +602,8 @@ public static class Merge
             }
             _leftOut = (left == 0 ? "" : $"{left} donor static models left out (models the stock lobby loads on demand): {string.Join(", ", dropNames)}")
                 + (v0Missing.Count == 0 ? "" : $"; 0.0.2.2 models no stock static model places (left out): {string.Join(", ", v0Missing)}")
-                + (outsideKeep == 0 ? "" : $"; {outsideKeep} outside their keep box");
+                + (outsideKeep == 0 ? "" : $"; {outsideKeep} outside their keep box")
+                + (outsideCells == 0 ? "" : $"; {outsideCells} in the cells left out");
         }
         int N = total, M = worlds.Sum(w => w.SmodelMap.Count(x => x >= 0));
         if (_leftOut.Length > 0) log(_leftOut);

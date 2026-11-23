@@ -1,10 +1,5 @@
 # <new camera> <donor stand> <stock stand> <stock camera> (camera_rows.py; Framing.cs)
 v3_frame_lobby v3_player_pos_center player_pos_center player_camera_center
-v3_frame_champion v3_champion_select_place1 player_pos_center player_camera_center
-v3_frame_team v3_s1_place1 player_pos_center player_camera_center
-v3_frame_zchamp v3_s1_zchamp_place1 player_pos_center player_camera_center
 v3_frame_dmz v3_s1_dmz_place1 player_pos_center player_camera_center
-v3_frame_depot v3_supply_depot_char_pos player_pos_center player_camera_center
-v3_frame_reward v3_daily_reward_char_pos player_pos_center player_camera_center
 v2_frame_lobby v2_player_pos_center player_pos_center player_camera_center
 v2_frame_team v2_s1_place1 player_pos_center player_camera_center

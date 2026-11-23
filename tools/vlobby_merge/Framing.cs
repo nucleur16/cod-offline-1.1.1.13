@@ -50,7 +50,7 @@ public static class Framing
 
     static string F(float v) => v.ToString("0.###", CultureInfo.InvariantCulture);
 
-    static Dictionary<string, Dictionary<string, string>> Parse(string text)
+    public static Dictionary<string, Dictionary<string, string>> Parse(string text)
     {
         var all = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
         foreach (Match m in Regex.Matches(text, "[{]([^{}]*)[}]"))
