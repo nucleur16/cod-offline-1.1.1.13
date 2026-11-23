@@ -111,6 +111,7 @@ init()
 	level.survival_enemies = [];
 	level.survival_bosses = [];
 	loot_init();
+	chase_init();
 
 	// IW5 ai_preload: the martyrdom C4, the claymores, the gas.
 	codescripts\character::precacheMounted( "weapon_c4" );
@@ -133,11 +134,18 @@ table_int( table, row, column, fallback )
 	return int( v );
 }
 
+// The tables write some fractions without the leading zero (speed ".8" for
+// the demolitionist, ".9" for noob and searcher), which float() reads as 0:
+// a moveplaybackrate of 0 froze those soldiers in their run cycle for good.
 table_float( table, row, column, fallback )
 {
 	v = tableLookup( table, 0, "" + row, column );
 	if ( !isDefined( v ) || v == "" )
 		return fallback;
+	if ( v[ 0 ] == "." )
+		v = "0" + v;
+	else if ( v.size > 1 && v[ 0 ] == "-" && v[ 1 ] == "." )
+		v = "-0" + getSubStr( v, 1, v.size );
 	return float( v );
 }
 
@@ -345,6 +353,8 @@ type_attributes( t, scale )
 	a.speed = t.speed * ( 1.0 + 0.05 * repeated );
 	if ( a.speed > 1.5 )
 		a.speed = 1.5;
+	else if ( a.speed < 0.5 )
+		a.speed = 0.5;	// never a frozen (rate 0) or crawling cycle
 	// Keep this MP soldier contract's base accuracy and safe ceiling; use
 	// IW5's independent repeated-wave multiplier instead of health's scale.
 	a.accuracy = t.accuracy * 0.3 * ( 1.0 + 0.2 * repeated );
@@ -412,10 +422,15 @@ spawn_type( ref, origin, angles, scale )
 	// map's static cover network. Keep real native combat at weapon range.
 	ai.coop_no_cover = true;
 	ai codol_actorUseCover( false );
+	// A hunter (soldier_move: the run, with IW4's sprints for variation),
+	// never the bored patrol walk soldier_move gives a soldier with no enemy
+	// and no hunt -- ~30 units a second, the "idling" stroll across the map.
+	ai.coop_hunting = true;
 	ai setThreatBiasGroup( "axis" );
 
 	level.survival_enemies[ level.survival_enemies.size ] = ai;
 	ai thread death_watch();
+	ai thread chase_watch();
 	ai special_behaviour( ref );
 	if ( !t.boss )
 		ai loot_roll( undefined );
@@ -745,6 +760,7 @@ spawn_dog( ref, origin, angles, scale )
 
 	level.survival_enemies[ level.survival_enemies.size ] = ai;
 	ai thread death_watch();
+	ai thread chase_watch();
 	if ( isSubStr( ref, "splode" ) )
 		ai thread dog_c4();
 	ai thread dog_hunt();
@@ -763,8 +779,18 @@ dog_hunt()
 		if ( isDefined( target ) )
 		{
 			self.favoriteenemy = target;
-			self.goalradius = 64;
-			self setGoalPos( target.origin );
+			if ( isDefined( self.survival_detour ) && getTime() < self.survival_detour_until &&
+			     distanceSquared( self.origin, self.survival_detour ) > 96 * 96 )
+			{
+				self.goalradius = 64;
+				self setGoalPos( self.survival_detour );
+			}
+			else
+			{
+				self.survival_detour = undefined;
+				self.goalradius = 64;
+				self setGoalPos( target.origin );
+			}
 		}
 		wait( 1 );
 	}
@@ -1004,25 +1030,354 @@ delete_after( time )
 // Behaviour (IW5 default_ai / aggressive_ai)
 // --------------------------------------------------------------------------
 
-// A Survival leader keeps approaching the nearest living player. The IW5
+// A Survival hunter keeps approaching the nearest living player. The IW5
 // 900-unit default radius assumed its own combat advance; our native soldier
 // handles firing at actual weapon range, so an unseen player needs a close
 // movement goal rather than stopping outside short-weapon engagement range.
+//
+// While the actor knows an enemy the native chase owns the goal (it re-sets
+// it on the enemy every frame), so the script goal is only written while he
+// has none: re-writing it then only reset the native route every second.
+// The goal radius shrinks with the distance, so a far hunter is "there" at
+// once and keeps walking as it is recomputed, and hunters far out approach
+// along their own flank (a per-actor side offset, kept only while findpath
+// can reach it) instead of all walking the same route in file.  A detour
+// (chase_watch) replaces the player as the goal for a few seconds.
 hunt()
 {
 	self endon( "death" );
 	self notify( "survival_hunt" );
 	self endon( "survival_hunt" );
+	self.survival_hunting = true;
+	// Staggered: a squad spawned on one frame must not re-plan on one frame.
+	wait( randomFloat( 1 ) );
 	for ( ;; )
 	{
 		if ( level.survival_over )
 			return;
-		self.goalradius = 128;
 		target = closest_player( self.origin );
 		if ( isDefined( target ) )
-			self setGoalPos( target.origin );
-		wait( 1 );
+			self chase_goal( target );
+		wait( 0.8 + randomFloat( 0.4 ) );
 	}
+}
+
+chase_goal( target )
+{
+	if ( !( isDefined( self.isdog ) && self.isdog ) )
+		self.favoriteenemy = target;
+	if ( isDefined( self.survival_detour ) )
+	{
+		if ( getTime() < self.survival_detour_until &&
+		     distanceSquared( self.origin, self.survival_detour ) > 96 * 96 )
+		{
+			self.goalradius = 64;
+			self setGoalPos( self.survival_detour );
+			return;
+		}
+		self.survival_detour = undefined;
+	}
+	if ( isDefined( self.enemy ) && !( isDefined( self.isdog ) && self.isdog ) )
+		return;
+	d = distance( self.origin, target.origin );
+	radius = d * 0.25;
+	if ( radius < 64 )
+		radius = 64;
+	else if ( radius > 384 )
+		radius = 384;
+	goal = target.origin;
+	if ( d > 1000 && !isDefined( self.survival_stalled ) )
+		goal = self flank_goal( target, d );
+	self.goalradius = radius;
+	self setGoalPos( goal );
+}
+
+// A side offset of up to 300 units, perpendicular to the line to the target
+// and fixed per actor, re-validated every few seconds; the plain target when
+// findpath cannot reach the offset point.
+flank_goal( target, d )
+{
+	if ( !isDefined( self.survival_flank_side ) )
+	{
+		self.survival_flank_side = randomFloatRange( -1, 1 );
+		self.survival_flank_check = 0;
+	}
+	v = vectorNormalize( ( target.origin[ 0 ] - self.origin[ 0 ], target.origin[ 1 ] - self.origin[ 1 ], 0 ) );
+	side = ( 0 - v[ 1 ], v[ 0 ], 0 );
+	reach = d * 0.25;
+	if ( reach > 300 )
+		reach = 300;
+	goal = target.origin + side * ( reach * self.survival_flank_side );
+	if ( getTime() >= self.survival_flank_check )
+	{
+		self.survival_flank_check = getTime() + 3000 + randomInt( 1000 );
+		self.survival_flank_ok = findPath( self.origin, goal );
+	}
+	if ( !self.survival_flank_ok )
+		return target.origin;
+	return goal;
+}
+
+// --------------------------------------------------------------------------
+// The chase watchdog (MW3 Survival: the enemies always find you after a
+// while).  One per enemy, staggered.  It measures progress -- the distance to
+// the nearest standing player shrinking by 64 units, or the actor inside
+// close range -- and escalates an actor that has made none:
+//   6 s   a soldier fighting from long range advances: his native attack
+//         range (meleeattackdist, the distance at which the frame hands him
+//         soldier_combat) is cut below his current distance, down to a floor
+//         per weapon, so he breaks off, closes 250-450 units and fights
+//         again -- a bounding advance, not a beeline.
+//   8 s   a follower leaves his (stuck) leader and hunts himself; a hunter
+//         with no enemy whose route fails is sent to the reachable waypoint
+//         nearest the player for a few seconds (the goal it could not reach
+//         is replaced, not re-issued).
+//   20 s  (12 s once the planner reported bad_path) an actor no player can
+//         see is moved to a spot no player can see, 600-1400 units from the
+//         player, from which findpath reaches him: the off-graph, wedged and
+//         unroutable ones.
+// The player moving away rebases the measure without counting as a stall.
+// --------------------------------------------------------------------------
+
+chase_init()
+{
+	level.survival_waypoints = codol_getWalkableWaypoints();
+	if ( !isDefined( level.survival_waypoints ) )
+		level.survival_waypoints = [];
+	codolprintln( "CoDOL survival: chase watchdog, " + level.survival_waypoints.size + " walkable waypoints" );
+}
+
+chase_watch()
+{
+	self endon( "death" );
+	self notify( "survival_chase_watch" );
+	self endon( "survival_chase_watch" );
+	self.survival_badpath = 0;
+	self thread chase_badpath();
+	self.survival_engage_base = self.meleeattackdist;
+	best = undefined;
+	anchor = undefined;
+	since = getTime();
+	badpathSeen = 0;
+	pushed = 0;
+	nextRelocate = 0;
+	wait( 1 + randomFloat( 1 ) );
+	for ( ;; )
+	{
+		wait( 1 );
+		if ( level.survival_over )
+			return;
+		target = closest_player( self.origin );
+		if ( !isDefined( target ) )
+			continue;
+		now = getTime();
+		d = distance( self.origin, target.origin );
+		close = self chase_close_range();
+		if ( isDefined( anchor ) && distanceSquared( target.origin, anchor ) > 256 * 256 &&
+		     self is_soldier() && self.meleeattackdist < self.survival_engage_base )
+			self.meleeattackdist = ( self.meleeattackdist + self.survival_engage_base ) * 0.5;	// the player moved: give some range back
+		if ( !isDefined( best ) || d < best - 64 || d <= close ||
+		     distanceSquared( target.origin, anchor ) > 256 * 256 )
+		{
+			if ( isDefined( best ) && d < best - 64 && isDefined( self.survival_stalled ) )
+				self.survival_stalled = undefined;
+			best = d;
+			anchor = target.origin;
+			since = now;
+			pushed = 0;
+			if ( d <= close )
+				self.survival_stalled = undefined;
+			continue;
+		}
+		stalled = ( now - since ) / 1000;
+		if ( self.survival_badpath > badpathSeen )
+		{
+			badpathSeen = self.survival_badpath;
+			if ( stalled < 4 )
+				continue;
+		}
+
+		// 6 s: a soldier in his combat script at long range bounds forward.
+		if ( stalled >= 6 && now >= pushed && self is_soldier() && isDefined( self.enemy ) )
+		{
+			engageFloor = self chase_engage_floor();
+			if ( d > engageFloor + 64 )
+			{
+				range = d - 250 - randomInt( 200 );
+				if ( range < engageFloor )
+					range = engageFloor;
+				if ( range < self.meleeattackdist )
+					self.meleeattackdist = range;
+				pushed = now + 5000 + randomInt( 3000 );
+			}
+		}
+
+		// 8 s: no more following, and no more re-issuing a goal that fails.
+		if ( stalled >= 8 && !isDefined( self.survival_stalled ) )
+		{
+			self.survival_stalled = true;
+			self.survival_leader = undefined;
+			if ( !( isDefined( self.isdog ) && self.isdog ) && !( isDefined( self.survival_hunting ) && self.survival_hunting ) )
+				self thread hunt();
+			if ( !isDefined( self.enemy ) || ( isDefined( self.isdog ) && self.isdog ) )
+				self chase_detour( target );
+		}
+		else if ( stalled >= 14 && isDefined( self.survival_stalled ) && !isDefined( self.survival_detour ) &&
+		          !isDefined( self.enemy ) )
+			self chase_detour( target );
+
+		// 20 s (12 after a bad_path): out of sight, out of the hole.
+		limit = 20;
+		if ( badpathSeen > 0 )
+			limit = 12;
+		if ( stalled >= limit && d > 700 && now >= nextRelocate && !self seen_by_players() )
+		{
+			nextRelocate = now + 5000;
+			if ( self chase_relocate( target ) )
+			{
+				best = undefined;
+				since = getTime();
+				self.survival_stalled = undefined;
+				self.survival_detour = undefined;
+			}
+		}
+	}
+}
+
+chase_badpath()
+{
+	self endon( "death" );
+	for ( ;; )
+	{
+		self waittill( "bad_path" );
+		self.survival_badpath++;
+	}
+}
+
+is_soldier()
+{
+	return !( isDefined( self.isdog ) && self.isdog ) && isDefined( self.survival_engage_base ) && self.survival_engage_base > 0;
+}
+
+// Inside this distance an actor is engaging, not chasing.
+chase_close_range()
+{
+	if ( isDefined( self.isdog ) && self.isdog )
+		return 160;
+	return self chase_engage_floor() + 96;
+}
+
+// How close the bounding advance takes a soldier before it lets him hold.
+chase_engage_floor()
+{
+	if ( isDefined( self.survival_boss ) )
+		return 160;
+	base = self.survival_engage_base;
+	if ( !isDefined( base ) || base <= 0 )
+		return 160;
+	if ( base >= 2000 )
+		return 1000;	// snipers keep their distance
+	if ( base <= 600 )
+		return 220;	// shotguns, pistols
+	return 400;
+}
+
+// The walkable waypoint nearest the target that findpath reaches from here,
+// as the goal for a few seconds.
+chase_detour( target )
+{
+	wps = level.survival_waypoints;
+	if ( !isDefined( wps ) || !wps.size )
+		return;
+	near = nearest_points( wps, target.origin, 6, 0, 900 );
+	for ( i = 0; i < near.size; i++ )
+	{
+		if ( distanceSquared( near[ i ], self.origin ) < 128 * 128 )
+			continue;
+		if ( !findPath( self.origin, near[ i ] ) )
+			continue;
+		self.survival_detour = near[ i ];
+		self.survival_detour_until = getTime() + 6000;
+		self.goalradius = 64;
+		self setGoalPos( near[ i ] );
+		return;
+	}
+}
+
+// Up to `count` of `points` nearest `origin`, between `minDist` and `maxDist`.
+nearest_points( points, origin, count, minDist, maxDist )
+{
+	out = [];
+	dist = [];
+	for ( i = 0; i < points.size; i++ )
+	{
+		d = distanceSquared( points[ i ], origin );
+		if ( d < minDist * minDist || d > maxDist * maxDist )
+			continue;
+		if ( out.size >= count && d >= dist[ out.size - 1 ] )
+			continue;
+		slot = out.size;
+		if ( slot >= count )
+			slot = count - 1;
+		while ( slot > 0 && dist[ slot - 1 ] > d )
+		{
+			out[ slot ] = out[ slot - 1 ];
+			dist[ slot ] = dist[ slot - 1 ];
+			slot--;
+		}
+		out[ slot ] = points[ i ];
+		dist[ slot ] = d;
+	}
+	return out;
+}
+
+seen_by_players()
+{
+	return point_seen( self.origin + ( 0, 0, 60 ), self );
+}
+
+point_seen( point, ignore )
+{
+	players = maps\mp\gametypes\_survival_utility::living_players();
+	for ( i = 0; i < players.size; i++ )
+	{
+		if ( sightTracePassed( players[ i ] getEye(), point, false, ignore ) )
+			return true;
+	}
+	return false;
+}
+
+// A hidden spot 600-1400 units from the target from which findpath reaches
+// him: the walkable waypoints, or the squad spawn locations on a map without
+// a waypoint graph.  The actor keeps his health, wave and squad.
+chase_relocate( target )
+{
+	points = level.survival_waypoints;
+	if ( !isDefined( points ) || !points.size )
+	{
+		points = [];
+		for ( i = 0; i < level.survival_squad_locs.size; i++ )
+			points[ points.size ] = level.survival_squad_locs[ i ].origin;
+	}
+	near = nearest_points( points, target.origin, 24, 600, 1400 );
+	tried = 0;
+	for ( i = randomInt( 4 ); i < near.size && tried < 8; i++ )
+	{
+		p = near[ i ];
+		if ( point_seen( p + ( 0, 0, 60 ), self ) )
+			continue;
+		tried++;
+		if ( !findPath( p, target.origin ) )
+			continue;
+		from = self.origin;
+		placed = self forceTeleport( p + ( 0, 0, 4 ), ( 0, vectorToYaw( target.origin - p ), 0 ) );
+		if ( isDefined( placed ) && !placed )
+			continue;
+		codolprintln( "CoDOL survival: " + self.survival_ref + " made no progress toward the player from " + from +
+			"; moved out of sight to " + p );
+		return true;
+	}
+	return false;
 }
 
 closest_player( origin )

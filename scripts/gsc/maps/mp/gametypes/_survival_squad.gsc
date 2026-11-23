@@ -175,6 +175,10 @@ setup_follower( leader )
 	self endon( "death" );
 	self endon( "survival_promoted" );
 	self notify( "survival_hunt" );
+	// The chase watchdog (_survival_ai::chase_watch) sends a follower whose
+	// squad made no progress hunting on his own: hunt() notifies this.
+	self endon( "survival_hunt" );
+	self.survival_hunting = undefined;
 	self.survival_leader = leader;
 	for ( ;; )
 	{
