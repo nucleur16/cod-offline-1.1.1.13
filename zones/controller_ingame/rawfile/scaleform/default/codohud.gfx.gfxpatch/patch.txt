@@ -1,7 +1,7 @@
 # GFx movie as a patch over a stock movie (zonekit/gfx.py)
 stock patch_common_mp:scaleform/default/codohud.gfx
 stock-sha256 c6c4367ea97f95efc1334c1dbf5e9ce834e244ed589a751fb83a1757d160659c
-sha256 b757d4ec06fe902ba13d8677ac295e51e235b4a6914444624f88fd9a0a4323bd
+sha256 0fa0d297f64074d08da9a806b7305f4b8c0da19433adc9b8680cbca22fde695b
 header 4746580a3e940d00800003200000025800001e0100
 keep 0
 keep 1
@@ -909,4 +909,4 @@ as codo.common.PageManagerHUD as/codo/common/PageManagerHUD.as fbd5c2141a6721d4e
 as codo.views.CyborgTokenView as/codo/views/CyborgTokenView.as 80faaa7da9e2ff750f1acf2206603f7f57297a4713d4c32bac96e47996279fe9
 as codo.views.ScoreboardBaseView as/codo/views/ScoreboardBaseView.as 541ac8697653999c542f3473969580c1aa640e2b0709393caec3859e16bccd5b
 as components.cyborg.cyborgInGame_part.CyborgTokenItem as/components/cyborg/cyborgInGame_part/CyborgTokenItem.as 564ca616fa91b2b6dd6dea5ff69633a50ab1bdb976401eaacb234948ed0a1a6c
-as components.scoreboard_part.ScoreboardTeamPanel as/components/scoreboard_part/ScoreboardTeamPanel.as 0e78302799a9bf0c8eb12798a5f97135dc74f947d3901e348424e6b60adb5afb
+as components.scoreboard_part.ScoreboardTeamPanel as/components/scoreboard_part/ScoreboardTeamPanel.as a6d98a4d56e6bc34ecb12105958071f4c98ff2d06618347af1cb837ffc435385
