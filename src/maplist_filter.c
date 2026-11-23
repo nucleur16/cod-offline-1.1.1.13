@@ -240,6 +240,94 @@ static BOOL MlHookLookup(void)
     return TRUE;
 }
 
+/* ---- the room lobby's scene for coop levels without an arena entry (Survival) ---------------------------------
+ * The room's 3D lobby (the "vlobby" behind the room UI: the map's environment scene and the players' characters)
+ * comes from the room's map. 0x00610F4C copies the room info (0x611180; the map string at +8, which room.changemap
+ * sets), puts that map in ui_mapname and asks the map info lookup 0x005ED910 for its "environment"; the scene is
+ * the one of that name (0x611A30: urban, forest, desert, arctic; zm_ maps take "zombie" without the lookup) and the
+ * characters are "<team>_<environment>". 0x005ED910 (eax = map, one stack argument = the key, the caller pops it;
+ * eax = the value) reads the map list C1 builds from mp/basemaps.arena (0x005EA420: count 0x02837598, 0xB30-byte
+ * entries from 0x0283759C, the map name at +0x30) and returns "" (0x00C2FEAD) for a map that has none. Every co-op
+ * row of mp/comaplist.csv has an arena entry except Survival's coop_survival_<level>: those rooms got "", so no
+ * scene (the cloud animation) and no characters. The arena cannot carry one per Survival level (C1 reads 128
+ * entries, zonekit/shipping.py), so the lookup answers for a coop_<mode>_mp_<map> that has no arena entry of its
+ * own with its MP base level mp_<map>'s value (the level the match runs on, as MlMapInstalled reads it). The other
+ * callers (the load screen's and the menus' map info of ui_mapname) get the same answer for such a level. */
+#define MI_LOOKUP_VA    0x005ED910u
+#define MI_MAP_COUNT_VA 0x02837598u
+#define MI_MAPS_VA      0x0283759Cu
+#define MI_MAP_STRIDE   0xB30u
+#define MI_MAP_NAME     0x30u
+#define MI_EMPTY_VA     0x00C2FEADu
+static const BYTE kMiPrologue[6] = { 0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x18 }; /* push ebp; mov ebp, esp; sub esp, 0x18 */
+__attribute__((used)) void *g_miOriginal; /* the moved prologue, then a jump back */
+
+const char *__cdecl MiCallOriginal(const char *map, const char *key);
+void MiLookupHook(void);
+__asm__(
+    ".text\n"
+    ".globl _MiCallOriginal\n"
+    "_MiCallOriginal:\n"            /* cdecl (map, key) -> C1's convention */
+    "    movl 4(%esp), %eax\n"
+    "    pushl 8(%esp)\n"
+    "    call *_g_miOriginal\n"
+    "    addl $4, %esp\n"
+    "    ret\n"
+    ".globl _MiLookupHook\n"
+    "_MiLookupHook:\n"              /* C1's convention -> cdecl MiLookup(map, key) */
+    "    pushl 4(%esp)\n"
+    "    pushl %eax\n"
+    "    call _MiLookup\n"
+    "    addl $8, %esp\n"
+    "    ret\n");
+
+static BOOL MiArenaHas(const char *map)
+{
+    int count = *(volatile const int *)(DWORD_PTR)MI_MAP_COUNT_VA;
+    if (count <= 0 || count > 0x80) return FALSE;
+    for (int i = 0; i < count; i++) {
+        const char *name = (const char *)(DWORD_PTR)(MI_MAPS_VA + MI_MAP_STRIDE * (DWORD)i + MI_MAP_NAME);
+        if (!_stricmp(name, map)) return TRUE;
+    }
+    return FALSE;
+}
+
+__attribute__((used)) const char *__cdecl MiLookup(const char *map, const char *key)
+{
+    static char logged[64];
+    const char *v = MiCallOriginal(map, key); /* it builds the map list first */
+    if (v && v != (const char *)(DWORD_PTR)MI_EMPTY_VA && *v) return v;
+    if (!map || !Readable(map, 1) || _strnicmp(map, "coop_", 5)) return v;
+    const char *base = strstr(map, "_mp_");
+    if (!base || MiArenaHas(map)) return v;
+    const char *b = MiCallOriginal(base + 1, key);
+    if (_stricmp(logged, map)) {
+        lstrcpynA(logged, map, sizeof(logged));
+        Log("maplist: %s has no arena entry; its lobby scene and map info are %s's (%s \"%s\")", map, base + 1,
+            key && Readable(key, 1) ? key : "?", b && Readable(b, 1) ? b : "");
+    }
+    return b;
+}
+
+static BOOL MiHookLookup(void)
+{
+    BYTE *entry = (BYTE *)(DWORD_PTR)MI_LOOKUP_VA;
+    if (!Readable(entry, sizeof(kMiPrologue)) || memcmp(entry, kMiPrologue, sizeof(kMiPrologue))) return FALSE;
+    BYTE *tramp = (BYTE *)VirtualAlloc(NULL, 16, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    if (!tramp) return FALSE;
+    memcpy(tramp, kMiPrologue, sizeof(kMiPrologue));
+    tramp[6] = 0xE9;
+    LONG back = (LONG)(DWORD_PTR)(entry + sizeof(kMiPrologue)) - (LONG)(DWORD_PTR)(tramp + 11);
+    memcpy(tramp + 7, &back, 4);
+    FlushInstructionCache(GetCurrentProcess(), tramp, 16);
+    g_miOriginal = tramp;
+    BYTE jump[6] = { 0xE9, 0, 0, 0, 0, 0x90 };
+    LONG rel = (LONG)(DWORD_PTR)MiLookupHook - (LONG)(DWORD_PTR)(entry + 5);
+    memcpy(jump + 1, &rel, 4);
+    WriteCode(entry, jump, sizeof(jump));
+    return TRUE;
+}
+
 static void InstallMapListFilter(void)
 {
     char v[8];
@@ -249,5 +337,7 @@ static void InstallMapListFilter(void)
     if (!g_mlFilterOn) Log("maplist: K33_MAPLIST_ALL=1, every map stays listed");
     else if (MlHookLookup()) Log("maplist: mp/comaplist.csv is filtered on its first lookup (DB_FindXAssetHeader 0x%08X hooked)", ML_DB_FIND_VA);
     else Log("maplist: DB_FindXAssetHeader 0x%08X differs; the table is filtered by the tick only", ML_DB_FIND_VA);
+    if (MiHookLookup()) Log("maplist: coop levels without an arena entry take their MP level's (0x%08X hooked)", MI_LOOKUP_VA);
+    else Log("maplist: the map info lookup 0x%08X differs; Survival rooms keep the lobby's default scene", MI_LOOKUP_VA);
     if (!K33OnMainTick(MapListTick)) Log("maplist: no main-thread tick left; every map stays listed, no Survival map is known");
 }
