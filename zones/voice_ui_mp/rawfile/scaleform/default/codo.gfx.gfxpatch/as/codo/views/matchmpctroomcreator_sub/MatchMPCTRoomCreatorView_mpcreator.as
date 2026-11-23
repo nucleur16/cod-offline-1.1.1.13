@@ -14,6 +14,9 @@ package codo.views.matchmpctroomcreator_sub
    import codo.utils.StringUtil;
    import components.Album;
    import components.CodoComboBox;
+   import flash.display.DisplayObject;
+   import flash.display.DisplayObjectContainer;
+   import flash.display.InteractiveObject;
    import flash.display.Sprite;
    import flash.events.Event;
    import flash.text.TextField;
@@ -61,6 +64,8 @@ package codo.views.matchmpctroomcreator_sub
       private var _currentMatchType:int = -1;
       
       private var _mapAlbum:Album;
+      
+      private var _k33Laid:Boolean = false;
 
       
       public function MatchMPCTRoomCreatorView_mpcreator()
@@ -99,6 +104,54 @@ package codo.views.matchmpctroomcreator_sub
          this.myOptionLabelTF_3.visible = this.myOptionCB_3.visible = this.myOptionBg_3.visible = false;
          this.myRoomNameTF.addEventListener(Event.CHANGE,this.onRoomNameChangedHandle);
          this.myPasswordTF.addEventListener(Event.CHANGE,this.onInputChangedHandle);
+         this.k33OfflineLayout();
+      }
+      
+      // k33 offline: the Room Name, Room Password and Channel rows (everything above Max Players) are hidden and the
+      // rows below move up into their place. Their values stay as before: the room is named after the profile
+      // (DEFAULT_ROOM_NAME, set in enable()), it has no password, and the channel is the first one (Casual), which
+      // getRoomCreatorParams still sends as the room's difficulty.
+      private function k33OfflineLayout() : void
+      {
+         if(this._k33Laid)
+         {
+            return;
+         }
+         this._k33Laid = true;
+         var top:Number = this.myOptionBg_1.y - 1;
+         var shift:Number = this.myOptionLabelTF_1.y - this.myRoomNameLabelTF.y;
+         var i:int = 0;
+         while(i < this.numChildren)
+         {
+            var child:DisplayObject = this.getChildAt(i);
+            if(child.y < top)
+            {
+               child.visible = false;
+               if(child is InteractiveObject)
+               {
+                  InteractiveObject(child).mouseEnabled = false;
+                  InteractiveObject(child).tabEnabled = false;
+               }
+               if(child is DisplayObjectContainer)
+               {
+                  DisplayObjectContainer(child).mouseChildren = false;
+                  DisplayObjectContainer(child).tabChildren = false;
+               }
+            }
+            else
+            {
+               child.y -= shift;
+            }
+            i++;
+         }
+      }
+      
+      // k33 offline: the description of the selected multiplayer map, for the room creator's description text
+      // (the Combat Training panel's, the only part of that panel still shown).
+      public function k33MapDescription() : String
+      {
+         var map:Object = this._optionMap != null ? this._optionMap.selectedValue : null;
+         return map != null && map.description != null ? String(map.description) : "";
       }
       
       override public function enable() : void
@@ -232,6 +285,7 @@ package codo.views.matchmpctroomcreator_sub
          {
             this._mapAlbum.currentIndex = this._optionMap.selectedDataIndex;
          }
+         this.dispatchEvent(new Event("k33MapInfo"));
       }
 
       private function refreshMPMaps(modeID:String) : void
@@ -342,6 +396,7 @@ package codo.views.matchmpctroomcreator_sub
             return;
          }
          this._optionMap.selectedDataIndex = cEvt.myPara.index;
+         this.dispatchEvent(new Event("k33MapInfo"));
       }
       
       private function getRoomCreatorParams() : Object

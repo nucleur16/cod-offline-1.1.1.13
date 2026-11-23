@@ -13,7 +13,7 @@ global.CFunctionContainerCommon={Dvar_GetString:n=>dvars[n]||'',setdvar:(n,v)=>{
 global.int=x=>Number(x)|0;
 function control(map,gt,host=true,level=1){
  const c={room:null,lastContext:'',localSelection:false,visible:false};
- for(const n of ['mapID','category','gameType','owner','difficultyIntent','setRoom'])c[n]=new Function(n==='setRoom'?'value':'',body(n));
+ for(const n of ['mapID','category','gameType','owner','difficultyIntent','setRoom','publishMaxPlayers'])c[n]=new Function(n==='setRoom'||n==='publishMaxPlayers'?'value':'',body(n));
  c.enter=()=>c.setRoom({currentMap:{id:map},currentMatchMode:{id:gt},forces:{isHost:host},currentLevel:level});
  return c;
 }
@@ -65,3 +65,21 @@ for(const bad of [-1,4,1.5,NaN,Infinity,'3',true,undefined]) {
 commands=[];dvars.ui_p2p_create='1';c=control('mp_rust','war',true,17);c.enter();
 assert.deepEqual(commands,['p2p_room mp_rust war mp 0 -1','p2p_localhost 1'],'MP league is not a difficulty');
 console.log('V2 tier0/Endless3 presence, same-map edits, malformed tiers and independent MP league domain pass');
+
+// k33 offline: the owned multiplayer room's Max Players goes to ui_p2p_maxplayers (p2p.c P2PBotFill); "0" otherwise.
+global.isFinite=Number.isFinite;
+dvars={ui_p2p_create:'1'};commands=[];
+c=control('mp_rust','war');
+c.setRoom({currentMap:{id:'mp_rust'},currentMatchMode:{id:'war'},forces:{isHost:true},currentMaxPlayers:6});
+assert.equal(dvars.ui_p2p_maxplayers,'6','owned MP room publishes its Max Players');
+c.setRoom({currentMap:{id:'mp_rust'},currentMatchMode:{id:'war'},forces:{isHost:true},currentMaxPlayers:14});
+assert.equal(dvars.ui_p2p_maxplayers,'14','a changed Max Players follows');
+c.setRoom({currentMap:{id:'mp_rust'},currentMatchMode:{id:'war'},forces:{isHost:false},currentMaxPlayers:14});
+assert.equal(dvars.ui_p2p_maxplayers,'0','a guest publishes none');
+c=control('zm_factory_sh','zm');c.setRoom({currentMap:{id:'zm_factory_sh'},currentMatchMode:{id:'zm'},forces:{isHost:true},currentLevel:0,currentMaxPlayers:4});
+assert.equal(dvars.ui_p2p_maxplayers,'0','Zombies publishes none');
+c=control('coop_survival_mp_cross_fire','coop');c.setRoom({currentMap:{id:'coop_survival_mp_cross_fire'},currentMatchMode:{id:'coop'},forces:{isHost:true},currentMaxPlayers:4});
+assert.equal(dvars.ui_p2p_maxplayers,'0','Survival publishes none');
+for(const bad of [0,-2,1.5,NaN,undefined,'x']){c=control('mp_rust','war');c.setRoom({currentMap:{id:'mp_rust'},currentMatchMode:{id:'war'},forces:{isHost:true},currentMaxPlayers:bad});assert.equal(dvars.ui_p2p_maxplayers,'0','invalid Max Players publishes none');}
+c.setRoom(null);assert.equal(dvars.ui_p2p_maxplayers,'0','no room publishes none');
+console.log('Max Players: the owned multiplayer room publishes ui_p2p_maxplayers; guests, Zombies, Survival and no room publish 0');

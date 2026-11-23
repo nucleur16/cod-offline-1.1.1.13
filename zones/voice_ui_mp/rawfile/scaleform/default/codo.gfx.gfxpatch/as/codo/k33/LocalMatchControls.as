@@ -136,8 +136,25 @@ package codo.k33
          return "1 "+int(tier);
       }
 
+      // k33 offline: the Max Players of the multiplayer room this player owns, for Kernel33's host, which fills the
+      // match with bots to twice that (p2p.c P2PBotFill); "0" for any other room or none.
+      private function publishMaxPlayers(value:Object):void
+      {
+         var max:String="0";
+         if(value!=null && value.isPlayList!=true && value.forces!=null && value.forces.isHost)
+         {
+            var saved:Object=this.room;
+            this.room=value;
+            var n:Number=Number(value.currentMaxPlayers);
+            if(this.category()=="mp" && isFinite(n) && n>=1 && n<=64 && int(n)==n)max=String(int(n));
+            this.room=saved;
+         }
+         if(CFunctionContainerCommon.Dvar_GetString("ui_p2p_maxplayers")!=max)CFunctionContainerCommon.setdvar("ui_p2p_maxplayers",max);
+      }
+
       public function setRoom(value:Object):void
       {
+         this.publishMaxPlayers(value);
          if(CFunctionContainerCommon.Dvar_GetString("ui_p2p_startup_protocol")=="3"){this.setProductionRoom(value);return;}
          this.room=value;
          this.visible=false;

@@ -233,6 +233,9 @@ package codo.controllers
                   this._currentBottomBtnStatus = GlobalBottomBtnStatus.STATUS_IDLE_COOP_ROOM_JOIN;
                   break;
                case PageID.ROOMLIST_ZOMBIE:
+                  // k33 offline: the Zombies room list is never shown (CyborgMatchRoomListView), so nothing can be
+                  // selected to join: this page's Join Room button has no label and is not shown.
+                  GlobalBottomBtnStatus.LOCALIZATION[GlobalBottomBtnStatus.STATUS_IDLE_CYBORG_ROOM_JOIN] = [null,null,null];
                   this._currentBottomBtnStatus = GlobalBottomBtnStatus.STATUS_IDLE_CYBORG_ROOM_JOIN;
                   break;
                default:

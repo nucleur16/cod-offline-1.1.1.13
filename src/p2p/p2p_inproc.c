@@ -573,11 +573,13 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
         /* fs_game carries the category for exactly the next spawn (server filesystem.c FS_NormalizeGameDir,
          * sv_main.c SV_ResolveAssetCategory), as the lobby dispatches a match. sv_zoneType alone only
          * counts while it differs from the running value: a second co-op or survival match in a row would
-         * otherwise resolve as mp from its mp_* level name. */
+         * otherwise resolve as mp from its mp_* level name. Bots (p2p.c P2PBotFill): a multiplayer room's fill;
+         * any other match gets the scripts' defaults back (no fill, scr_botmax 11), so no fill carries over. */
         _snprintf(g_piRetarget, sizeof(g_piRetarget),
                   "set fs_game %s\nset sv_zoneType %s\nset sv_sessionMap %s\nset g_gametype %s\nset g_difficulty %d\n"
-                  "set zombiesEndlessEnabled %d\nmap %s\n",
-                  c.zoneType, c.zoneType, session, c.gametype, difficulty, difficulty == 3, c.map);
+                  "set zombiesEndlessEnabled %d\nset scr_botfill %d\nset scr_botmax %d\nmap %s\n",
+                  c.zoneType, c.zoneType, session, c.gametype, difficulty, difficulty == 3,
+                  c.botFill > 0 ? c.botFill : 0, c.botFill > 0 ? c.botMax : 11, c.map);
         g_piRetarget[sizeof(g_piRetarget) - 1] = 0;
         Log("p2p in-process: reusing the match server started %lu s ago (match %ld): %s %s on %s:%d",
             (GetTickCount() - g_piServerStartTick) / 1000, n, c.map, c.gametype, c.netIp, c.port);
