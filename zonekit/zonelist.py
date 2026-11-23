@@ -89,7 +89,9 @@ ZONES = {
     # navigation; ahead of code_pre_gfx, so they stay loaded in a match
     "controller_ingame": dict(origin="R:3317112:patch", install=PATCH,
                               gfx={"scaleform/default/codohud.gfx": HUD, "scaleform/default/codoingame.gfx": INGAME},
-                              handwritten={"scaleform/default/codoingame.gfx": {"MainPause"}}),
+                              handwritten={"scaleform/default/codohud.gfx": {"components.scoreboard_part.ScoreboardTeamPanel"},
+                                           "scaleform/default/codoingame.gfx": {"MainPause",
+                                                                                "components.scoreboard_part.ScoreboardTeamPanel"}}),
     # Native HUD menus reference materials/defaults initialized by code_post_gfx. Its menufile also carries the
     # HUD styles' items for killstreaks_hd and scorebar_hd (one copy of a menu: tools/build_survival_hud.py styled()).
     "survival_hud_postgfx_mp": dict(origin="new", install=PATCH),
