@@ -230,6 +230,9 @@ package codo.controllers
                   this._currentBottomBtnStatus = GlobalBottomBtnStatus.STATUS_IDLE_COOP_STAGE_CHOOSE;
                   break;
                case PageID.ROOM_COOP:
+                  // k33 offline: the Spec Ops room list is never shown (MatchRoomListView), so nothing can be selected
+                  // to join: this page's Join button has no label and is not shown.
+                  GlobalBottomBtnStatus.LOCALIZATION[GlobalBottomBtnStatus.STATUS_IDLE_COOP_ROOM_JOIN] = [null,null,null];
                   this._currentBottomBtnStatus = GlobalBottomBtnStatus.STATUS_IDLE_COOP_ROOM_JOIN;
                   break;
                case PageID.ROOMLIST_ZOMBIE:

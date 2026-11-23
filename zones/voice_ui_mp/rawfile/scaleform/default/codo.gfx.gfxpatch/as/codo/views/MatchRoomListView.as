@@ -129,18 +129,14 @@ package codo.views
             });
             return;
          }
-         this.broadcast(BCEvent.EVT_MPCT_ROOMLIST_SELECTED,{"selected":false});
-         this.addSyncDP(SyncDataID.MATCH_ROOMLIST_SELECTED_ROOM,this.getCurrentSelectedRoom);
-         this.tweenShow(TweenParam.SPD_FADE,{
-            "delay":0.3,
-            "z":0,
-            "autoAlpha":1,
-            "blurFilter":TweenParam.BLUR_NONE
-         },null,null,{
-            "autoAlpha":0,
-            "z":TweenParam.Z_GENERAL_TOP,
-            "blurFilter":TweenParam.BLUR_GENERAL
-         });
+         // k33 offline: there are no other players' rooms to list, so the room list (Spec Ops' and the old Rooms page's:
+         // column headers, the list, Refresh) is never shown; without it nothing is selected for the Join button, which
+         // MainMenuController hides. The list's data side (enableData / disableData) is as before. The theatre's
+         // list (theatreOnly, above) is unchanged.
+         this.visible = false;
+         this.mouseEnabled = false;
+         this.mouseChildren = false;
+         this.tabChildren = false;
       }
       
       override protected function hideView() : void
