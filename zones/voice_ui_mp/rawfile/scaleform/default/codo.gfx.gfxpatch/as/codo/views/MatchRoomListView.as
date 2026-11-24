@@ -9,6 +9,7 @@ package codo.views
    import codo.common.ParaEvent;
    import codo.constants.AsyncTaskID;
    import codo.constants.BCEvent;
+   import codo.constants.CoopMapType;
    import codo.constants.GameInfo;
    import codo.constants.LocalizationRoom;
    import codo.constants.QuickMatchType;
@@ -412,8 +413,45 @@ package codo.views
          }
       }
       
+      // The mode a co-op film shows: the mode table's only "coop" row is Challenge Mode and it has no Survival row, so
+      // the level names the kind, as it does in the rooms. "" for every other film (Main's name for it stands).
+      private function theatreCoopMode(row:Object) : String
+      {
+         var mode:String = "";
+         var i:int = 0;
+         while(i < 10)
+         {
+            if(CFunctionContainerCommon.Dvar_GetString("ui_theatreId" + i) == String(row.theatreId))
+            {
+               mode = CFunctionContainerCommon.Dvar_GetString("ui_theatreMode" + i);
+               if(mode == "survival")
+               {
+                  return "@K33UI_MODE_SURVIVAL";
+               }
+               if(mode == "coop")
+               {
+                  return CoopMapType.GetCoopSubType(CFunctionContainerCommon.Dvar_GetString("ui_theatreMap" + i)) == CoopMapType.SPEC_OPS ? LocalizationRoom.MAP_TYPE_SPEC : LocalizationRoom.MAP_TYPE_STORY;
+               }
+               return "";
+            }
+            i++;
+         }
+         return "";
+      }
+      
       public function theatrePopulate(rows:Array, page:int, pages:int) : void
       {
+         var coopMode:String = "";
+         var j:int = 0;
+         while(j < rows.length)
+         {
+            coopMode = this.theatreCoopMode(rows[j]);
+            if(coopMode != "")
+            {
+               rows[j].theatreMode = coopMode;
+            }
+            j++;
+         }
          this.myHeader.label = "@K33UI_THEATRE_MY_MATCHES";
          this.myList.dataProvider = rows;
          this.myList.selectedIndex = rows.length > 0 ? 0 : -1;
