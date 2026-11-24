@@ -589,7 +589,9 @@ martyrdom_ability( fuse )
 
 detonate_c4( origin, fuse )
 {
-	charge = spawn( "script_model", origin );
+	// The charge lies on the ground where he fell; the blast stays at its own
+	// height, where the ground does not shadow it.
+	charge = spawn( "script_model", floor_under( origin ) );
 	charge.survival_enemy = true;
 	if ( codescripts\character::modelMounted( "weapon_c4" ) )
 		charge setModel( "weapon_c4" );
@@ -1057,7 +1059,23 @@ drop_shield()
 	s = spawn( "script_model", origin );
 	s.angles = angles;
 	s setModel( model );
+	// A script_model does not fall: it hung at his hand for its 30 s.
+	ground = floor_under( origin ) + ( 0, 0, 2 );
+	time = sqrt( ( origin[ 2 ] - ground[ 2 ] + 1 ) / 400 );
+	if ( time < 0.1 )
+		time = 0.1;
+	s moveTo( ground, time, time, 0 );
+	s rotateTo( ( 0, angles[ 1 ], 90 ), time );
 	s thread delete_after( 30 );
+}
+
+// The ground under a point (the point itself over a drop).
+floor_under( origin )
+{
+	trace = bulletTrace( origin + ( 0, 0, 8 ), origin - ( 0, 0, 400 ), false, undefined );
+	if ( trace[ "fraction" ] >= 1 )
+		return origin;
+	return trace[ "position" ];
 }
 
 delete_after( time )
