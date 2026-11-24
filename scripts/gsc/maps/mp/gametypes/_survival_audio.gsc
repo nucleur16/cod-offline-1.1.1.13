@@ -525,7 +525,7 @@ wave_over_line( first )
 	level endon( "wave_started" );
 	wait( 1.5 );
 	speak( "wave_over" );
-	if ( first )
+	if ( first && level.survival_audio_lines == 1 )
 		speak( "stations" );
 }
 
