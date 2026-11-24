@@ -175,8 +175,9 @@ main()
 	for ( i = 0; i < spots.size; i++ )
 	{
 		spot = spots[ i ];
-		e = spawn( "script_model", spot.origin );
-		e.angles = spot.angles;
+		placed = place( spot.origin, spot.angles );
+		e = spawn( "script_model", placed.origin );
+		e.angles = placed.angles;
 		model = level.survival_kiosk_models[ spot.kind ];
 		if ( codescripts\character::modelMounted( model ) )
 			e setModel( model );
@@ -189,6 +190,274 @@ main()
 	level thread markers_lifecycle();
 	if ( getDvarInt( "scr_survival_test" ) != 0 )
 		level thread test_purchases();
+}
+
+// --------------------------------------------------------------------------
+// Standing the cases on the floor
+//
+// Both case models (coop_evac_case_ammo, coop_evac_case_support) have their
+// origin 15.59 units over the feet: LOD 0 is z -15.59 .. 18.1 (35.5 for the
+// support case's open laptop), the feet x +-24, y +-14, the body's bottom at
+// -13.95, its rim at +12. CoDOL's authored placements carry that offset; a
+// spot taken from the floor (a navigation waypoint) does not, and its case
+// stood half buried. So where a spot's height is and how it leans are only a
+// starting point: the feet decide.
+//
+// A spot keeps its author's placement while its feet stand on the floor
+// (the middle one of the nine up to 2.5 units in it, as most were authored,
+// up to 1 over it). Otherwise the case is stood on the floor bullets hit
+// under its feet (the floor you see: player clip is not it), at the spot's
+// x and y and yaw, leaning as the author had it or with the slope, whichever
+// its feet follow best. Only a case inside a wall or a prop moves sideways,
+// by the least that clears it.
+// --------------------------------------------------------------------------
+
+// A point of the case: x along it, y to its left, z up.
+case_point( origin, angles, x, y, z )
+{
+	f = anglesToForward( angles );
+	r = anglesToRight( angles );
+	u = anglesToUp( angles );
+	return ( origin[ 0 ] + f[ 0 ] * x - r[ 0 ] * y + u[ 0 ] * z,
+		origin[ 1 ] + f[ 1 ] * x - r[ 1 ] * y + u[ 1 ] * z,
+		origin[ 2 ] + f[ 2 ] * x - r[ 2 ] * y + u[ 2 ] * z );
+}
+
+foot( origin, angles, x, y )
+{
+	return case_point( origin, angles, x, y, -15.59 );
+}
+
+// The floor at (x, y) between top and bottom, undefined where there is none
+// (a hole, a ledge) or the trace starts in something (a wall, a prop). Under
+// shallow water it is the bottom, where the players wade. `ent` is ignored.
+floor_at( x, y, top, bottom, ent )
+{
+	t = bulletTrace( ( x, y, top ), ( x, y, bottom ), false, ent );
+	if ( t[ "fraction" ] <= 0.01 || t[ "fraction" ] >= 1 || t[ "normal" ][ 2 ] < 0.6 )
+		return undefined;
+	z = t[ "position" ][ 2 ];
+	if ( t[ "surfacetype" ] == "water" )
+	{
+		under = physicsTrace( ( x, y, top ), ( x, y, z - 24 ) );
+		if ( under[ 2 ] > z - 23.9 && under[ 2 ] < z )
+			return under[ 2 ];
+	}
+	return drawn_floor( x, y, z );
+}
+
+// Where the level draws a floor over the one bullets hit (the only such place
+// of the 57 levels' stations, measured against their drawn geometry):
+// mp_storm_spring's concrete pad, 4 units thick and not solid.
+drawn_floor( x, y, z )
+{
+	if ( getDvar( "mapname" ) == "mp_storm_spring" && abs( x ) < 156 && abs( y ) < 224 && abs( z ) < 4 )
+		return 4;
+	return z;
+}
+
+// How the nine feet of a case at `origin`, `angles` stand to the floor around
+// `floor`: .high, .low and .mid are the floor less the foot, the most, the
+// least and the middle of them (> 0: that foot is in the floor). What is over
+// 14 units above or below `floor` is not the floor it stands on (a wall's
+// foot, a prop, the drop over a ledge).
+feet_on_floor( origin, angles, floor )
+{
+	r = spawnStruct();
+	r.count = 0;
+	r.high = 0;
+	r.low = 0;
+	r.mid = 0;
+	sorted = [];
+	for ( a = -1; a <= 1; a++ )
+	{
+		for ( b = -1; b <= 1; b++ )
+		{
+			p = foot( origin, angles, a * 24, b * 14 );
+			z = floor_at( p[ 0 ], p[ 1 ], floor + 20, floor - 14, undefined );
+			if ( !isDefined( z ) || z > floor + 14 )
+				continue;
+			d = z - p[ 2 ];
+			for ( i = r.count; i > 0 && sorted[ i - 1 ] > d; i-- )
+				sorted[ i ] = sorted[ i - 1 ];
+			sorted[ i ] = d;
+			r.count++;
+		}
+	}
+	if ( r.count )
+	{
+		r.low = sorted[ 0 ];
+		r.mid = sorted[ int( r.count / 2 ) ];
+		r.high = sorted[ r.count - 1 ];
+	}
+	return r;
+}
+
+// The slope of the floor under a case, as angles with its yaw: the mean rise
+// along and across it, between the feet that have a floor at both ends.
+floor_angles( origin, yaw, floor )
+{
+	along = 0;
+	alongCount = 0;
+	across = 0;
+	acrossCount = 0;
+	for ( k = -1; k <= 1; k++ )
+	{
+		p = foot( origin, ( 0, yaw, 0 ), 24, k * 14 );
+		q = foot( origin, ( 0, yaw, 0 ), -24, k * 14 );
+		front = floor_at( p[ 0 ], p[ 1 ], floor + 20, floor - 14, undefined );
+		back = floor_at( q[ 0 ], q[ 1 ], floor + 20, floor - 14, undefined );
+		if ( isDefined( front ) && isDefined( back ) && front < floor + 14 && back < floor + 14 )
+		{
+			along += ( front - back ) / 48;
+			alongCount++;
+		}
+		p = foot( origin, ( 0, yaw, 0 ), k * 24, 14 );
+		q = foot( origin, ( 0, yaw, 0 ), k * 24, -14 );
+		left = floor_at( p[ 0 ], p[ 1 ], floor + 20, floor - 14, undefined );
+		right = floor_at( q[ 0 ], q[ 1 ], floor + 20, floor - 14, undefined );
+		if ( isDefined( left ) && isDefined( right ) && left < floor + 14 && right < floor + 14 )
+		{
+			across += ( left - right ) / 28;
+			acrossCount++;
+		}
+	}
+	pitch = 0;
+	if ( alongCount )
+		pitch = 0 - lean( atan( along / alongCount ) );
+	roll = 0;
+	if ( acrossCount )
+		roll = lean( atan( across / acrossCount ) );
+	return ( pitch, yaw, roll );
+}
+
+// A case leans with the floor up to 20 degrees.
+lean( angle )
+{
+	if ( angle > 20 )
+		return 20;
+	if ( angle < -20 )
+		return -20;
+	return angle;
+}
+
+// Where a case for a spot stands: .origin, .angles, .moved (not as the spot
+// says), .spread (how unevenly the feet meet the floor; undefined: no floor
+// was found under the spot, and the case is where the spot says), .feet (how
+// many of the nine have a floor).
+place( origin, angles )
+{
+	placed = stand( origin, angles );
+	if ( !isDefined( placed.spread ) || walls_cut( placed.origin, placed.angles, undefined ) < 3 )
+		return placed;
+	// In a wall or a prop: the nearest place beside it that is clear.
+	for ( step = 4; step <= 32; step += 4 )
+	{
+		for ( i = 0; i < 8; i++ )
+		{
+			p = origin + vectorScale( anglesToForward( ( 0, angles[ 1 ] + i * 45, 0 ) ), step );
+			aside = stand( p, angles );
+			if ( !isDefined( aside.spread ) || aside.spread > placed.spread + 4 ||
+			     abs( aside.origin[ 2 ] - placed.origin[ 2 ] ) > 14 || walls_cut( aside.origin, aside.angles, undefined ) )
+				continue;
+			aside.moved = true;
+			return aside;
+		}
+	}
+	return placed;
+}
+
+stand( origin, angles )
+{
+	placed = spawnStruct();
+	placed.origin = origin;
+	placed.angles = angles;
+	placed.moved = false;
+	floor = floor_at( origin[ 0 ], origin[ 1 ], origin[ 2 ] + 28, origin[ 2 ] - 120, undefined );
+	if ( !isDefined( floor ) )
+		return placed;
+
+	feet = feet_on_floor( origin, angles, floor );
+	if ( !feet.count )
+		return placed;
+	placed.spread = feet.high - feet.low;
+	placed.feet = feet.count;
+	if ( feet.mid <= 2.5 && feet.mid >= -1 )
+		return placed;
+
+	base = ( origin[ 0 ], origin[ 1 ], floor + 15.59 );
+	best = angles;
+	feet = feet_on_floor( base, angles, floor );
+	slope = floor_angles( base, angles[ 1 ], floor );
+	other = feet_on_floor( base, slope, floor );
+	if ( other.count && ( !feet.count || other.high - other.low < feet.high - feet.low - 0.5 ) )
+	{
+		best = slope;
+		feet = other;
+	}
+	if ( !feet.count )
+		return placed;
+	placed.spread = feet.high - feet.low;
+	placed.feet = feet.count;
+	// On the highest foot, a touch into it; where the floor is uneven, up to
+	// 2.5 into it, so that the middle one hangs no more than half a unit.
+	height = feet.high - 0.25;
+	if ( height > feet.mid + 0.5 )
+		height = feet.mid + 0.5;
+	if ( height < feet.high - 2.5 )
+		height = feet.high - 2.5;
+	placed.origin = base + ( 0, 0, height );
+	placed.angles = best;
+	placed.moved = true;
+	return placed;
+}
+
+// How many of the case's body edges and diagonals, at three heights from
+// near its base to the open lid, something other than `ent` cuts (0: it is
+// clear of walls and props).
+walls_cut( origin, angles, ent )
+{
+	cut = 0;
+	for ( h = 0; h < 3; h++ )
+	{
+		z = h * 10 - 4;
+		c = [];
+		c[ 0 ] = case_point( origin, angles, -28, -15, z );
+		c[ 1 ] = case_point( origin, angles, 28, -15, z );
+		c[ 2 ] = case_point( origin, angles, 28, 15, z );
+		c[ 3 ] = case_point( origin, angles, -28, 15, z );
+		for ( i = 0; i < 4; i++ )
+		{
+			if ( !bulletTracePassed( c[ i ], c[ ( i + 1 ) % 4 ], false, ent ) )
+				cut++;
+		}
+		if ( !bulletTracePassed( c[ 0 ], c[ 2 ], false, ent ) )
+			cut++;
+		if ( !bulletTracePassed( c[ 1 ], c[ 3 ], false, ent ) )
+			cut++;
+	}
+	return cut;
+}
+
+// The sides (of eight, 52 units out) a player can stand at, in reach and in
+// sight of the case and, with `home`, can walk there from.
+usable_sides( origin, yaw, home, ent )
+{
+	sides = 0;
+	for ( i = 0; i < 8; i++ )
+	{
+		p = origin + vectorScale( anglesToForward( ( 0, yaw + i * 45, 0 ) ), 52 );
+		e = playerPhysicsTrace( p + ( 0, 0, 24 ), p - ( 0, 0, 72 ) );
+		// 24 up it is in something already, or there is nothing to stand on
+		if ( e[ 2 ] > p[ 2 ] + 23.5 || e[ 2 ] < p[ 2 ] - 71 || distanceSquared( e, origin ) > 96 * 96 )
+			continue;
+		if ( !bulletTracePassed( e + ( 0, 0, 60 ), origin + ( 0, 0, 14 ), false, ent ) )
+			continue;
+		if ( isDefined( home ) && !findpath( home, e ) )
+			continue;
+		sides++;
+	}
+	return sides;
 }
 
 // IW5 _so_survival_armory::armory_use_monitor: one archived world HUD shader

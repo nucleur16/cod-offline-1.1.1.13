@@ -195,6 +195,62 @@ nav_points( anchor, minRadius, maxRadius, count, spacing, avoid )
 	return out;
 }
 
+// A walkable waypoint between minRadius and maxRadius of the start for a
+// kiosk: of a few dozen on its part of the graph, the one where a case stands
+// best (kiosk_cost), clear of the other kiosk.
+kiosk_spot( home, minRadius, maxRadius, others )
+{
+	best = undefined;
+	for ( tries = 0; tries < 32; tries++ )
+	{
+		p = codol_botNavPointNear( home.origin, maxRadius, minRadius );
+		if ( !isDefined( p ) || near_any( others, p, 160 ) )
+			continue;
+		angles = facing( p, home.origin );
+		for ( turn = 0; turn < 2; turn++ )
+		{
+			s = spot( p, ( 0, angles[ 1 ] + turn * 90, 0 ) );
+			s.cost = kiosk_cost( s.origin, s.angles );
+			if ( !isDefined( best ) || s.cost < best.cost )
+				best = s;
+		}
+		if ( best.cost < 3 )
+			break;
+	}
+	return best;
+}
+
+// What speaks against a kiosk at a waypoint: no floor under its feet, an
+// uneven or a steep one, the case cutting a wall or a prop, a doorway or a narrow
+// passage (a way through it under 130 units wide), a player start within 110
+// units, too few sides to use it from.
+kiosk_cost( origin, angles )
+{
+	placed = maps\mp\gametypes\_survival_kiosk::place( origin, angles );
+	if ( !isDefined( placed.spread ) )
+		return 1000;
+	up = anglesToUp( placed.angles );
+	cost = placed.spread + acos( up[ 2 ] ) + ( 9 - placed.feet ) * 10;
+	cost += maps\mp\gametypes\_survival_kiosk::walls_cut( placed.origin, placed.angles, undefined ) * 30;
+	mid = placed.origin + ( 0, 0, 24 );
+	for ( i = 0; i < 4; i++ )
+	{
+		dir = maps\mp\gametypes\_survival_kiosk::vectorScale( anglesToForward( ( 0, angles[ 1 ] + i * 45, 0 ) ), 130 );
+		a = bulletTrace( mid, mid + dir, false, undefined );
+		b = bulletTrace( mid, mid - dir, false, undefined );
+		if ( a[ "fraction" ] + b[ "fraction" ] < 1 )
+			cost += 25;
+	}
+	if ( near_any( level.survival_player_starts, origin, 110 ) )
+		cost += 60;
+	sides = maps\mp\gametypes\_survival_kiosk::usable_sides( placed.origin, angles[ 1 ], undefined, undefined );
+	if ( sides < 3 )
+		cost += 200;
+	else if ( sides < 6 )
+		cost += 4 * ( 6 - sides );
+	return cost;
+}
+
 data()
 {
 	map = getDvar( "mapname" );
@@ -271,13 +327,22 @@ data()
 	// The two CoDOL kiosks (the locker: ammo, armor and perks; the support
 	// crate: the bought support) near the start.
 	level.survival_kiosk_spots = [];
-	near = nav_points( home.origin, 140, 480, 2, 160, level.survival_player_starts );
-	if ( near.size < 2 )
-		near = nav_points( home.origin, 64, 900, 2, 96, undefined );
-	if ( near.size > 0 )
-		level.survival_kiosk_spots[ 0 ] = kiosk( "kiosk_locker", near[ 0 ].origin, facing( near[ 0 ].origin, home.origin ) );
-	if ( near.size > 1 )
-		level.survival_kiosk_spots[ 1 ] = kiosk( "kiosk_killstreak", near[ 1 ].origin, facing( near[ 1 ].origin, home.origin ) );
+	kinds = [];
+	kinds[ 0 ] = "kiosk_locker";
+	kinds[ 1 ] = "kiosk_killstreak";
+	for ( i = 0; i < kinds.size; i++ )
+	{
+		s = kiosk_spot( home, 140, 480, level.survival_kiosk_spots );
+		if ( !isDefined( s ) || s.cost > 40 )
+		{
+			// Nothing clear that near: look farther out.
+			far = kiosk_spot( home, 140, 900, level.survival_kiosk_spots );
+			if ( !isDefined( s ) || ( isDefined( far ) && far.cost < s.cost ) )
+				s = far;
+		}
+		if ( isDefined( s ) )
+			level.survival_kiosk_spots[ level.survival_kiosk_spots.size ] = kiosk( kinds[ i ], s.origin, s.angles );
+	}
 
 	// The claymore planter's spots: on the approaches, clear of the start.
 	level.survival_claymore_spots = nav_points( home.origin, 350, 2200, 32, 160, undefined );
