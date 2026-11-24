@@ -564,7 +564,18 @@ fire_shot( enemy )
 	// Hold fire with a squadmate in the line.
 	trace = bulletTrace( start, target, true, self );
 	if ( isDefined( trace[ "entity" ] ) && trace[ "entity" ] != enemy && isAI( trace[ "entity" ] ) )
-		return;
+	{
+		// A Survival wave crowds the player (dogs, walking bombs): the ones
+		// behind shoot past them, at his head or a shoulder.
+		if ( !isDefined( self.survival_ref ) )
+			return;
+		target = past_squadmate( start, enemy, target );
+		if ( !isDefined( target ) )
+		{
+			self.survival_blocked = getTime();
+			return;
+		}
+	}
 
 	dist = distance( start, target );
 	hit = randomFloat( 1 ) < hit_chance( enemy, dist );
@@ -603,6 +614,23 @@ fire_shot( enemy )
 	}
 	self.a.lastShootTime = getTime();
 	self.a.burstShots++;
+}
+
+past_squadmate( start, enemy, target )
+{
+	dir = vectorNormalize( target - start );
+	side = ( 0 - dir[ 1 ], dir[ 0 ], 0 );
+	points = [];
+	points[ 0 ] = enemy getEye();
+	points[ 1 ] = target + side * 12;
+	points[ 2 ] = target - side * 12;
+	for ( i = 0; i < points.size; i++ )
+	{
+		trace = bulletTrace( start, points[ i ], true, self );
+		if ( !isDefined( trace[ "entity" ] ) || trace[ "entity" ] == enemy || !isAI( trace[ "entity" ] ) )
+			return points[ i ];
+	}
+	return undefined;
 }
 
 // A new target, or one not shot at for four seconds (longer than any

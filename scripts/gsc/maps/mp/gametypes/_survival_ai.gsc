@@ -538,7 +538,39 @@ special_behaviour( ref )
 	case "claymore":
 		self thread claymore_planter();
 		break;
+	case "riotshield":
+		self carry_shield();
+		break;
 	}
+	self engage_range( ref );
+}
+
+// How close a type comes before it stands and fights (the native attack
+// distance) and how close the advance takes it after that.  The walking bombs
+// carry their C4 to the player, firing as they run (the role's shotgun range had
+// them stop 600 units out and hold at 220, beyond its blast) and the gas tank is worth
+// something only near him (IW5 goal radius 512); the rest keep their weapon's.
+engage_range( ref )
+{
+	switch ( ref )
+	{
+	case "martyrdom":
+	case "martyrdom_volatile":
+		self.meleeattackdist = 180;
+		self.survival_engage_floor = 90;
+		self.survival_rush = true;
+		break;
+	case "chemical":
+	case "hazmat":
+		self.meleeattackdist = 800;
+		self.survival_engage_floor = 240;
+		break;
+	case "riotshield":
+		self.meleeattackdist = 600;
+		self.survival_engage_floor = 160;
+		break;
+	}
+	self.survival_engage_base = self.meleeattackdist;
 }
 
 // IW5 martyrdom_ability / detonate_c4_when_dead: C4 strapped to the chest,
@@ -661,16 +693,24 @@ claymore_planter()
 		}
 		if ( !isDefined( spot ) )
 			continue;
+		// The hunt leaves him alone meanwhile (it and the native chase own the
+		// goal otherwise, and he never got to a spot); IW5's planter ignores
+		// everybody too.
+		self.survival_dash = spot.origin;
+		self.ignoreall = true;
 		self.goalradius = 48;
 		self setGoalPos( spot.origin );
-		for ( t = 0; t < 20 && distanceSquared( self.origin, spot.origin ) > 72 * 72; t++ )
+		for ( t = 0; t < 40 && distanceSquared( self.origin, spot.origin ) > 72 * 72; t++ )
 			wait( 0.5 );
-		if ( distanceSquared( self.origin, spot.origin ) > 96 * 96 )
+		self.ignoreall = false;
+		self.survival_dash = undefined;
+		if ( distanceSquared( self.origin, spot.origin ) > 96 * 96 || !isDefined( target ) )
 			continue;
 		yaw = vectorToAngles( target.origin - spot.origin );
 		spot.survival_claymore = spawn_claymore( self.origin, ( 0, yaw[ 1 ], 0 ) );
 		spot.survival_claymore.survival_spot = spot;
 		planted++;
+		self.survival_planted = planted;
 		self thread hunt();
 	}
 }
@@ -878,6 +918,8 @@ actor_damage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, v
 		return;
 	if ( isDefined( self.dmg_factor ) )
 		iDamage = self jug_damage( iDamage, eAttacker, sMeansOfDeath, sWeapon, sHitLoc, vDir );
+	else if ( self shield_stops( sMeansOfDeath, vDir ) )
+		iDamage = int( iDamage * 0.1 );
 	if ( iDamage <= 0 )
 		return;
 	self [[level.survival_mp_actor_damage]]( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime );
@@ -919,18 +961,30 @@ jug_damage( iDamage, eAttacker, sMeansOfDeath, sWeapon, sHitLoc, vDir )
 	else
 		factor = f[ "bodyshot" ];
 
-	// The riot shield: a bullet into its face is stopped (IW5's shield has
-	// its own collision; here the hit's direction against his facing).
-	if ( isDefined( self.survival_shield ) && isSubStr( sMeansOfDeath, "BULLET" ) && isDefined( vDir ) )
-	{
-		facing = anglesToForward( self.angles );
-		if ( vectorDot( facing, vectorNormalize( ( vDir[ 0 ], vDir[ 1 ], 0 ) ) ) < -0.5 )
-			factor = factor * 0.1;
-	}
+	if ( self shield_stops( sMeansOfDeath, vDir ) )
+		factor = factor * 0.1;
 	iDamage = int( iDamage * factor );
 	if ( iDamage < 1 )
 		iDamage = 1;
 	return iDamage;
+}
+
+// The riot shield: a bullet into its face is stopped (IW5's shield has its
+// own collision; here the hit's direction against his facing).
+shield_stops( sMeansOfDeath, vDir )
+{
+	if ( !isDefined( self.survival_shield ) || !isDefined( vDir ) || !isSubStr( sMeansOfDeath, "BULLET" ) )
+		return false;
+	facing = anglesToForward( self.angles );
+	return vectorDot( facing, vectorNormalize( ( vDir[ 0 ], vDir[ 1 ], 0 ) ) ) < -0.5;
+}
+
+carry_shield()
+{
+	if ( !codescripts\character::modelMounted( level.survival_shield_model ) )
+		return;
+	self attach( level.survival_shield_model, "tag_weapon_left", true );
+	self.survival_shield = level.survival_shield_model;
 }
 
 // IW5 global_jug_behavior and the boss_jug_* factors.
@@ -947,6 +1001,11 @@ jug_behaviour( ref )
 	self.goalradius = 128;
 	self setEngagementMinDist( 100, 60 );
 	self setEngagementMaxDist( 512, 768 );
+	// IW5's juggernaut walks in firing, to 128 units; the machine gun's band
+	// had him stop 1400 units out.
+	self.meleeattackdist = 700;
+	self.survival_engage_base = 700;
+	self.survival_engage_floor = 160;
 	switch ( ref )
 	{
 	case "jug_riotshield":
@@ -982,11 +1041,7 @@ jug_factors( head, body, melee, meleeShield, explosive, ai )
 jug_riotshield()
 {
 	self endon( "death" );
-	if ( codescripts\character::modelMounted( level.survival_shield_model ) )
-	{
-		self attach( level.survival_shield_model, "tag_weapon_left", true );
-		self.survival_shield = level.survival_shield_model;
-	}
+	self carry_shield();
 	full = self.health;
 	for ( ;; )
 	{
@@ -996,7 +1051,6 @@ jug_riotshield()
 	}
 	self drop_shield();
 	jug_factors( 0.75, 0.33, 0.25, 0.25, 0.33, 0.33 );
-	self thread jug_shield_on_death();
 }
 
 drop_shield()
@@ -1012,11 +1066,6 @@ drop_shield()
 	s.angles = angles;
 	s setModel( model );
 	s thread delete_after( 30 );
-}
-
-jug_shield_on_death()
-{
-	self waittill( "death" );
 }
 
 delete_after( time )
@@ -1064,6 +1113,8 @@ hunt()
 
 chase_goal( target )
 {
+	if ( isDefined( self.survival_dash ) )
+		return;
 	if ( !( isDefined( self.isdog ) && self.isdog ) )
 		self.favoriteenemy = target;
 	if ( isDefined( self.survival_detour ) )
@@ -1087,9 +1138,99 @@ chase_goal( target )
 		radius = 384;
 	goal = target.origin;
 	if ( d > 1000 && !isDefined( self.survival_stalled ) )
-		goal = self flank_goal( target, d );
+	{
+		goal = self approach_goal( target, d );
+		if ( isDefined( goal ) )
+			radius = 96;
+		else
+			goal = self flank_goal( target, d );
+	}
 	self.goalradius = radius;
 	self setGoalPos( goal );
+}
+
+// The side he comes in from: a waypoint 500 to 950 units from the player, on
+// a bearing the other hunters have not taken, within 110 degrees of his own.
+// A wave's squads spawn on the far side of the map and arrived in a 50 degree
+// arc.  Kept while the player stays near where it was chosen for; undefined
+// when there is none he can get to, or once he has been there.
+approach_goal( target, d )
+{
+	if ( d > 3500 || isDefined( self.survival_rush ) || isDefined( self.survival_boss ) || ( isDefined( self.isdog ) && self.isdog ) )
+		return undefined;
+	if ( isDefined( self.survival_approach ) && distanceSquared( target.origin, self.survival_approach_for ) < 500 * 500 )
+	{
+		if ( distanceSquared( self.origin, self.survival_approach ) < 200 * 200 )
+			self.survival_approach_done = true;
+		if ( isDefined( self.survival_approach_done ) )
+			return undefined;
+		return self.survival_approach;
+	}
+	now = getTime();
+	if ( now < level.survival_next_approach || ( isDefined( self.survival_approach_wait ) && now < self.survival_approach_wait ) )
+		return self.survival_approach;
+	level.survival_next_approach = now + 100;
+	self.survival_approach_wait = now + 4000;
+	self.survival_approach = undefined;
+	self.survival_approach_done = undefined;
+	own = vectorToYaw( self.origin - target.origin );
+	taken = [];
+	enemies = living_enemies();
+	for ( i = 0; i < enemies.size; i++ )
+	{
+		e = enemies[ i ];
+		if ( e == self )
+			continue;
+		if ( isDefined( e.survival_approach ) && distanceSquared( e.survival_approach_for, target.origin ) < 900 * 900 )
+			taken[ taken.size ] = vectorToYaw( e.survival_approach - target.origin );
+		else if ( distanceSquared( e.origin, target.origin ) < 1200 * 1200 )
+			taken[ taken.size ] = vectorToYaw( e.origin - target.origin );
+	}
+	points = waypoints_around( target.origin, 2 );
+	best = [];
+	bestScore = [];
+	for ( i = 0; i < points.size; i++ )
+	{
+		dt = distance2d( points[ i ], target.origin );
+		if ( dt < 500 || dt > 950 )
+			continue;
+		yaw = vectorToYaw( points[ i ] - target.origin );
+		off = abs( angleClamp180( yaw - own ) );
+		if ( off > 110 )
+			continue;
+		apart = 120;
+		for ( k = 0; k < taken.size; k++ )
+		{
+			a = abs( angleClamp180( taken[ k ] - yaw ) );
+			if ( a < apart )
+				apart = a;
+		}
+		score = apart * 2 - off * 0.5 + randomInt( 30 );
+		slot = best.size;
+		if ( slot >= 3 )
+		{
+			if ( score <= bestScore[ 2 ] )
+				continue;
+			slot = 2;
+		}
+		while ( slot > 0 && bestScore[ slot - 1 ] < score )
+		{
+			best[ slot ] = best[ slot - 1 ];
+			bestScore[ slot ] = bestScore[ slot - 1 ];
+			slot--;
+		}
+		best[ slot ] = points[ i ];
+		bestScore[ slot ] = score;
+	}
+	for ( i = 0; i < best.size; i++ )
+	{
+		if ( !findPath( self.origin, best[ i ] ) )
+			continue;
+		self.survival_approach = best[ i ];
+		self.survival_approach_for = target.origin;
+		return best[ i ];
+	}
+	return undefined;
 }
 
 // A side offset of up to 300 units, perpendicular to the line to the target
@@ -1123,11 +1264,15 @@ flank_goal( target, d )
 // while).  One per enemy, staggered.  It measures progress -- the distance to
 // the nearest standing player shrinking by 64 units, or the actor inside
 // close range -- and escalates an actor that has made none:
-//   6 s   a soldier fighting from long range advances: his native attack
-//         range (meleeattackdist, the distance at which the frame hands him
-//         soldier_combat) is cut below his current distance, down to a floor
-//         per weapon, so he breaks off, closes 250-450 units and fights
-//         again -- a bounding advance, not a beeline.
+//   6 s   a soldier fighting from long range advances (a juggernaut or a
+//         walking bomb after 3 s): his native attack range (meleeattackdist, the distance at which
+//         the frame hands him soldier_combat) is cut below his current
+//         distance, down to a floor per weapon or type, so he breaks off,
+//         closes 250-450 units and fights again -- a bounding advance, not a
+//         beeline.
+//   a soldier already that close who has stood on one spot for a while, or
+//         has had no shot from it for some seconds (a squadmate or a wall in
+//         the line), moves to another that has one (combat_tick).
 //   8 s   a follower leaves his (stuck) leader and hunts himself; a hunter
 //         with no enemy whose route fails is sent to the reachable waypoint
 //         nearest the player for a few seconds (the goal it could not reach
@@ -1136,6 +1281,7 @@ flank_goal( target, d )
 //         see is moved to a spot no player can see, 600-1400 units from the
 //         player, from which findpath reaches him: the off-graph, wedged and
 //         unroutable ones.
+//   10 s  on one spot far from the player, unseen and without a shot: the same.
 // The player moving away rebases the measure without counting as a stall.
 // --------------------------------------------------------------------------
 
@@ -1144,7 +1290,42 @@ chase_init()
 	level.survival_waypoints = codol_getWalkableWaypoints();
 	if ( !isDefined( level.survival_waypoints ) )
 		level.survival_waypoints = [];
+	level.survival_wp_grid = [];
+	for ( i = 0; i < level.survival_waypoints.size; i++ )
+	{
+		key = wp_cell( level.survival_waypoints[ i ], 0, 0 );
+		if ( !isDefined( level.survival_wp_grid[ key ] ) )
+			level.survival_wp_grid[ key ] = [];
+		n = level.survival_wp_grid[ key ].size;
+		level.survival_wp_grid[ key ][ n ] = level.survival_waypoints[ i ];
+	}
+	level.survival_next_dash = 0;
+	level.survival_next_approach = 0;
 	codolprintln( "CoDOL survival: chase watchdog, " + level.survival_waypoints.size + " walkable waypoints" );
+}
+
+// The waypoints by 512-unit cell, so a look around one actor reads a few
+// dozen of them and not the level's thousand.
+wp_cell( p, dx, dy )
+{
+	return int( floor( p[ 0 ] / 512 ) + dx ) + "_" + int( floor( p[ 1 ] / 512 ) + dy );
+}
+
+waypoints_around( origin, cells )
+{
+	out = [];
+	for ( x = 0 - cells; x <= cells; x++ )
+	{
+		for ( y = 0 - cells; y <= cells; y++ )
+		{
+			cell = level.survival_wp_grid[ wp_cell( origin, x, y ) ];
+			if ( !isDefined( cell ) )
+				continue;
+			for ( i = 0; i < cell.size; i++ )
+				out[ out.size ] = cell[ i ];
+		}
+	}
+	return out;
 }
 
 chase_watch()
@@ -1161,6 +1342,8 @@ chase_watch()
 	badpathSeen = 0;
 	pushed = 0;
 	nextRelocate = 0;
+	stillAt = undefined;
+	stillSince = since;
 	wait( 1 + randomFloat( 1 ) );
 	for ( ;; )
 	{
@@ -1173,6 +1356,29 @@ chase_watch()
 		now = getTime();
 		d = distance( self.origin, target.origin );
 		close = self chase_close_range();
+		self combat_tick( target, d, now );
+
+		// 10 s on one spot, far from the player, unseen and without a shot:
+		// stuck, however the player moves about meanwhile (his moving rebases
+		// the stall below, so against one who kept moving it never came).
+		if ( !isDefined( stillAt ) || distanceSquared( self.origin, stillAt ) > 64 * 64 || self shot_since( stillSince ) )
+		{
+			stillAt = self.origin;
+			stillSince = now;
+		}
+		else if ( now - stillSince >= 10000 && d > 700 && now >= nextRelocate && !self seen_by_players() )
+		{
+			nextRelocate = now + 5000;
+			if ( self chase_relocate( target ) )
+			{
+				stillAt = undefined;
+				best = undefined;
+				since = now;
+				self.survival_stalled = undefined;
+				self.survival_detour = undefined;
+				continue;
+			}
+		}
 		if ( isDefined( anchor ) && distanceSquared( target.origin, anchor ) > 256 * 256 &&
 		     self is_soldier() && self.meleeattackdist < self.survival_engage_base )
 			self.meleeattackdist = ( self.meleeattackdist + self.survival_engage_base ) * 0.5;	// the player moved: give some range back
@@ -1198,7 +1404,10 @@ chase_watch()
 		}
 
 		// 6 s: a soldier in his combat script at long range bounds forward.
-		if ( stalled >= 6 && now >= pushed && self is_soldier() && isDefined( self.enemy ) )
+		patience = 6;
+		if ( isDefined( self.survival_boss ) || isDefined( self.survival_rush ) )
+			patience = 3;
+		if ( stalled >= patience && now >= pushed && self is_soldier() && isDefined( self.enemy ) )
 		{
 			engageFloor = self chase_engage_floor();
 			if ( d > engageFloor + 64 )
@@ -1244,6 +1453,11 @@ chase_watch()
 	}
 }
 
+shot_since( time )
+{
+	return isDefined( self.a ) && isDefined( self.a.lastShootTime ) && self.a.lastShootTime > time;
+}
+
 chase_badpath()
 {
 	self endon( "death" );
@@ -1270,8 +1484,8 @@ chase_close_range()
 // How close the bounding advance takes a soldier before it lets him hold.
 chase_engage_floor()
 {
-	if ( isDefined( self.survival_boss ) )
-		return 160;
+	if ( isDefined( self.survival_engage_floor ) )
+		return self.survival_engage_floor;
 	base = self.survival_engage_base;
 	if ( !isDefined( base ) || base <= 0 )
 		return 160;
@@ -1380,6 +1594,170 @@ chase_relocate( target )
 	return false;
 }
 
+// --------------------------------------------------------------------------
+// Fighting from a new place.  Once a soldier stood inside his weapon's floor
+// he stayed on that spot for the rest of the fight, three or four of them in
+// a clump, some without a shot because a squadmate stood in their line (the
+// animscript holds fire for a friendly).  Now he moves on after a while, or
+// when he has had no shot for some seconds: to a waypoint near him that sees
+// the player, away from his squadmates and off their bearing, with the native
+// enemy dropped (ignoreall) for the run, since the chase otherwise owns the
+// goal.  One search every 0.2 s on the level.
+// --------------------------------------------------------------------------
+
+combat_tick( target, d, now )
+{
+	if ( !self is_soldier() || isDefined( self.survival_boss ) || isDefined( self.survival_rush ) || isDefined( self.survival_dash ) )
+		return;
+	if ( !isDefined( self.survival_held_at ) || !isDefined( self.enemy ) ||
+	     distanceSquared( self.origin, self.survival_held_at ) > 48 * 48 )
+	{
+		self.survival_held_at = self.origin;
+		self.survival_held_since = now;
+		self.survival_hold = 6000 + randomInt( 5000 );
+		return;
+	}
+	held = now - self.survival_held_since;
+	shot = self.survival_held_since;
+	if ( isDefined( self.a ) && isDefined( self.a.lastShootTime ) && self.a.lastShootTime > shot )
+		shot = self.a.lastShootTime;
+	// 2 s without a shot when squadmates stand in the line, else 3.5 s
+	patience = 3500;
+	if ( isDefined( self.survival_blocked ) && now - self.survival_blocked < 1500 )
+		patience = 2000;
+	if ( held < self.survival_hold && now - shot < patience )
+		return;
+	if ( now < level.survival_next_dash )
+		return;
+	level.survival_next_dash = now + 200;
+	spot = self combat_spot( target, d );
+	if ( isDefined( spot ) )
+		self thread combat_dash( spot );
+	else
+	{
+		// nowhere else to shoot from: come closer instead
+		self.survival_held_since = now;
+		range = d - 150;
+		least = self combat_nearest();
+		if ( range < least )
+			range = least;
+		if ( range < self.meleeattackdist )
+			self.meleeattackdist = range;
+	}
+}
+
+// A new firing spot may be this near the player.
+combat_nearest()
+{
+	near = self chase_engage_floor() * 0.5;
+	if ( near < 120 )
+		near = 120;
+	return near;
+}
+
+combat_spot( target, d )
+{
+	far = d + 150;
+	if ( far > self.survival_engage_base )
+		far = self.survival_engage_base;
+	near = self combat_nearest();
+	enemies = living_enemies();
+	points = waypoints_around( self.origin, 1 );
+	best = [];
+	bestScore = [];
+	for ( i = 0; i < points.size; i++ )
+	{
+		p = points[ i ];
+		step = distance( p, self.origin );
+		if ( step < 140 || step > 520 || abs( p[ 2 ] - self.origin[ 2 ] ) > 120 )
+			continue;
+		dt = distance( p, target.origin );
+		if ( dt < near || dt > far )
+			continue;
+		// the bearing farthest from the others', and nobody standing there
+		yaw = vectorToYaw( p - target.origin );
+		apart = 90;
+		taken = false;
+		for ( k = 0; k < enemies.size; k++ )
+		{
+			e = enemies[ k ];
+			if ( e == self || distanceSquared( e.origin, target.origin ) > 1200 * 1200 )
+				continue;
+			if ( distanceSquared( e.origin, p ) < 96 * 96 || ( isDefined( e.survival_dash ) && distanceSquared( e.survival_dash, p ) < 96 * 96 ) )
+			{
+				taken = true;
+				break;
+			}
+			a = abs( angleClamp180( vectorToYaw( e.origin - target.origin ) - yaw ) );
+			if ( a < apart )
+				apart = a;
+		}
+		if ( taken )
+			continue;
+		score = apart * 3 - step * 0.2 + randomInt( 60 );
+		slot = best.size;
+		if ( slot >= 5 )
+		{
+			if ( score <= bestScore[ 4 ] )
+				continue;
+			slot = 4;
+		}
+		while ( slot > 0 && bestScore[ slot - 1 ] < score )
+		{
+			best[ slot ] = best[ slot - 1 ];
+			bestScore[ slot ] = bestScore[ slot - 1 ];
+			slot--;
+		}
+		best[ slot ] = p;
+		bestScore[ slot ] = score;
+	}
+	for ( i = 0; i < best.size; i++ )
+	{
+		if ( !bulletTracePassed( best[ i ] + ( 0, 0, 56 ), target getEye(), false, self ) )
+			continue;
+		if ( findPath( self.origin, best[ i ] ) )
+			return best[ i ];
+	}
+	return undefined;
+}
+
+combat_dash( spot )
+{
+	self endon( "death" );
+	self.survival_dash = spot;
+	if ( !isDefined( self.survival_dashes ) )
+		self.survival_dashes = 0;
+	self.survival_dashes++;
+	self.ignoreall = true;
+	self.goalradius = 40;
+	self setGoalPos( spot );
+	from = self.origin;
+	still = 0;
+	for ( t = 0; t < 4.5; t += 0.25 )
+	{
+		wait( 0.25 );
+		if ( distanceSquared( self.origin, spot ) < 64 * 64 )
+			break;
+		if ( distanceSquared( self.origin, from ) < 8 * 8 )
+			still++;
+		else
+			still = 0;
+		// a burst or a reload may hold the start of the run
+		if ( still >= 8 )
+			break;
+		from = self.origin;
+		target = closest_player( self.origin );
+		if ( isDefined( target ) && distanceSquared( target.origin, self.origin ) < 140 * 140 )
+			break;
+	}
+	self.ignoreall = false;
+	self.survival_dash = undefined;
+	self.survival_held_at = undefined;
+	target = closest_player( self.origin );
+	if ( isDefined( target ) )
+		self.favoriteenemy = target;
+}
+
 closest_player( origin )
 {
 	players = maps\mp\gametypes\_survival_utility::living_players();
@@ -1423,13 +1801,14 @@ go_aggressive()
 // Specials and bosses
 // --------------------------------------------------------------------------
 
-// IW5 spawn_special_ai: at the spawn location farthest from the players.
+// IW5 spawn_special_ai / spawn_dogs: each at one of the four spawn locations
+// farthest from the players.
 spawn_specials( ref, count, scale )
 {
 	spawned = 0;
 	for ( i = 0; i < count; i++ )
 	{
-		loc = maps\mp\gametypes\_survival_squad::farthest_location();
+		loc = maps\mp\gametypes\_survival_squad::far_location( 4 );
 		if ( !isDefined( loc ) )
 			break;
 		ai = undefined;
