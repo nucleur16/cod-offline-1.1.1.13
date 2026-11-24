@@ -1053,7 +1053,7 @@ static void P2PArmLegacyRoom(void)
 {
     P2PConfig c;
     const char *bad;
-    BOOL busy,same;
+    BOOL busy,same,answered=g_p2pLaunchAnswered;
     P2PDisarm();
     if (!g_p2pHasRoom) { lstrcpyA(g_p2pLobbyError,"Choose a match lobby first.");return; }
     P2PDefaults(&c);P2PLoadIni(&c);
@@ -1067,7 +1067,7 @@ static void P2PArmLegacyRoom(void)
     same=busy && g_p2p.state!=P2P_STOPPING && !g_p2pLobbyPending && !InterlockedCompareExchange(&g_p2pStop,0,0) &&
         !strcmp(g_p2pLobbyMap,c.sessionMap) && !strcmp(g_p2p.cfg.gametype,c.gametype) && !strcmp(g_p2p.cfg.zoneType,c.zoneType);
     LeaveCriticalSection(&g_p2pLock);
-    if (same) { g_p2pArmed=g_p2pLaunched=TRUE;g_p2pLobbyError[0]=0;return; } /* the launched host runs this room */
+    if (same) { g_p2pArmed=g_p2pLaunched=TRUE;g_p2pLaunchAnswered=answered;g_p2pLobbyError[0]=0;return; } /* the launched host runs this room */
     if (busy) {
         /* The room changed under a launched host: it is never left running for the old room. */
         g_p2pLaunchPending=FALSE;g_p2pLobbyPending=FALSE;InterlockedExchange(&g_p2pStop,1);

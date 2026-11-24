@@ -481,12 +481,14 @@ static const char *__cdecl PiScriptString(unsigned handle)
     s = (const char *)(DWORD_PTR)(C1_SL_BUFFER_VA + 16u * handle + 4u);
     return Readable(s, 1) ? s : NULL;
 }
-/* Offline: the match is over once its level ended and its player left (or nobody came back for a minute). */
+/* Offline: the match is over once its level ended and its player left (or nobody came back for a minute). A
+ * multiplayer or Zombies level says ended=1 and runs on; a Spec Ops or Survival server loads nothing more and parks
+ * (parked=1, map=none, running=0). */
 static BOOL PiMatchOverPoll(const char *line, int *state, int *emptyPolls)
 {
     const char *h = strstr(line, " humans="), *e = strstr(line, " ended=");
     int humans = h ? atoi(h + 8) : -1, ended = e ? atoi(e + 7) : 0;
-    if (ended) *state |= 2;
+    if (ended || P2PStatusTokenEquals(line, "parked", "1")) *state |= 2;
     if (humans > 0) { *state |= 1; *emptyPolls = 0; return FALSE; }
     if (!(*state & 1) || humans != 0) return FALSE;
     ++*emptyPolls;
@@ -658,7 +660,8 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
          * room asked for. Once ready, a running match on another map/gametype is still this session's match (a
          * console or rcon `map`): the session follows it, and it answers, so it is not hung. Requiring the
          * requested map here ended every session 20 s after a map change ("stopped answering"). */
-        if (kind == P2P_STATUS_EXACT || (ready && kind == P2P_STATUS_LIVE)) {
+        BOOL live = kind == P2P_STATUS_EXACT || (ready && kind == P2P_STATUS_LIVE);
+        if (live) {
             lastAnswer = now;
             P2PStatusIdentity(line, ident, sizeof(ident));
             if (strcmp(ident, current)) {
@@ -670,15 +673,20 @@ static int P2PInprocRun(const P2PConfig *cp, const char *password, const char *a
                 }
                 lstrcpynA(current, ident, sizeof(current));
             }
-            if (OfflineLobbyActive() && tracked && PiMatchOverPoll(line, &matchState, &emptyPolls)) {
-                /* offline: one match per session; the room is re-armed for the next Ready (p2p.c) */
-                InterlockedExchange(&g_piMatchOver, 1);
-                quitAsked = TRUE;
-                quitAt = now;
-                P2PSetState(P2P_STOPPING, NULL);
-                InterlockedExchange(&g_piQuit, 1);
-                continue;
-            }
+        }
+        /* A parked line answers for no match (IDLE), and it is the end of this one: without this the session of a
+         * finished Survival match failed 20 s later as a server that stopped answering. */
+        if ((live || (ready && kind == P2P_STATUS_IDLE && P2PStatusTokenEquals(line, "parked", "1"))) &&
+            OfflineLobbyActive() && tracked && PiMatchOverPoll(line, &matchState, &emptyPolls)) {
+            /* offline: one match per session; the room is re-armed for the next Ready (p2p.c) */
+            InterlockedExchange(&g_piMatchOver, 1);
+            quitAsked = TRUE;
+            quitAt = now;
+            P2PSetState(P2P_STOPPING, NULL);
+            InterlockedExchange(&g_piQuit, 1);
+            continue;
+        }
+        if (live) {
             EnterCriticalSection(&g_p2pLock);
             lstrcpynA(g_p2p.status, line, sizeof(g_p2p.status));
             if (!ready) g_p2p.readyMs = now - t0;
