@@ -1409,31 +1409,95 @@ static void PatchImagePool(void)
         IMAGE_STOCK_SIZE);
 }
 
+/* XModel asset pool. C1 holds models (asset type 4, XModel, 0x168 bytes) in a static pool of 7168: g_poolSize[4] = 7168
+ * @ 0xCD4D78, DB_XAssetPool[4] = 0x019A2F70 @ 0xCD5038 ({freeHead, entries[7168]}, init 0x4CE930). The zones every match
+ * shares (common_mp, common_gametype_*, their patches) hold 6300 to 6420 of them and a map up to 750 more: Survival on
+ * mp_village came to 7168 with the client's own registrations, "Exceeded limit of 7168 'xmodel' assets"
+ * (DB_AllocXAssetHeader 0x4CB180), a fatal error. The pool is enlarged like the localize one.
+ * Nothing in C1 is sized to or indexed by the pool:
+ *   the pool's address is only in its table entry; no code refers to the pool or to that entry directly, the DB code
+ *     reaches both through the two tables by type (ten sites, 0x4CB186..0x4CE425, all alloc / free / init);
+ *   the only multiplication by 0x168 is the init's own (0x4CE95D) and there is no division by it, so no code turns a
+ *     model into a pool index or back; models are passed and stored as pointers;
+ *   no list holds 7168 of anything: DB_EnumXAssets 0x4CAA80 is never called with type 4, and the model load queue
+ *     (0x17CBFC8, at most 0x400) holds pointers and refuses more.
+ * The model surfaces (type 3) have their own pool of 5120, the entry table (59,999 entries) is shared by all types. Both
+ * stay as they are. XMODEL_POOL is what the generic gather list at 0x2AAEB70 holds (see the image pool): the entry table
+ * has some 5,100 entries left on the largest map, so it is the entry table that ends first, not this pool. */
+#define XMODEL_TYPE             4
+#define XMODEL_SIZE             0x168
+#define XMODEL_STOCK_POOL       0x019A2F70u
+#define XMODEL_STOCK_SIZE       7168
+#define XMODEL_POOL             10000
+#define POOL_INIT_TABLE_VA      0x00CD4E18u
+#define XMODEL_INIT_VA          0x004CE930u
+
+static void PatchXModelPool(void)
+{
+    /* 0x4CE950: dec edx ; lea ecx, [eax + 0x168] ; mov [eax], ecx ; mov eax, ecx ... 0x4CE95D: imul esi, esi, 0x168 */
+    static const BYTE kInit[] = { 0x4A, 0x8D, 0x88, 0x68, 0x01, 0x00, 0x00, 0x89, 0x08, 0x8B, 0xC1,
+                                  0x75, 0xF3, 0x69, 0xF6, 0x68, 0x01, 0x00, 0x00 };
+    int *size = (int *)(DWORD_PTR)(POOL_SIZE_TABLE_VA + 4 * XMODEL_TYPE);
+    DWORD *pool = (DWORD *)(DWORD_PTR)(POOL_TABLE_VA + 4 * XMODEL_TYPE);
+    const DWORD *init = (const DWORD *)(DWORD_PTR)(POOL_INIT_TABLE_VA + 4 * XMODEL_TYPE);
+    const BYTE *initLoop = (const BYTE *)(DWORD_PTR)(XMODEL_INIT_VA + 0x20);
+    if (!Readable(size, 4) || !Readable(pool, 4) || !Readable(init, 4) || *size != XMODEL_STOCK_SIZE ||
+        *pool != XMODEL_STOCK_POOL || *init != XMODEL_INIT_VA || !Readable(initLoop, sizeof(kInit)) ||
+        memcmp(initLoop, kInit, sizeof(kInit)) != 0) {
+        Log("xmodel pool: tables or code at 0x%08X / 0x%08X / 0x%08X do not match, the pool stays at %d",
+            (unsigned)(DWORD_PTR)size, (unsigned)(DWORD_PTR)pool, XMODEL_INIT_VA, XMODEL_STOCK_SIZE);
+        return;
+    }
+    void *block = VirtualAlloc(NULL, 4 + (SIZE_T)XMODEL_POOL * XMODEL_SIZE, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    if (!block) {
+        Log("xmodel pool: VirtualAlloc failed (%lu), the pool stays at %d", GetLastError(), XMODEL_STOCK_SIZE);
+        return;
+    }
+    DWORD newPool = (DWORD)(DWORD_PTR)block;
+    int newSize = XMODEL_POOL;
+    WriteCode(pool, &newPool, 4);
+    WriteCode(size, &newSize, 4);
+    Log("xmodel pool: %d entries at %p (C1's: %d)", newSize, block, XMODEL_STOCK_SIZE);
+}
+
 #if K33_DIAGNOSTICS
-/* Image pool use over time: one line each time the count has held for 2 s at a new value, with the peak and the
- * asset entries in use (the sum of every type's count). */
-static DWORD WINAPI ImagePoolSampler(LPVOID arg)
+/* Asset pool use over time: one line each time the image and model counts have held for 2 s at a new value, with the
+ * peaks and the asset entries in use (the sum of every type's count); and one line for each pool that reaches a new peak
+ * above 7/8 of its size (the pools of one are left out), so a log shows which limit comes next. */
+static DWORD WINAPI AssetPoolSampler(LPVOID arg)
 {
     (void)arg;
     const volatile int *counts = (const volatile int *)(DWORD_PTR)ASSET_COUNT_TABLE_VA;
-    int last = -1, logged = -1, peak = 0, stable = 0;
+    const volatile int *sizes = (const volatile int *)(DWORD_PTR)POOL_SIZE_TABLE_VA;
+    int last = -1, logged = -1, stable = 0, peak[44] = { 0 }, peakLogged[44] = { 0 };
     for (;;) {
         Sleep(250);
-        int now = counts[IMAGE_TYPE];
-        if (now > peak) peak = now;
-        if (now != last) { last = now; stable = 0; continue; }
-        if (++stable != 8 || now == logged) continue;
         int entries = 0;
-        for (int t = 0; t < 44; t++) entries += counts[t];
+        for (int t = 0; t < 44; t++) {
+            int n = counts[t];
+            entries += n;
+            if (n > peak[t]) peak[t] = n;
+        }
+        int now = counts[IMAGE_TYPE] * 0x8000 + counts[XMODEL_TYPE];
+        if (now != last) { last = now; stable = 0; continue; }
+        if (++stable != 8) continue;
+        for (int t = 0; t < 44; t++) {
+            if (sizes[t] < 8 || peak[t] <= peakLogged[t] || peak[t] * 8 <= sizes[t] * 7) continue;
+            peakLogged[t] = peak[t];
+            Log("asset pool: type %d peak %d of %d", t, peak[t], sizes[t]);
+        }
+        if (now == logged) continue;
         logged = now;
-        Log("image pool: %d of %d in use (peak %d); asset entries %d of 59999", now, g_imagePoolSize, peak, entries);
+        Log("image pool: %d of %d in use (peak %d); xmodel pool: %d of %d (peak %d); asset entries %d of 59999",
+            counts[IMAGE_TYPE], sizes[IMAGE_TYPE], peak[IMAGE_TYPE], counts[XMODEL_TYPE], sizes[XMODEL_TYPE],
+            peak[XMODEL_TYPE], entries);
     }
     return 0;
 }
 
-static void InstallImagePoolSampler(void)
+static void InstallAssetPoolSampler(void)
 {
-    HANDLE h = CreateThread(NULL, 0, ImagePoolSampler, NULL, 0, NULL);
+    HANDLE h = CreateThread(NULL, 0, AssetPoolSampler, NULL, 0, NULL);
     if (h) CloseHandle(h);
 }
 #endif
@@ -1935,8 +1999,9 @@ static void __cdecl TakeOver(void)
     PatchPatchDir();
     PatchLocalizePool();
     PatchImagePool();
+    PatchXModelPool();
 #if K33_DIAGNOSTICS
-    InstallImagePoolSampler();
+    InstallAssetPoolSampler();
 #endif
     PatchUserMaps();
     PatchSurvivalCategory();
