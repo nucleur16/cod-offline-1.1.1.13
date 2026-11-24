@@ -9704,3 +9704,39 @@ SUBTITLE_SCANCR_AB_1MC_READYTOMOVE01	Prepare!
 SUBTITLE_SCANCR_AB_1MC_SENTRY_GONE	Your sentry's gone
 SUBTITLE_SCANCR_AB_1MC_SWITCHING	Swap sides
 SUBTITLE_SCANCR_AB_1MC_WIN	Victory! Good!
+SUBTITLE_SURVIVAL_SO_HQ_BOSS_INTEL_CHOPPER_01	Enemy helicopter inbound
+SUBTITLE_SURVIVAL_SO_HQ_BOSS_INTEL_CHOPPER_02	Enemy helicopter near you. Advise you take cover.
+SUBTITLE_SURVIVAL_SO_HQ_BOSS_INTEL_CHOPPER_MANY_01	Intel shows several enemy helicopters entering your airspace.
+SUBTITLE_SURVIVAL_SO_HQ_BOSS_INTEL_CHOPPER_MANY_02	Be advised, enemy air support is closing from all sides. Take cover.
+SUBTITLE_SURVIVAL_SO_HQ_BOSS_INTEL_MISSILE_CHOPPER_01	Move! Enemy gunship inbound.
+SUBTITLE_SURVIVAL_SO_HQ_ENEMY_INTEL_CHEMICAL_01	Team, chemical agents detected in your area.
+SUBTITLE_SURVIVAL_SO_HQ_ENEMY_INTEL_CHEMICAL_02	Be advised, the enemy is moving chemical agents near you.
+SUBTITLE_SURVIVAL_SO_HQ_ENEMY_INTEL_DOGS_01	Infrared shows enemy attack dogs in your area.
+SUBTITLE_SURVIVAL_SO_HQ_ENEMY_INTEL_DOGS_02	Heads up, enemy attack dogs closing on your area.
+SUBTITLE_SURVIVAL_SO_HQ_ENEMY_INTEL_DOGS_SPLODE_01	Enemy dogs closing on you. They are carrying explosives.
+SUBTITLE_SURVIVAL_SO_HQ_ENEMY_INTEL_DOGS_SPLODE_02	Dogs rigged with explosives near you. Advise you keep your distance, over.
+SUBTITLE_SURVIVAL_SO_HQ_ENEMY_INTEL_GENERIC_01	Enemies closing in.
+SUBTITLE_SURVIVAL_SO_HQ_ENEMY_INTEL_GENERIC_02	Enemy forces are coming for you.
+SUBTITLE_SURVIVAL_SO_HQ_ENEMY_INTEL_GENERIC_03	Enemies approaching your position.
+SUBTITLE_SURVIVAL_SO_HQ_ENEMY_INTEL_GENERIC_04	Enemy forces closing in. Get ready.
+SUBTITLE_SURVIVAL_SO_HQ_ENEMY_INTEL_GENERIC_05	Enemies are moving on your position from several directions.
+SUBTITLE_SURVIVAL_SO_HQ_ENEMY_INTEL_GENERIC_06	Heads up, a large enemy force is moving on our position.
+SUBTITLE_SURVIVAL_SO_HQ_ENEMY_INTEL_MARTYRDOM_01	Suicide bombers inbound. Keep your distance!
+SUBTITLE_SURVIVAL_SO_HQ_ENEMY_INTEL_MARTYRDOM_02	Careful, enemies reported with C4 strapped to them.
+SUBTITLE_SURVIVAL_SO_HQ_ENEMY_INTEL_TRANSPORT_01	Enemy transport closing in.
+SUBTITLE_SURVIVAL_SO_HQ_ENEMY_INTEL_TRANSPORT_02	Enemy helicopters are bringing troops into the area. Advise heavy weapons.
+SUBTITLE_SURVIVAL_SO_HQ_ENEMY_INTEL_TRANSPORT_MANY	Be advised, the enemy is deploying heavily armored ground troops.
+SUBTITLE_SURVIVAL_SO_HQ_ENEMY_UPDATE_CLAYMORE_01	Enemies are setting explosive traps near you. Stay alert.
+SUBTITLE_SURVIVAL_SO_HQ_ENEMY_UPDATE_CLAYMORE_02	Be advised, enemy claymores near you.
+SUBTITLE_SURVIVAL_SO_HQ_MISSION_INTRO_01	Ground forces are held up. We will support you, but for now you fight alone. Good luck, gentlemen.
+SUBTITLE_SURVIVAL_SO_HQ_MISSION_INTRO_02	Be advised, all ground forces are pinned down. Hold out as long as you can.
+SUBTITLE_SURVIVAL_SO_HQ_MISSION_INTRO_03	Heads up, enemies entering your area. Use anything you can find to stay alive.
+SUBTITLE_SURVIVAL_SO_HQ_MISSION_INTRO_04	Be advised, we cannot support you right now. Save your ammo and hold out.
+SUBTITLE_SURVIVAL_SO_HQ_MISSION_INTRO_05	Intel shows large forces moving on you. Set up a defense and stay alive.
+SUBTITLE_SURVIVAL_SO_HQ_MISSION_INTRO_06	Be advised, we cannot support you. I repeat, you fight alone. Survive at all costs.
+SUBTITLE_SURVIVAL_SO_HQ_WAVE_OVER_FLAVOR_01	Enemy eliminated. Good work, soldiers.
+SUBTITLE_SURVIVAL_SO_HQ_WAVE_OVER_FLAVOR_02	Enemies eliminated. Go and rearm.
+SUBTITLE_SURVIVAL_SO_HQ_WAVE_OVER_FLAVOR_03	Enemies driven back. Go and rearm.
+SUBTITLE_SURVIVAL_SO_HQ_WAVE_OVER_FLAVOR_04	All down. Good work, gentlemen.
+SUBTITLE_SURVIVAL_SO_HQ_WAVE_OVER_FLAVOR_05	They are routed. Keep it up.
+SUBTITLE_SURVIVAL_SO_HQ_WAVE_OVER_FLAVOR_06	All enemies eliminated.

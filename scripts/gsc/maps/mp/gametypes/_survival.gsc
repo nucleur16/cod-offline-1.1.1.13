@@ -139,6 +139,8 @@ precache()
 	maps\mp\gametypes\_survival_ai::init();
 	maps\mp\gametypes\_survival_kiosk::init();
 	maps\mp\gametypes\_survival_vehicles::precache();
+	maps\mp\gametypes\_survival_audio::precache();
+	maps\mp\gametypes\_survival_credits::precache();
 	codolprintln( "CoDOL survival: " + getDvar( "mapname" ) + ", waves " + level.survival_wave_table );
 }
 
@@ -170,6 +172,7 @@ init()
 	// Start the native team radar now; _uav keeps the Survival-only baseline
 	// when a purchased support aircraft expires. No item/award is created.
 	maps\mp\killstreaks\_uav::updateTeamUAVStatus( "allies" );
+	maps\mp\gametypes\_survival_audio::init();
 }
 
 // The actor callbacks are the MP dog's (maps\mp\_dogs::init, threaded from
@@ -524,6 +527,7 @@ add_credits( value, why )
 	self setClientDvar( "surHUD_credits", self.survival_credit );
 	if ( isDefined( self.survival_hud_credits ) )
 		self.survival_hud_credits setValue( self.survival_credit );
+	self maps\mp\gametypes\_survival_credits::award( int( value ), why );
 }
 
 spend_credits( value )
@@ -844,6 +848,7 @@ reinforce( w, size, scale )
 		     level.survival_alive + size <= level.survival_max_alive )
 		{
 			maps\mp\gametypes\_survival_squad::spawn_squad( w.squad_type, size, scale );
+			maps\mp\gametypes\_survival_audio::reinforced();
 			return;
 		}
 		wait( 0.5 );
@@ -860,6 +865,7 @@ boss_spawn( w, scale )
 		while ( !level.survival_aggressive && !level.survival_over )
 			wait( 0.5 );
 	}
+	maps\mp\gametypes\_survival_audio::boss_spawning( "jug", w.bosses_ai );
 	maps\mp\gametypes\_survival_ai::spawn_bosses( w.bosses_ai, scale );
 	level.survival_boss_pending--;
 }
@@ -873,6 +879,7 @@ chopper_spawn( w, scale )
 		while ( !level.survival_aggressive && !level.survival_over )
 			wait( 0.5 );
 	}
+	maps\mp\gametypes\_survival_audio::boss_spawning( "chopper", w.bosses_nonai );
 	for ( i = 0; i < w.bosses_nonai.size; i++ )
 	{
 		maps\mp\gametypes\_survival_vehicles::spawn_chopper_boss( w.bosses_nonai[ i ], scale );
@@ -936,6 +943,7 @@ intermission()
 		players = getPlayers();
 		for ( i = 0; i < players.size; i++ )
 			players[ i ] iPrintLnBold( "" + t );
+		maps\mp\gametypes\_survival_audio::countdown_beep();
 		wait( 1 );
 	}
 	level.survival_in_intermission = false;

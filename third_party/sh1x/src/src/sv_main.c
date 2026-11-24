@@ -4009,7 +4009,9 @@ SV_GetConfigstring
 */
 void SV_GetConfigstring( int index, char *buffer, int bufferSize ) {
 
-    short strIndex;
+    // a uint16 script string: as a short, one from 0x8000 up read below the
+    // string memory (AV in Q_strncpyz)
+    unsigned int strIndex;
     const char* cs;
 
     if ( bufferSize < 1 ) {

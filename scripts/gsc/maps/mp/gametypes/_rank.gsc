@@ -606,6 +606,10 @@ scorePopup( amount, bonus, hudColor, glowAlpha )
 	if ( amount == 0 )
 		return;
 
+	// Survival shows its credits here instead (_survival_credits).
+	if ( isDefined( level.survival_credits_popup ) )
+		return;
+
 	self notify( "scorePopup" );
 	self endon( "scorePopup" );
 
@@ -662,6 +666,7 @@ removeRankHUD()
 	// stale total must not carry into the next popup.
 	self.xpUpdateTotal = 0;
 	self.bonusUpdateTotal = 0;
+	self.survival_popup_total = 0;
 }
 
 getRank()

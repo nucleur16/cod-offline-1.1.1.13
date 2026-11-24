@@ -698,6 +698,49 @@ void Scr_SoundAliasSubtitle(void)
     }
     if(pick) Scr_AddString(pick);
 }
+/* <player> codol_playmusic(<alias>) and <player> codol_stopmusic([<fade>]):
+ * musicPlay / musicStop for one client. The wire is the broadcast builtins':
+ * C1 'l' 0x469698 resolves the alias by name (no sound bank slot) and starts
+ * it on the music stream (0x739870, a hard cut of whatever that stream plays);
+ * 'm' 0x4696ee fades the stream out over the given milliseconds (0x739810).
+ * C1 sends both to every client; a Survival player who joins or lands while a
+ * track is on needs it alone, without restarting it for the others.
+ * An alias this server's zones do not carry is not sent: the client would
+ * report it missing. */
+static gentity_t *music_player(scr_entref_t ref)
+{
+    gentity_t *entity=VM_GetGEntityForEntRef(ref);
+    if(!entity) return NULL;
+    if(!entity->client) {
+        Scr_ObjectError(va("entity %i is not a player",entity->s.number));
+        return NULL;
+    }
+    return entity;
+}
+void Scr_PlayMusicToPlayer(scr_entref_t ref)
+{
+    gentity_t *entity=music_player(ref);
+    const char *alias;
+    if(!entity) return;
+    alias=Scr_GetString(0);
+    if(!*alias || !FindEngineSoundAlias(alias)) {
+        Com_PrintWarning(CON_CHANNEL_SERVER,"codol_playmusic: no sound alias \"%s\" in the loaded zones\n",alias);
+        return;
+    }
+    SV_GameSendServerCommand(entity->s.number,1,va("%c %s",'l',alias));
+}
+void Scr_StopMusicToPlayer(scr_entref_t ref)
+{
+    gentity_t *entity=music_player(ref);
+    float fade=0.0f;
+    if(!entity) return;
+    if(Scr_GetNumParam()>0) fade=Scr_GetFloat(0);
+    if(fade<0.0f) {
+        Scr_ParamError(0,"codol_stopmusic: the fade must not be negative");
+        return;
+    }
+    SV_GameSendServerCommand(entity->s.number,1,va("%c %i",'m',(int)(fade*1000.0f+0.5f)));
+}
 #endif
 
 
