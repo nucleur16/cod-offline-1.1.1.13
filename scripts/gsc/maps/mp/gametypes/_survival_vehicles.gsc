@@ -181,7 +181,7 @@ goal_watch()
 // A boss hunts one player at a time and hovers where it can shoot him:
 //   * the target is the nearest standing player, a visible one before a
 //     hidden one, the current one before an equal one, and another than the
-//     other choppers' when there is a choice (hunt_target, twice a second);
+//     other choppers' when there is a choice (hunt_target, before every move);
 //   * a hover spot is an air point around him -- a ring point at the type's
 //     fighting distance and height, or one of the level's own path nodes --
 //     that sees him inside the type's turret arc, with clear air around it
