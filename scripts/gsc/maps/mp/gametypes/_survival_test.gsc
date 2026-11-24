@@ -14,6 +14,8 @@
 //   join            every human joins the survivors and spawns (also at every
 //                   connect with scr_survival_test_join 1: a headless client
 //                   answers no class menu and would stay spectating)
+//   dummy <n>       n test clients that join and stand there (a server with no
+//                   client; scr_survival_test_dummy n at the start)
 //   tour <0|1>      player 0 runs a fixed chain of walkable waypoints, pausing
 //   log <0|1>       one "SVT" line a second per enemy, helicopter and player
 //   bench <s> <n..> log, tour and godmode, then the waves n.., s seconds each
@@ -28,6 +30,8 @@ main()
 	codolprintln( "CoDOL survivaltest: harness active" );
 	if ( getDvarInt( "scr_survival_test_join" ) )
 		level thread join_all();
+	if ( getDvarInt( "scr_survival_test_dummy" ) )
+		level thread add_dummies( getDvarInt( "scr_survival_test_dummy" ) );
 	bench = getDvar( "scr_survival_test_bench" );
 	if ( bench != "" )
 		level thread bench( strTok( bench, " " ), 0 );
@@ -149,6 +153,10 @@ main()
 		case "wave":
 			if ( tokens.size > 1 )
 				level.survival_wave_num = int( tokens[ 1 ] ) - 1;
+			break;
+		case "dummy":
+			if ( tokens.size > 1 )
+				level thread add_dummies( int( tokens[ 1 ] ) );
 			break;
 		case "join":
 			level thread join_all();
@@ -274,6 +282,22 @@ join_one()
 	codolprintln( "CoDOL survivaltest: " + self.name + " team " + self.pers[ "team" ] + " state " + self.sessionstate + " at " + self.origin );
 }
 
+add_dummies( n )
+{
+	for ( i = 0; i < n; i++ )
+	{
+		bot = addTestClient();
+		if ( !isDefined( bot ) )
+			return;
+		bot.codolCombatBot = true;
+		bot.codolBotClass = 0;
+		bot.pers[ "codolCombatBot" ] = true;
+		bot.pers[ "codolBotClass" ] = 0;
+		bot thread join_one();
+		wait( 1 );
+	}
+}
+
 // --------------------------------------------------------------------------
 // The tour: the player runs a chain of walkable waypoints at 190 units a
 // second, four legs at a time, then stands for 8 s. The chain is the same on
@@ -349,12 +373,51 @@ tour()
 		self glide_to( chain[ i ] );
 		legs++;
 		if ( legs % 4 == 0 )
-			wait( 8 );
+			self look_around( 8 );
 		if ( i + dir < 0 || i + dir >= chain.size )
 			dir = 0 - dir;
 		i += dir;
 		if ( i < 0 || i >= chain.size )
 			i = 0;
+	}
+}
+
+// Stand and face the nearest chopper, else the nearest enemy.
+look_around( time )
+{
+	self endon( "disconnect" );
+	for ( t = 0; t < time && isAlive( self ); t += 0.1 )
+	{
+		face = undefined;
+		best = 0;
+		for ( i = 0; i < level.survival_choppers.size; i++ )
+		{
+			c = level.survival_choppers[ i ];
+			if ( !isDefined( c ) || ( isDefined( c.survival_dead ) && c.survival_dead ) )
+				continue;
+			d = distance( c.origin, self.origin );
+			if ( !isDefined( face ) || d < best )
+			{
+				face = c.origin;
+				best = d;
+			}
+		}
+		if ( !isDefined( face ) )
+		{
+			enemies = maps\mp\gametypes\_survival_ai::living_enemies();
+			for ( i = 0; i < enemies.size; i++ )
+			{
+				d = distance( enemies[ i ].origin, self.origin );
+				if ( !isDefined( face ) || d < best )
+				{
+					face = enemies[ i ].origin + ( 0, 0, 40 );
+					best = d;
+				}
+			}
+		}
+		if ( isDefined( face ) )
+			self setPlayerAngles( vectorToAngles( face - self getEye() ) );
+		wait( 0.1 );
 	}
 }
 
@@ -380,10 +443,11 @@ glide_to( goal )
 // --------------------------------------------------------------------------
 // The log. Every line starts with SVT:
 //   A  an enemy:    t wave ent ref script dist moved enemy visible shots aimed
-//                   grenades badpath stalled relocated at
+//                   grenades badpath stalled new-firing-spots at
 //   H  a chopper:   t wave ent ref dist2d dist sight yaw-error moved shots
-//                   rockets moves damage at
-//   P  player 0:    t hp at
+//                   rockets moves damage at target
+//   P  player 0:    t hp at, and of 36 air points 900 units off and 30 to 60
+//                   degrees up the number that see him (while a chopper is up)
 //   D  damage to a player, per source, at the end of a wave
 // --------------------------------------------------------------------------
 
@@ -402,7 +466,7 @@ svt_log()
 		now = getTime();
 		players = getPlayers();
 		if ( players.size )
-			codolprintln( "SVT P t" + now + " w" + level.survival_wave_num + " hp " + players[ 0 ].health + " at " + players[ 0 ].origin );
+			codolprintln( "SVT P t" + now + " w" + level.survival_wave_num + " hp " + players[ 0 ].health + " at " + players[ 0 ].origin + " open " + svt_open( players[ 0 ] ) );
 		enemies = maps\mp\gametypes\_survival_ai::living_enemies();
 		for ( i = 0; i < enemies.size; i++ )
 			enemies[ i ] svt_enemy( now );
@@ -414,6 +478,23 @@ svt_log()
 		}
 		wait( 1 );
 	}
+}
+
+svt_open( player )
+{
+	if ( !level.survival_choppers.size || !isAlive( player ) )
+		return -1;
+	n = 0;
+	eye = player getEye();
+	for ( pitch = 30; pitch <= 60; pitch += 15 )
+	{
+		for ( yaw = 0; yaw < 360; yaw += 30 )
+		{
+			if ( sightTracePassed( eye + anglesToForward( ( 0 - pitch, yaw, 0 ) ) * 900, eye, false, player ) )
+				n++;
+		}
+	}
+	return n;
 }
 
 svt_enemy( now )
@@ -457,8 +538,8 @@ svt_enemy( now )
 	if ( isDefined( self.survival_badpath ) )
 		badpath = self.survival_badpath;
 	moved = 0;
-	if ( isDefined( self.survival_relocations ) )
-		moved = self.survival_relocations;
+	if ( isDefined( self.survival_dashes ) )
+		moved = self.survival_dashes;
 	codolprintln( "SVT A t" + now + " w" + level.survival_wave_num + " e" + self getEntityNumber() + " " + self.survival_ref + " " + script +
 		" d " + d + " mv " + move + " en " + enemy + " vis " + sees + " sh " + self.coop_stat_shots + " ah " + self.coop_stat_aimed_hits +
 		" gr " + self.svt_grenades + " bp " + badpath + " stl " + isDefined( self.survival_stalled ) + " rl " + moved + " at " + self.origin );
@@ -484,7 +565,14 @@ svt_chopper( now )
 	self.svt_last = self.origin;
 	codolprintln( "SVT H t" + now + " w" + level.survival_wave_num + " e" + self getEntityNumber() + " " + self.survival_ref + " d2 " + d2 + " d " + d +
 		" los " + sees + " yaw " + yaw + " mv " + move + " sh " + svt_count( self.survival_shots ) + " rk " + svt_count( self.survival_rockets ) +
-		" nd " + svt_count( self.survival_moves ) + " dmg " + self.damageTaken + " at " + self.origin );
+		" nd " + svt_count( self.survival_moves ) + " dmg " + self.damageTaken + " at " + self.origin + " tgt " + svt_number( self.survival_target ) );
+}
+
+svt_number( e )
+{
+	if ( isDefined( e ) )
+		return e getEntityNumber();
+	return -1;
 }
 
 svt_count( n )
@@ -506,7 +594,7 @@ svt_player_damage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeap
 		source = "weapon:" + sWeapon;
 	if ( isDefined( sMeansOfDeath ) )
 		source = source + "/" + sMeansOfDeath;
-	if ( isDefined( level.svt_god ) )
+	if ( isDefined( level.svt_god ) && self == level.svt_god )
 	{
 		// never the kill: the mode's own arithmetic, on a full player
 		if ( isAlive( self ) )
@@ -524,7 +612,7 @@ svt_player_damage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeap
 	}
 	level.svt_hits[ source ]++;
 	level.svt_taken[ source ] += taken;
-	if ( isDefined( level.svt_god ) && isAlive( self ) && !( isDefined( self.laststand ) && self.laststand ) )
+	if ( isDefined( level.svt_god ) && self == level.svt_god && isAlive( self ) && !( isDefined( self.laststand ) && self.laststand ) )
 		self.health = self.maxhealth;
 }
 
@@ -535,6 +623,40 @@ svt_damage_report()
 		codolprintln( "SVT D w" + level.survival_wave_num + " " + keys[ i ] + " hits " + level.svt_hits[ keys[ i ] ] + " damage " + level.svt_taken[ keys[ i ] ] );
 	level.svt_hits = [];
 	level.svt_taken = [];
+}
+
+// scr_survival_test_down <s>: the nearest other player to the enemies goes down
+// that many seconds into each wave of the bench.
+down_one( except, time )
+{
+	level endon( "svt_bench" );
+	wait( time );
+	players = maps\mp\gametypes\_survival_utility::living_players();
+	best = undefined;
+	bestDist = 0;
+	enemies = maps\mp\gametypes\_survival_ai::living_enemies();
+	for ( i = 0; i < players.size; i++ )
+	{
+		if ( players[ i ] == except || ( isDefined( players[ i ].laststand ) && players[ i ].laststand ) )
+			continue;
+		n = 0;
+		for ( k = 0; k < enemies.size; k++ )
+		{
+			if ( isDefined( enemies[ k ].enemy ) && enemies[ k ].enemy == players[ i ] )
+				n++;
+		}
+		if ( !isDefined( best ) || n > bestDist )
+		{
+			best = players[ i ];
+			bestDist = n;
+		}
+	}
+	if ( !isDefined( best ) )
+		return;
+	codolprintln( "SVT DOWN t" + getTime() + " e" + best getEntityNumber() + " the enemy of " + bestDist );
+	best doDamage( best.health + 500, best.origin + ( 0, 0, 40 ) );
+	wait( 0.2 );
+	codolprintln( "SVT DOWN e" + best getEntityNumber() + " laststand " + ( isDefined( best.laststand ) && best.laststand ) + " alive " + isAlive( best ) );
 }
 
 // bench <seconds> <wave..>: each wave for that long, its boss_delay waived,
@@ -548,10 +670,10 @@ bench( tokens, first )
 	seconds = int( tokens[ first ] );
 	level.survival_intermission = 5;
 	level.survival_wave_num = int( tokens[ first + 1 ] );
-	level.svt_god = true;
 	while ( maps\mp\gametypes\_survival_utility::living_players().size <= 0 )
 		wait( 0.25 );
 	player = maps\mp\gametypes\_survival_utility::living_players()[ 0 ];
+	level.svt_god = player;
 	player thread godmode();
 	level thread svt_log();
 	for ( i = first + 1; i < tokens.size; i++ )
@@ -570,6 +692,8 @@ bench( tokens, first )
 		level.svt_taken = [];
 		codolprintln( "SVT W t" + getTime() + " start " + num );
 		player thread tour();
+		if ( getDvarInt( "scr_survival_test_down" ) )
+			level thread down_one( player, getDvarInt( "scr_survival_test_down" ) );
 		wait( seconds );
 		player notify( "svt_tour" );
 		codolprintln( "SVT W t" + getTime() + " end " + num );
