@@ -390,10 +390,13 @@ static LONG CALLBACK VlFaultProbe(EXCEPTION_POINTERS *e)
 /* the merged world's static models are not in C1's material order: its load-time sort must not leave the cell
  * trees naming the wrong ones (installed for every map; smodel_sort.c) */
 #include "smodel_sort.c"
+/* presets of ported maps that C1 links before their names are loaded (mp_offshore; installed for every map) */
+#include "physpreset_names.c"
 
 static void InstallVlobbyEnv(void)
 {
     InstallSmodelSort();
+    InstallPhysPresetNames();
 #if K33_DIAGNOSTICS
     AddVectoredExceptionHandler(1, VlFaultProbe);
 #endif
