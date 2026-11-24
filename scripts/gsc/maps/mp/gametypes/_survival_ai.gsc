@@ -1089,12 +1089,14 @@ hunt()
 	self endon( "death" );
 	self notify( "survival_hunt" );
 	self endon( "survival_hunt" );
+	if ( !isAlive( self ) )
+		return;
 	self.survival_hunting = true;
 	// Staggered: a squad spawned on one frame must not re-plan on one frame.
 	wait( randomFloat( 1 ) );
 	for ( ;; )
 	{
-		if ( level.survival_over )
+		if ( level.survival_over || !isDefined( self ) )
 			return;
 		target = closest_player( self.origin );
 		if ( isDefined( target ) )

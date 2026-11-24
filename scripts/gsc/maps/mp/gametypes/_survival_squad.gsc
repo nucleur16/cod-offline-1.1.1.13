@@ -159,10 +159,21 @@ spawn_squad( ref, size, scale )
 			ais[ ais.size ] = ai;
 		wait( 0.05 );
 	}
-	leader thread setup_leader( ais );
-	for ( i = 1; i < ais.size; i++ )
-		ais[ i ] thread setup_follower( leader );
-	return ais;
+	// The spawns are spread over several frames: one that died meanwhile gets no
+	// thread (its "death" is past, so nothing would ever end it).
+	living = [];
+	for ( i = 0; i < ais.size; i++ )
+	{
+		if ( isDefined( ais[ i ] ) && isAlive( ais[ i ] ) )
+			living[ living.size ] = ais[ i ];
+	}
+	if ( !living.size )
+		return living;
+	leader = living[ 0 ];
+	leader thread setup_leader( living );
+	for ( i = 1; i < living.size; i++ )
+		living[ i ] thread setup_follower( leader );
+	return living;
 }
 
 living_leaders()
