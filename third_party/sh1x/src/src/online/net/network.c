@@ -37,6 +37,11 @@ static peer_t peers[PEERS];
  * total, so one host cannot occupy every slot with INITs it never finishes. */
 #define PENDING_PER_IP 4
 #define PENDING_TOTAL (PEERS * 3 / 4)
+/* How long an incomplete handshake lives. A hosted server runs on the player's game thread: a map load is one frame
+ * of seconds with no network, and C1 repeats its COOKIE_ECHO for about 45 s but never sends a second INIT, so a
+ * handshake dropped behind such a frame can never complete (EXE_HOSTUNREACH; a 9.8 s frame, 2026-11-23). It listens
+ * on loopback, for its own player. */
+static uint32_t pending_life(void) { return Sys_IsHosted() ? 60000u : 10000u; }
 /* Unauthenticated packets that cause a reply or a roster read: per source
  * address and in total, per second. */
 #define UNAUTH_PER_ADDRESS 8u
@@ -176,7 +181,7 @@ static peer_t *find(netadr_t *address, uint32_t now, int allocate)
         /* C1 can reuse its established association after a long lobby idle.
          * Only incomplete handshakes expire automatically; established peers
          * are recycled when a valid new INIT needs a full pool's idle slot. */
-        if(p->used && !p->handshake.established && age > 10000u)
+        if(p->used && !p->handshake.established && age > pending_life())
             erase(p, sizeof(*p));
         if(p->used && same(&p->address, address)) return p;
         if(!p->used && !free_slot) free_slot = p;
@@ -541,7 +546,7 @@ int NetworkReceive(netadr_t *from, const void *raw, int n)
             /* A different INIT on a live association: stage it. The live
              * association and its player stay until the staged handshake's
              * COOKIE_ECHO proves the sender holds the session key. */
-            if(p->has_staged && now - p->staged_at > 10000u) {
+            if(p->has_staged && now - p->staged_at > pending_life()) {
                 erase(&p->staged, sizeof(p->staged)); p->has_staged = 0;
             }
             result = HandshakeInit(&p->staged, response, packet, n, id, from->ip,
@@ -575,7 +580,7 @@ int NetworkReceive(netadr_t *from, const void *raw, int n)
             goto done;
         }
         result = 0;
-        if(p->has_staged && now - p->staged_at <= 10000u) {
+        if(p->has_staged && now - p->staged_at <= pending_life()) {
             result = HandshakeCookie(&p->staged, response, packet, n, keys[0], random_bytes, NULL);
             if(result == 1) {
                 /* The new association authenticated: it replaces the old one,

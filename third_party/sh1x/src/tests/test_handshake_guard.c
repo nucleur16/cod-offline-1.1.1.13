@@ -7,13 +7,16 @@
  *  - Unauthenticated replies (NAT echo, INIT_ACK) are rate limited.
  * The handshake crypto is stubbed; the slot logic is the real code.
  * SPDX-License-Identifier: AGPL-3.0-or-later */
+#include "sys_main.h"
+static int test_hosted;
+#define Sys_IsHosted() test_hosted /* network.c: a hosted server (inside the client), or a dedicated one */
 #include "network.c"
 #include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 
 cvar_t *com_developer;
-serverStatic_t svs;
+SH1X_ONDEMAND(, serverStatic_t, svs, ); /* server.h: svs is what this pointer points at */
 cvar_t *sv_maxclients;
 static unsigned clock_ms = 1000;
 static int sent, dropped;
@@ -43,6 +46,14 @@ long FS_SV_FOpenFileRead(const char *name, fileHandle_t *file) { (void)name; *fi
 int FS_Read(void *buffer, int len, fileHandle_t f) { (void)buffer; (void)len; (void)f; return 0; }
 qboolean FS_FCloseFile(fileHandle_t f) { (void)f; return qtrue; }
 int AdmissionRequired(void) { return 1; }
+/* Not reached here; PE linking resolves every reference of network.c, dropped functions included. */
+cvar_t *Cvar_RegisterString(const char *name, const char *value, unsigned short flags, const char *description)
+{ (void)name; (void)value; (void)flags; (void)description; return NULL; }
+void AdmissionInit(void) { }
+int AdmissionIdentify(const uint8_t ip[4], const uint8_t shared_x[28], const uint8_t data_key[24], admission_entry_t *out)
+{ (void)ip; (void)shared_x; (void)data_key; (void)out; return 0; }
+size_t AssociationSeal(association_t *s, uint8_t *out, size_t cap, const uint8_t *data, size_t n)
+{ (void)s; (void)out; (void)cap; (void)data; (void)n; return 0; }
 size_t AdmissionCandidates(const uint8_t ip[4], uint8_t keys[][16], size_t max)
 { (void)ip; assert(max >= 1); memcpy(keys[0], lobby_key, 16); return 1; }
 /* Stand-ins with the real functions' state contract (ol_handshake.c). */
@@ -87,6 +98,27 @@ static void init_packet(byte p[16], byte nonce)
 }
 static void cookie_packet(byte p[189], byte nonce)
 { memset(p, 0, 189); p[0] = 3; p[1] = 2; p[100] = nonce; }
+/* A server silent (one long frame) for `silent` ms after it answered an INIT, then C1's 45 COOKIE_ECHOs one second
+ * apart (it never sends a second INIT): how many of them it answers. */
+static int echoes_answered(unsigned silent)
+{
+    netadr_t a = addr(1, 30001);
+    byte init[16], echo[189];
+    int answered = 0, i;
+    memset(peers, 0, sizeof(peers));
+    clock_ms += 60000; sent = 0;
+    init_packet(init, 7); cookie_packet(echo, 7);
+    NetworkReceive(&a, init, 16);
+    assert(sent == 1);
+    clock_ms += silent;
+    for (i = 0; i < 45; ++i) {
+        int before = sent;
+        NetworkReceive(&a, echo, 189);
+        answered += sent - before;
+        clock_ms += 1000;
+    }
+    return answered;
+}
 
 int main(void)
 {
@@ -101,6 +133,8 @@ int main(void)
     key_path = &key; session_id = &id;
     strcpy(configured_path, key.string); strcpy(configured_id, id.string);
     sessions_loaded = 1;
+    sh1x_od_svs = calloc(1, sizeof(*sh1x_od_svs)); /* Sys_OnDemandInit */
+    assert(sh1x_od_svs);
     maxclients.integer = 4; sv_maxclients = &maxclients;
     svs.clients[0].state = CS_ACTIVE; svs.clients[0].netchan.remoteAddress = victim;
 
@@ -184,6 +218,11 @@ int main(void)
         for (i = 0; i < 50; ++i) NetworkReceive(&probe, nat, sizeof(nat));
         assert(sent == UNAUTH_PER_ADDRESS);
     }
+    /* A half-open handshake lives 10 s on a dedicated server and 60 s on a hosted one (a map load is one frame). */
+    assert(echoes_answered(10000) == 45 && echoes_answered(10001) == 0);
+    test_hosted = 1;
+    assert(echoes_answered(10001) == 45 && echoes_answered(60000) == 45 && echoes_answered(60001) == 0);
+    test_hosted = 0;
     puts("CoDOL handshake: spoofed INITs are staged, pending slots are capped, unauthenticated replies are rate limited");
     return 0;
 }
