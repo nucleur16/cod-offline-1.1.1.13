@@ -11,6 +11,7 @@
 //   chopper <ref>   a chopper boss now (chopper, missile_chopper)
 //   jug <ref>       a juggernaut drop now (jug_regular, jug_riotshield, ...)
 //   streak <n> <s>  give player n the killstreak s
+//   kiosks          one log line per station of the level (kiosk_report)
 // Purchases are maps\_survival_kiosk's scr_survival_buy.
 
 main()
@@ -138,6 +139,9 @@ main()
 			if ( tokens.size > 1 )
 				level.survival_wave_num = int( tokens[ 1 ] ) - 1;
 			break;
+		case "kiosks":
+			kiosks_report();
+			break;
 		}
 	}
 }
@@ -201,4 +205,102 @@ status()
 		codolprintln( "CoDOL survivaltest:   player " + i + " " + p.sessionstate + " hp " + p.health + " at " + p.origin +
 			" credits " + p.survival_credit + " kills " + p.kills );
 	}
+}
+
+// --------------------------------------------------------------------------
+// The stations' placement (kiosks): one line per station with where it is
+// and how it stands.
+//   depth  the deepest of the nine feet under the floor a bullet trace finds
+//          there (< -1: the case floats)
+//   hang   how far the highest foot is over the floor
+//   pts    the floor less the foot, for each of the nine (x: a wall or prop
+//          there, or no floor)
+//   pfloor the floor a player's capsule finds under the centre, less the
+//          bullet trace's (a clip brush over the visible floor)
+//   cut    the body edges and diagonals walls or props cut
+//   room   the free way along the case's axes, 20 up
+//   stand  the sides a player can use it from; routed: those he can walk to
+//          from the players' start
+//   start  the distance to the nearest player start
+// Before any player has joined there are no stations yet: the report is then
+// of where the level's spots would be placed.
+// --------------------------------------------------------------------------
+
+kiosks_report()
+{
+	map = getDvar( "mapname" );
+	if ( isDefined( level.survival_kiosks ) && level.survival_kiosks.size )
+	{
+		for ( i = 0; i < level.survival_kiosks.size; i++ )
+		{
+			k = level.survival_kiosks[ i ];
+			kiosk_report( map, i, k.survival_kind, "spawned", k.origin, k.angles, k );
+		}
+		return;
+	}
+	if ( !isDefined( level.survival_kiosk_spots ) )
+		return;
+	for ( i = 0; i < level.survival_kiosk_spots.size; i++ )
+	{
+		spot = level.survival_kiosk_spots[ i ];
+		placed = maps\mp\gametypes\_survival_kiosk::place( spot.origin, spot.angles );
+		how = "kept";
+		if ( placed.moved )
+			how = "placed from " + spot.origin + " " + spot.angles;
+		kiosk_report( map, i, spot.kind, how, placed.origin, placed.angles, undefined );
+	}
+}
+
+kiosk_report( map, index, kind, how, origin, angles, ent )
+{
+	depth = -999;
+	hang = -999;
+	floors = "";
+	centre = undefined;
+	for ( a = -1; a <= 1; a++ )
+	{
+		for ( b = -1; b <= 1; b++ )
+		{
+			p = maps\mp\gametypes\_survival_kiosk::foot( origin, angles, a * 24, b * 14 );
+			if ( a == 0 && b == 0 )
+				centre = bulletTrace( ( p[ 0 ], p[ 1 ], origin[ 2 ] + 28 ), ( p[ 0 ], p[ 1 ], origin[ 2 ] - 120 ), false, ent );
+			z = maps\mp\gametypes\_survival_kiosk::floor_at( p[ 0 ], p[ 1 ], origin[ 2 ] + 28, origin[ 2 ] - 120, ent );
+			if ( !isDefined( z ) )
+			{
+				floors = floors + " x";
+				continue;
+			}
+			d = z - p[ 2 ];
+			floors = floors + " " + d;
+			if ( d > depth )
+				depth = d;
+			if ( 0 - d > hang )
+				hang = 0 - d;
+		}
+	}
+	pz = playerPhysicsTrace( ( origin[ 0 ], origin[ 1 ], origin[ 2 ] + 28 ), ( origin[ 0 ], origin[ 1 ], origin[ 2 ] - 120 ) );
+	room = "";
+	base = origin + ( 0, 0, 20 );
+	for ( i = 0; i < 4; i++ )
+	{
+		dir = anglesToForward( ( 0, angles[ 1 ] + i * 90, 0 ) );
+		t = bulletTrace( base, base + maps\mp\gametypes\_survival_kiosk::vectorScale( dir, 400 ), false, ent );
+		room = room + " " + int( t[ "fraction" ] * 400 );
+	}
+	home = undefined;
+	near = 99999;
+	for ( i = 0; isDefined( level.survival_player_starts ) && i < level.survival_player_starts.size; i++ )
+	{
+		if ( i == 0 )
+			home = level.survival_player_starts[ 0 ].origin;
+		d = distance( level.survival_player_starts[ i ].origin, origin );
+		if ( d < near )
+			near = d;
+	}
+	codolprintln( "KIOSK|" + map + "|" + index + "|" + kind + "|" + how + "|" + origin + "|" + angles + "|depth " + depth +
+		"|hang " + hang + "|floor " + centre[ "position" ][ 2 ] + "|pfloor " + ( pz[ 2 ] - centre[ "position" ][ 2 ] ) +
+		"|surf " + centre[ "surfacetype" ] + "|cut " + maps\mp\gametypes\_survival_kiosk::walls_cut( origin, angles, ent ) + "|room" + room +
+		"|stand " + maps\mp\gametypes\_survival_kiosk::usable_sides( origin, angles[ 1 ], undefined, ent ) +
+		"|routed " + maps\mp\gametypes\_survival_kiosk::usable_sides( origin, angles[ 1 ], home, ent ) +
+		"|start " + near + "|pts" + floors );
 }
