@@ -629,17 +629,14 @@ static std::string ReadyPress(Server &s, Conn &c, uint64_t rid, uint32_t trailer
     const std::string &gt = route.local && !route.launchGametype.empty() ? route.launchGametype : sel.gametype;
     /* The JoinResponse empties the receiver's member roster (it must carry 0 members: C1 Com_Error 702), which
      * the owner's room view shows after the match as a card of placeholder texts. The owner of a multiplayer
-     * room whose own dwRoomInfo already names this map does not need it: its START_GAME reads that map. Every
-     * other owner's client is told the names beside the room (Survival: room coop_survival_<level> / coop, match
-     * <level> / survival). */
+     * room whose own dwRoomInfo already names this map does not need it: its START_GAME reads that map. */
     bool ownRoom = route.owner && sel.roomMap && (sel.type == "mp" || sel.type == "zm") && sel.sessionMap == sel.map;
-    bool beside = false;
-    if (route.owner) {
-        bool want = built && !ownRoom && !map.empty();
-        beside = s.host->StartNames(want ? map : std::string(), want ? gt : std::string()) && want;
-    }
     if (!map.empty()) {
         Bytes jr = BuildJoinResponseRecord(map, gt), mr = BuildRoomInfoRecord(map, gt);
+        /* Every other owner's client is told the names beside its room, which stays as it is (Survival: room
+         * coop_survival_<level> / coop, match <level> / survival). */
+        bool want = route.owner && built && !ownRoom, beside = false;
+        if (route.owner) beside = s.host->StartNames(want ? map : std::string(), want ? gt : std::string()) && want;
         if (beside)
             note += " | no JoinResponse: the owner's client loads " + map + "/" + gt + " and keeps its room";
         else if (!ownRoom)
