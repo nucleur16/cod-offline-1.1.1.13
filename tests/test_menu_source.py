@@ -30,7 +30,7 @@ PINNED = {
     "field_orders_postgfx_mp": ("a4af57c1970eba3cae93e0bd05c72278", "7b583c6a32f93d22398aeab60a39575a"),
     "hud_styles_postgfx_mp": ("068721d21b30aea502656605644e62a4", "2bf644b4a4c9b6a437dfb1be20898f28"),
     "survival_hud_postgfx_mp": ("ee8c343e43558dd06a47009e5fbd9718", "539cd76c39f03a9d6c194c47db1cb47a"),
-    "patch_common_gametype_survival": ("b9ba3d8084447ce644ce0583946482ec", "68a52c64bb2cf51dd7996a6cf2955bea"),
+    "patch_common_gametype_survival": ("d9a2bf6c0a293142fefb5a195212643d", "2ba7c9ee96a78b0e7c07145a433ff2b5"),
     "survival_menus": ("223e58ab1ebddc12a3c075fd5a0293ad", "44d8224f89d7d96b6ab256eac11818ae"),
 }
 # .menu sources that are not zone assets themselves, and their MenuList names (the generators read them)
