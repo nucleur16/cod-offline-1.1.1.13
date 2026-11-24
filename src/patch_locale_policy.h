@@ -97,6 +97,9 @@ static const char *const kPatchZoneMerged[][2]={
  {"mp_codol_weapons_postgfx_mp","mp_weapons_postgfx_mp"}, /* LEGACY_ZONE */
  /* zones that installed under their own name and were packed later: {old file name, the pack that carries it} */
  {"m1911_arms_diag","common_extras"}, /* LEGACY_ZONE */
+ /* Survival's strings, packed from the start */
+ {"english_survival","english_locale"},
+ {"chinese_survival","chinese_locale"},
 };
 static int AsciiEqual(const char *a,const char *b)
 {

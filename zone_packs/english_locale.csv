@@ -13,6 +13,7 @@ part,english_ui
 part,english_ui_extra
 part,english_usermaps
 part,english_zombies_base
+part,english_survival
 // Keep the exact legacy English strings, outside the shared first-linked pack.
 part,000_party_modes,only=localize
 part,loading_mode_names,only=localize

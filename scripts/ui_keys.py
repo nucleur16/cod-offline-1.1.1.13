@@ -183,6 +183,7 @@ NAMED = {
     "K33UI_HUD_SWAY_OFF": ("Off", "关", "codo.gfx"),
     "K33UI_HUD_SWAY_ON": ("On", "开", "codo.gfx"),
     "K33UI_GAME_TAB": ("Game", "游戏", "codo.gfx"),
+    "K33UI_MODE_SURVIVAL": ("Survival", "生存模式", "codo.gfx"),
     "K33UI_LOBBY_SCENE": ("Lobby scene", "大厅场景", "codo.gfx"),
     "K33UI_VLOBBY_CENTER": ("Default", "默认", "codo.gfx"),
     "K33UI_VLOBBY_V0_MENU": ("Alpha menu", "早期主菜单", "codo.gfx"),

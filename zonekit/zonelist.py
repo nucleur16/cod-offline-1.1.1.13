@@ -74,6 +74,8 @@ ZONES = {
     "english_ui": dict(origin="Z:" + PATCH, install=PATCH),
     "english_ui_extra": dict(origin="Z:" + PATCH, install=PATCH),
     "english_zombies_base": dict(origin="Z:" + PATCH, install=PATCH),
+    "english_survival": dict(origin="new", install=PATCH),
+    "chinese_survival": dict(origin="new", install=PATCH),
     # usermaps_patch's map names and descriptions in English (its own are GBK Chinese); ahead of usermaps_patch, so
     # they win while English is on, filtered like usermaps_patch's (a map that does not ship has no strings here either)
     "english_usermaps": dict(origin="new", install=PATCH, maps=dict(localize_from="usermaps_patch")),
@@ -171,6 +173,4 @@ ZONES = {
     # Historical Survival staging sources remain reproducible; the integrated
     # shipping kiosks use patch_common_gametype_survival instead.
     "survival_menus": dict(origin="new", install=CHINESE, staging=True),
-    "survival_localize_chinese": dict(origin="new", install=CHINESE, staging=True),
-    "survival_localize_english": dict(origin="new", install=CHINESE, staging=True),
 }

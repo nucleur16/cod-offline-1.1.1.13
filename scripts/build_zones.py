@@ -5,8 +5,7 @@ r"""build_zones.py -- the one build entry point for every zone of this repositor
     python scripts/build_zones.py --maps all                   the same with every usermap's UI, into output_dev\
     python scripts/build_zones.py voice_ui_mp controller_ingame
                                                        build only these zones
-    python scripts/build_zones.py survival_menus survival_localize_chinese survival_localize_english
-                                                       the staging zones (zonelist staging=True), which a default
+    python scripts/build_zones.py survival_menus       the staging zones (zonelist staging=True), which a default
                                                        build leaves out: they merge into other zones, never install
     python scripts/build_zones.py --list                       list the zones, where each installs and where it came from
     python scripts/build_zones.py --verify                     build, then compare each output with the recorded original
