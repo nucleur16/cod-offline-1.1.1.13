@@ -484,6 +484,18 @@ void SelectionChecks(const dw::Config &base, const std::string &scratch)
             Check(levels.size() == 1 && levels[0] == "mp_seatown", T,
                   "no loose tree: a level the zones list and whose zone is installed hosts Survival");
         }
+        host.survival = "mp_seatown mp_rust";
+        {
+            Pick p(cfg, &host);
+            Check(Is(p.Select("coop", "coop_survival_mp_rust"), "mp_rust", "mp_rust", "survival", "survival"), T,
+                  "a listed and installed level outside the authored ones hosts Survival (generic placements)");
+        }
+        host.survival = "mp_seatown";
+        {
+            Pick p(cfg, &host);
+            Check(Is(p.Select("coop", "coop_survival_mp_rust"), "mp_seatown", "mp_seatown", "survival", "survival"), T,
+                  "an installed level the zones do not list as Survival plays the first listed one");
+        }
         host.survival.clear();
     }
 }
