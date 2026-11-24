@@ -26,6 +26,10 @@ short ShortSwap(short value)
 { return (short)(((unsigned short)value >> 8) | ((unsigned short)value << 8)); }
 time_t Com_GetRealtime(void) { return 1800000000; }
 unsigned int Sys_Milliseconds(void) { return clock_ms; }
+#ifdef _WIN32 /* sys_main.h: an inline 0 elsewhere */
+int test_hosted;
+int Sys_IsHosted(void) { return test_hosted; }
+#endif
 int AtomicWriteHomeFile(const char *path, const void *data, size_t size)
 { (void)path; (void)data; (void)size; return 1; }
 int AtomicWriteFile(const char *path, const void *data, size_t size)
