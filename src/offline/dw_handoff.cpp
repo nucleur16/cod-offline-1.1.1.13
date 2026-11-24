@@ -325,6 +325,17 @@ std::vector<std::string> HandoffSurvivalLevels(Server &s)
     return out;
 }
 
+/* Whether `level` itself can be played as Survival: one of the levels above, or any other MP level the game's own
+ * zones list (a coop_survival_<level> row; every MP map has one since the generic placements) whose zone is installed.
+ * kSurvivalLevels is only the authored levels, in the order the default is picked from. */
+static bool SurvivalLevelAvailable(Server &s, const std::vector<std::string> &avail, const std::string &level)
+{
+    if (std::find(avail.begin(), avail.end(), level) != avail.end()) return true;
+    if (s.cfg.gameDir.empty() || s.cfg.differential || !s.host || s.host->SurvivalSupported(level) != 1) return false;
+    return FileExists(PathJoin(PathJoin(PathJoin(s.cfg.gameDir, "client_shipRetail"), "chinese"), level + ".ff")) ||
+           FileExists(PathJoin(PathJoin(PathJoin(s.cfg.gameDir, "usermaps"), level), level + ".ff"));
+}
+
 /* ---- the playlist file: the name<->crc32 dictionary and the rotations (_load_playlists) ---- */
 
 static void LoadPlaylists(Server &s)
@@ -776,9 +787,9 @@ Selection HandoffSelect(Server &s, const Vals *desc)
         std::vector<std::string> avail = HandoffSurvivalLevels(s);
         ztype = "survival";
         gametype = "survival";
-        if (std::find(avail.begin(), avail.end(), level) != avail.end()) {
+        if (SurvivalLevelAvailable(s, avail, level)) {
             mapName = sessionMap = level;
-            chain.push_back("type: survival -- MP level " + level + " (the selected MP level has authored survival placements)");
+            chain.push_back("type: survival -- MP level " + level + " (the selected MP level has survival placements)");
         } else if (!avail.empty()) {
             /* not a rotation: the selection is resolved more than once per match and must not move */
             mapName = sessionMap = avail[0];
