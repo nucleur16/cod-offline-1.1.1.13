@@ -57,8 +57,18 @@ void FreeString(char* tofree)
     }
 }
 
+#ifdef _WIN32
+void Sys_DescribeMemory(char *out, int outSize);
+#endif
+
 void __cdecl Sys_OutOfMemError(const char* filename, int line)
 {
+#ifdef _WIN32
+	char why[512];
+
+	Sys_DescribeMemory(why, sizeof(why));
+	Com_PrintError(CON_CHANNEL_SYSTEM, "CoDOL out of memory: %s\n", why);
+#endif
 	Com_Error(ERR_FATAL, "System is out of memory! Filename: %s, Line: %d\n", filename, line);
 }
 
