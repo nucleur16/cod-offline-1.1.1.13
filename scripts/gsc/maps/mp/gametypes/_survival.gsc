@@ -108,6 +108,7 @@ precache()
 	precacheString( &"MPUI_ROUND_X" );
 	precacheString( &"CGAME_SB_SCORE" );
 	precacheString( &"SO_SURVIVAL_CREDITS" );
+	precacheString( &"SO_SURVIVAL_SURVIVED_TO_WAVE" );
 	precacheString( &"MPUI_TAR_MAP_SURVIVAL_GLOBAL_OBJ" );
 
 	level.survival_wave_num = getDvarInt( "scr_survival_start_wave" );
@@ -696,12 +697,12 @@ game_over()
 	survived = level.survival_wave_num - 1;
 	if ( survived < 0 )
 		survived = 0;
-	waves = " waves";
-	if ( survived == 1 )
-		waves = " wave";
+	// The line under the end title (_hud_message::teamOutcomeNotify), in place of "eliminated". It was a bold line of its
+	// own, drawn over that one.
+	level.survival_end_wave = level.survival_wave_num;
 	// IW5 congrat_min_wave 5: five waves or more is a success for the
 	// lobby's mission report.
-	maps\mp\gametypes\_survival_utility::match_over( survived >= 5, "survived " + survived + waves, "Survived " + survived + waves );
+	maps\mp\gametypes\_survival_utility::match_over( survived >= 5, "survived " + survived + " waves" );
 }
 
 // IW5 survival_wave_pickup_downed_players, and the dead come back.

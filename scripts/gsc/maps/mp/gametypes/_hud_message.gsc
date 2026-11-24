@@ -1120,7 +1120,13 @@ teamOutcomeNotify( winner, isRound, endReasonText )
 	}
 	
 	outcomeText.glowColor = (0.2, 0.3, 0.7);
-	outcomeText setText( endReasonText );
+	if ( isDefined( level.survival_end_wave ) )
+	{
+		outcomeText.label = &"SO_SURVIVAL_SURVIVED_TO_WAVE";
+		outcomeText setValue( level.survival_end_wave );
+	}
+	else
+		outcomeText setText( endReasonText );
 	
 	outcomeTitle setPulseFX( 100, duration, 1000 );
 	outcomeText setPulseFX( 100, duration, 1000 );

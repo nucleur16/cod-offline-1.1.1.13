@@ -216,9 +216,7 @@ announce( text )
 		players[ i ] iPrintLnBold( text );
 }
 
-// end_text: the line under the end title. The wave count is there, not in a bold line of its own: the two are drawn
-// in the same place.
-match_over( success, reason, end_text )
+match_over( success, reason )
 {
 	if ( level.survival_over )
 		return;
@@ -226,11 +224,11 @@ match_over( success, reason, end_text )
 	level.survival_success = success;
 	// The caller may be a thread that ends on "survival_over" (watch_wipe):
 	// the end runs on its own thread, started before the notify.
-	level thread match_end( success, reason, end_text );
+	level thread match_end( success, reason );
 	level notify( "survival_over" );
 }
 
-match_end( success, reason, end_text )
+match_end( success, reason )
 {
 	codolprintln( "CoDOL survival: over, success " + success + " (" + reason + "), " +
 		level.survival_killed + " killed, " + level.survival_spawned + " spawned" );
@@ -250,7 +248,5 @@ match_end( success, reason, end_text )
 	winner = "axis";
 	if ( success )
 		winner = "allies";
-	if ( !isDefined( end_text ) )
-		end_text = game[ "strings" ][ "allies_eliminated" ];
-	level thread maps\mp\gametypes\_gamelogic::endGame( winner, end_text );
+	level thread maps\mp\gametypes\_gamelogic::endGame( winner, game[ "strings" ][ "allies_eliminated" ] );
 }
