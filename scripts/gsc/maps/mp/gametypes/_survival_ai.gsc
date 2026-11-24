@@ -1365,6 +1365,7 @@ chase_watch()
 		target = closest_player( self.origin );
 		if ( !isDefined( target ) )
 			continue;
+		self drop_downed_enemy( target );
 		now = getTime();
 		d = distance( self.origin, target.origin );
 		close = self chase_close_range();
@@ -1768,6 +1769,24 @@ combat_dash( spot )
 	target = closest_player( self.origin );
 	if ( isDefined( target ) )
 		self.favoriteenemy = target;
+}
+
+// The native enemy is kept until another is seen, so soldiers fighting a player
+// who went down stood over him shooting while the standing one was out of their
+// sight (setDontTarget only stops a new acquisition). ignoreall drops it and
+// the hunt goes for the standing one.
+drop_downed_enemy( target )
+{
+	e = self.enemy;
+	if ( !isDefined( e ) || e == target || isDefined( self.survival_dash ) )
+		return;
+	if ( !isPlayer( e ) || !isDefined( e.laststand ) || !e.laststand )
+		return;
+	if ( isDefined( target.laststand ) && target.laststand )
+		return;
+	self.ignoreall = true;
+	self.favoriteenemy = target;
+	self.ignoreall = false;
 }
 
 closest_player( origin )
