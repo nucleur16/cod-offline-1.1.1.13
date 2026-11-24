@@ -18,6 +18,7 @@ main()
 
 	// turn the light grid tweaks off explicitly: another map's level script may have left them on
 	setdvar( "r_lightGridEnableTweaks", 0 );
+	setdvar( "sm_sunSampleSizeNear", 0.40 );
 
 	maps\mp\_compass::setupMiniMap( "compass_map_mp_strike_sh" );
 
