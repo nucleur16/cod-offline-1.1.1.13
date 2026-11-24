@@ -190,12 +190,12 @@ on_connect()
 		level waittill( "connected", player );
 		player.survival_vo = [];
 		player.survival_vo_said = [];
+		player thread watch_down();
+		player thread watch_revived();
 		if ( player is_a_bot() )
 			continue;
 		player thread announcer();
 		player thread landing();
-		player thread watch_down();
-		player thread watch_revived();
 	}
 }
 
