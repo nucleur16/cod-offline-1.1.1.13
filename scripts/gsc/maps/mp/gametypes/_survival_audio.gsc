@@ -89,6 +89,9 @@ init()
 	add_line( "jug", "so_hq_enemy_intel_boss_transport", 4.4, mp + "enemy_heavy_heli", 2.3, 3, 15, 5, true );
 	add_line( "jugs", "so_hq_enemy_intel_boss_transport_many", 3.8, mp + "enemy_heavy_heli", 2.3, 3, 15, 5, true );
 	add_line( "wave_over", "so_hq_wave_over_flavor", 2.9, mp + "encourage_win", 2.9, 2, 10, 10, false );
+	// IW5 says which armory a wave opened; here the kiosks are open from the
+	// start and the first intermission points at them.
+	add_line( "stations", "", 0, mp + "secure_supplies", 1.6, 1, 10, 600, false );
 	add_line( "one_enemy", "", 0, mp + "one_enemy", 1.5, 1, 4, 20, true );
 	add_line( "last_alive", "", 0, mp + "last_one", 1.4, 4, 4, 20, true );
 	add_line( "player_down", "", 0, "survival_vo_player_down", 2.2, 4, 4, 3, true );
@@ -509,18 +512,21 @@ wave_end_lines()
 	for ( ;; )
 	{
 		level waittill( "wave_ended" );
+		first = !isDefined( level.survival_first_wave_over );
 		level.survival_first_wave_over = true;
 		drop_wave_lines();
-		level thread wave_over_line();
+		level thread wave_over_line( first );
 	}
 }
 
-wave_over_line()
+wave_over_line( first )
 {
 	level endon( "survival_over" );
 	level endon( "wave_started" );
 	wait( 1.5 );
 	speak( "wave_over" );
+	if ( first )
+		speak( "stations" );
 }
 
 // A downed player calls his teammates; the last one standing is told so.
