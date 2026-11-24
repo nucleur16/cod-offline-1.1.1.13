@@ -120,6 +120,9 @@ BASE = {
     # co-op Crash's battle tracks (crash_escape, crash_data_defense): the boss music without the audio pack
     "survival_music_boss_chopper": music("music/crash/bt_warlord_mortar_inbound_lp.mp3", 0.5),
     "survival_music_boss_jug": music("music/crash/bt_warlord_go_hot_lp.mp3", 0.5),
+    # "More hostiles, do not let them pass", "Multiple fire teams spotted" (co-op Favela and Crash radio)
+    "survival_vo_enemies": partner(["voiceovers/_codo_favela/favela_pri_hostiles01.mp3",
+                                    "voiceovers/dcburn/dcburn_bhp_30_16_r.mp3"]),
     # Spec Ops partner lines (so_uk_1_inform_suppressed, _bleedout, _revived, localized_common_gametype_coop):
     # "I'm down! Help me out!", "I'm bleeding out!", "Come on, get up!"
     "survival_vo_player_down": partner([_TF_SO + "suppressed_%02d.mp3" % i for i in (1, 2, 3, 4)]),

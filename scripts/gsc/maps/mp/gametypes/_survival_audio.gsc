@@ -75,7 +75,7 @@ init()
 	// seconds before it may be said again, dropped at the wave's end.
 	add_line( "intro_coop", "so_hq_mission_intro", 6.4, mp + "readytomove", 1.5, 3, 30, 60, false );
 	add_line( "intro_solo", "so_hq_mission_intro_sp", 5.0, mp + "readytomove", 1.5, 3, 30, 60, false );
-	add_line( "generic", "so_hq_enemy_intel_generic", 3.0, mp + "keepfighting", 1.9, 1, 8, 12, true );
+	add_line( "generic", "so_hq_enemy_intel_generic", 3.0, "survival_vo_enemies", 2.4, 1, 8, 12, true );
 	add_line( "martyrdom", "so_hq_enemy_intel_martyrdom", 3.1, "", 0, 2, 10, 12, true );
 	add_line( "chemical", "so_hq_enemy_intel_chemical", 3.5, "", 0, 2, 10, 12, true );
 	add_line( "hazmat", "so_hq_enemy_intel_chemical", 3.5, "", 0, 2, 10, 12, true );
