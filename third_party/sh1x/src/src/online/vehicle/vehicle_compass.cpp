@@ -22,7 +22,8 @@ void Scr_VehicleSetCompassIcon(scr_entref_t ref)
     if(!e->r.inuse || (e->s.eType!=ET_HELICOPTER && e->s.eType!=ET_VEHICLE) || !e->scr_vehicle) {
         Scr_ObjectError("vehicle compass icon requires a live native vehicle"); return;
     }
-    if(Scr_GetNumParam()!=1) { Scr_Error("codol_vehicleSetCompassIcon(enemy|friendly|empty)"); return; }
+    int count=Scr_GetNumParam();
+    if(count<1 || count>2) { Scr_Error("codol_vehicleSetCompassIcon(enemy|friendly|empty [, vehicle definition])"); return; }
     const char *variant=Scr_GetString(0);
     unsigned material=0;
     if(*variant) {
@@ -33,7 +34,15 @@ void Scr_VehicleSetCompassIcon(scr_entref_t ref)
            (address-base)%sizeof(scr_vehicle_s) || e->scr_vehicle->entNum!=e->s.number) {
             Scr_ObjectError("vehicle compass icon has no native vehicle instance"); return;
         }
-        const vehicle_native_t *def=NativeVehicleDefinition(e->scr_vehicle->infoIdx);
+        /* Another mounted definition's icon (the Survival little bird flies
+         * on cobra_mp for its turret arc and shows littlebird_mp's icon);
+         * precacheVehicle installed it, or it is installed here. */
+        int record=e->scr_vehicle->infoIdx;
+        if(count>1) {
+            record=InstallNativeVehicleRecord(Scr_GetString(1));
+            if(record<0) { Scr_ParamError(1,"unknown vehicle definition"); return; }
+        }
+        const vehicle_native_t *def=NativeVehicleDefinition(record);
         if(!def || !def->compass_icon[which][0]) {
             Scr_Error("vehicle definition has no requested compass material"); return;
         }
