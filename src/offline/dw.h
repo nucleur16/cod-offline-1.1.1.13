@@ -145,6 +145,10 @@ struct Host {
     }
     /* The owner left its room: nothing stays armed, a launched host is stopped. */
     virtual void LocalPlayLeave(uint64_t ownerUid) { (void)ownerUid; }
+    /* The owner's client will load the START_GAME that follows under this map and mode, whatever its room names,
+     * and keep the room as it is; empty names drop what was staged. -> false when the embedder cannot: the room's
+     * names then have to be rewritten (a JoinResponse, which empties its roster). */
+    virtual bool StartNames(const std::string &map, const std::string &gametype) { (void)map; (void)gametype; return false; }
     /* A room start was answered with START_GAME. Runs on the server thread: copy and return. */
     virtual void OnStartGame(const StartInfo &info) { (void)info; }
     /* The name the local player chose for `profileName` (the console's `name`), or "" for none: the lobby then

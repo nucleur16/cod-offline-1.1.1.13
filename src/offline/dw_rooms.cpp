@@ -9,7 +9,8 @@
  *   15 MEMBERS  -> u64 uid, string name (base64), u32 flags  per member (record class 0x58, C1 0x00A41B40)
  *    4 MESSAGES -> relayed back as push 7 (the echo is how the sender learns the state is
  *                  authoritative) and fanned out to the other members; a READY press is followed by
- *                  SET_MAP (typeId 5 + 15) and START_GAME (typeId 3).
+ *                  SET_MAP (typeId 5 + 15; 15 alone when the owner keeps its room, ReadyPress) and START_GAME
+ *                  (typeId 3).
  *
  * Not ported: the join fix (CODOL_JOIN_FIX=0 is the serving default: a JoinResponse with members is
  * fatal on C1 and one without leaves the joiner in a room nobody starts), and the in-match chat
@@ -632,7 +633,15 @@ static std::string ReadyPress(Server &s, Conn &c, uint64_t rid, uint32_t trailer
     bool ownRoom = route.owner && sel.roomMap && (sel.type == "mp" || sel.type == "zm") && sel.sessionMap == sel.map;
     if (!map.empty()) {
         Bytes jr = BuildJoinResponseRecord(map, gt), mr = BuildRoomInfoRecord(map, gt);
-        if (!ownRoom)
+        /* Every other owner's client is told the names beside its room, which stays as it is (Survival: room
+         * coop_survival_<level> / coop, match <level> / survival). So is one whose room carries the map under another
+         * category's mode: C1 would load that category's zones and constant strings. */
+        bool otherMode = HandoffRoomInfoOtherCategory(s, map, sel.type);
+        bool want = route.owner && built && (!ownRoom || otherMode), beside = false;
+        if (route.owner) beside = s.host->StartNames(want ? map : std::string(), want ? gt : std::string()) && want;
+        if (beside)
+            note += " | no JoinResponse: the owner's client loads " + map + "/" + gt + " and keeps its room";
+        else if (!ownRoom || otherMode)
             c.Queue(MapPushPayload(jr, rid, 0, kSenderName, trailer), Fmt("push 7 SET_MAP(joinresp) %s/%s, %uB", map.c_str(), gt.c_str(), (unsigned)jr.size()));
         else
             note += " | no JoinResponse: the owner's own room already names " + map;

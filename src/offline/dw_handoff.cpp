@@ -840,6 +840,12 @@ std::string HandoffRotationAdvance(Server &s, const Selection &sel)
     return Fmt("playlist %d round-robin advanced %d -> %d of %d (next: %s)", sel.playlist, cur + 1, next + 1, n, live[(size_t)next].first.c_str());
 }
 
+bool HandoffRoomInfoOtherCategory(Server &s, const std::string &map, const std::string &type)
+{
+    const HandoffState &h = H(s);
+    return h.hasRoomLatch && h.roomMap == map && h.roomHasGametype && !h.roomGametype.empty() && ZoneCategory(h.roomGametype) != type;
+}
+
 static bool SafeToken(const std::string &v)
 {
     if (v.empty() || v.size() > 48) return false;

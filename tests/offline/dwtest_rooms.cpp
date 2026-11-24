@@ -64,6 +64,13 @@ struct FakeHost : dw::Host {
         outPort = port;
         return true;
     }
+    bool keepRoom = false; /* StartNames: the client can load a start under names its room does not carry */
+    std::string named;     /* the last StartNames: "map/gametype" ("/" = dropped) */
+    virtual bool StartNames(const std::string &map, const std::string &gametype)
+    {
+        named = map + "/" + gametype;
+        return keepRoom && !map.empty();
+    }
     virtual void LocalPlayLeave(uint64_t owner)
     {
         leaves++;
@@ -318,6 +325,31 @@ void RunCase(const dw::Config &cfg, const Case &t, int n)
     Pressed::Press(server, c, mc, press);
     Check(host.told == want, t.room, "an incoherent room context is ignored");
     host.haveIntent = false;
+
+    /* 3b. A client that loads a start under names its room does not carry: nothing empties the room's roster. */
+    host.keepRoom = true;
+    Send(server, c, mc, 11, 4, press);
+    f = Drain(c);
+    int kStart = 0, kJoinResp = 0;
+    for (size_t i = 0; i < f.size(); i++) {
+        if (f[i].type != 2 || !RoomPush(f[i], typeId, body)) continue;
+        kStart += typeId == 3;
+        kJoinResp += typeId == 5;
+    }
+    Check(kStart == 1 && kJoinResp == 0, t.room, "a client that keeps its room gets START_GAME and no JoinResponse");
+    Check(host.named == (wantJoinResp ? std::string(t.roomMap) + "/" + t.roomGametype : std::string("/")), t.room,
+          "... and is told the match's names unless its room already carries them");
+    if (!wantJoinResp) {
+        std::string coop = "coop";
+        dw::HandoffLatchRoom(server, t.roomMap, &coop, 4, "test");
+        Send(server, c, mc, 11, 4, press);
+        Drain(c);
+        Check(host.named == std::string(t.roomMap) + "/" + t.roomGametype, t.room,
+              "a room that carries the map under another category's mode: the client is told the match's names");
+        std::string own = t.roomGametype;
+        dw::HandoffLatchRoom(server, t.roomMap, &own, 4, "test");
+    }
+    host.keepRoom = false;
 
     /* 4. A guest of the room: only the owner's host, and only once it runs this selection. */
     dw::Conn *g = server.Open();

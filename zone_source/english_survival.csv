@@ -1,7 +1,7 @@
-// survival_localize_english -- built by build_zones.py from zones/survival_localize_english/ (zonekit/manifest.py describes the format)
-// not installed: its assets merge into localized_common_gametype_survival (survival_staging)
->zone,survival_localize_english
->install,client_shipRetail\chinese
+// english_survival -- built by build_zones.py from zones/english_survival/ (zonekit/manifest.py describes the format)
+// Survival's strings (2.6.9.7's and 3.5.2.6's keys: the station menus' titles and item names, the HUD): a part of english_locale.
+>zone,english_survival
+>install,client_shipRetail\patch
 >origin,new
 >origin-md5,67a38d438434c8da5e4cca4c6af03962
 >container,iwffu100
@@ -11,7 +11,7 @@
 >blocks,0x0,0x20,0x0,0x0,auto,0x0,0x0,0x0,0x0
 >xassetlist,0x0,0xffffffff
 >localize,localize.str,ascii
-rawfile,survival_localize_english
+rawfile,english_survival
 localize,KIOSKS_AIRSUPPORT_AIRSTRIKE
 localize,KIOSKS_AIRSUPPORT_AIRSTRIKE_DESC
 localize,KIOSKS_AIRSUPPORT_ASSAULT

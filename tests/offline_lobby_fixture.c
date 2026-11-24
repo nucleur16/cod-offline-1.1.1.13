@@ -62,6 +62,15 @@ int K33LocalPlayAuto(unsigned long long owner_uid, const char *session_map, cons
     return 1;
 }
 void K33LocalPlayLeave(unsigned long long owner_uid) { ++leave_calls; leave_seen = owner_uid; }
+/* maplist_filter.c double. */
+static int K33SurvivalSupported(const char *level) { (void)level; return -1; }
+/* rooms/start_names.c double. */
+static char names_seen[128];
+static BOOL SnStage(const char *map, const char *mode)
+{
+    _snprintf(names_seen, sizeof(names_seen), "%s/%s", map, mode);
+    return *map != 0;
+}
 
 /* The NAT traversal constant of C1 (0x00A50454) is a local double here. */
 static BYTE nat_site[9] = { 0xB9, 0x02, 0x0C, 0x00, 0x00, 0x66, 0x89, 0x4F, 0x14 };
@@ -180,7 +189,7 @@ int main(int argc, char **argv)
     const int port = ini3999 ? 3999 : ini3074 ? 3074 : FIXTURE_FREE_PORT;
     assert(started.port == (ini3999 ? 3999 : ini3074 ? 3074 : 0) && started.altPort == (ini3999 ? 4003 : 0));
     assert(g_ofl.port == port && g_ofl.altPort == (ini3999 ? 4003 : FIXTURE_FREE_ALT));
-    assert(started.localRoute && started.start && started.leave && started.startGame && started.log);
+    assert(started.localRoute && started.start && started.leave && started.startGame && started.startNames && started.log);
     /* 3074 is C1's own NAT traversal port: any other port is written into the constant. */
     DWORD imm; memcpy(&imm, nat_site + 1, 4);
     assert(imm == (DWORD)(port == 3074 ? 0xC02 : port));
@@ -290,8 +299,10 @@ int main(int argc, char **argv)
     auto_answer = 1;
     assert(started.start(77, "mp_rust", "war", "mp", -1, 0, &hostPort, why, sizeof(why)) == 1 && auto_calls == 2 && hostPort == 17999 &&
            !strcmp(auto_seen, "77/mp_rust/war/mp/-1/0"));
+    /* a start's names are staged for START_GAME, and dropped when the room is left */
+    assert(started.startNames("mp_rust", "survival") == 1 && !strcmp(names_seen, "mp_rust/survival"));
     started.leave(77);
-    assert(leave_calls == 1 && leave_seen == 77);
+    assert(leave_calls == 1 && leave_seen == 77 && !strcmp(names_seen, "/"));
     DwOfflineStartInfo info; memset(&info, 0, sizeof(info)); info.local = 1; info.hostPort = c.port;
     started.startGame(&info); /* a log line only */
     assert(auto_calls == 2 && leave_calls == 1);

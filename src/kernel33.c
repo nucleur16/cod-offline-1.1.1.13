@@ -1808,6 +1808,7 @@ static void PatchGbkInput(void)
 #include "rooms/initial_room_owner.c"
 #include "rooms/training_preview_publish.c"
 #include "rooms/room_roster_roles.c"
+#include "rooms/start_names.c"
 
 /* Snapshot-parity logger, parity-log branch only: see parity.c. */
 #include "parity.c"
@@ -1995,6 +1996,7 @@ static void __cdecl TakeOver(void)
     PatchCapacityQueueWait();
     PatchInitialRoomOwner();
     PatchRoomRosterRoles();
+    PatchRoomStartNames();
     PatchLoopFxCatchUp();
     PatchPatchDir();
     PatchLocalizePool();

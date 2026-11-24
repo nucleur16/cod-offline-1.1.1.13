@@ -10,4 +10,5 @@
 part,chinese_hud_styles
 part,chinese_ui
 part,chinese_ui_extra
+part,chinese_survival
 part,usermaps_patch,only=localize

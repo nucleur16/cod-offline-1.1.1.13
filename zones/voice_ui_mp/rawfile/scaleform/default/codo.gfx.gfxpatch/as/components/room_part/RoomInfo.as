@@ -71,7 +71,9 @@ package components.room_part
          this.myRoomIDTF.text = cDat.index.toString();
          this.myFakeMapImg.visible = false;
          this.myPlayListTF.visible = cDat.isPlayList;
-         this.myLeagueTF.visible = cDat.matchType == MatchType.PVP ? false : true;
+         // A Survival room is a co-op room of a coop_survival_<level>: its mode is Survival, and it has no difficulty.
+         var isSurvival:Boolean = !cDat.isPlayList && cDat.currentMap != null && String(cDat.currentMap.id).indexOf("coop_survival_") == 0;
+         this.myLeagueTF.visible = cDat.matchType != MatchType.PVP && !isSurvival;
          this.myPlayListDescriptionTF.visible = false;
          this.myGameModeTF.visible = !cDat.isPlayList;
          this.myRoomNameTF.visible = !cDat.isPlayList;
@@ -135,7 +137,7 @@ package components.room_part
          else
          {
             this.myFakeMapImg.stop();
-            this.myGameModeTF.text = cDat.matchType == MatchType.PVP ? cDat.currentMatchMode.name : LocalizationRoom.COOP_MAPS[cDat.mapType];
+            this.myGameModeTF.text = isSurvival ? "@K33UI_MODE_SURVIVAL" : (cDat.matchType == MatchType.PVP ? cDat.currentMatchMode.name : LocalizationRoom.COOP_MAPS[cDat.mapType]);
          }
          if(!cDat.isPlayList && cDat.currentMatchMode.id == "combat")
          {

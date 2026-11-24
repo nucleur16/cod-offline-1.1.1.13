@@ -61,6 +61,10 @@ struct ApiHost : dw::Host {
         name[sizeof(name) - 1] = 0;
         return name;
     }
+    virtual bool StartNames(const std::string &map, const std::string &gametype)
+    {
+        return cb.startNames && cb.startNames(map.c_str(), gametype.c_str()) != 0;
+    }
     virtual void LocalPlayLeave(uint64_t ownerUid)
     {
         if (cb.leave) cb.leave(ownerUid);

@@ -216,8 +216,15 @@ static int OflStart(unsigned long long owner, const char *sessionMap, const char
     return ok;
 }
 
+/* The owner's next START_GAME loads these names; the room keeps its own (rooms/start_names.c). */
+static int OflStartNames(const char *map, const char *gametype) /* lobby thread */
+{
+    return SnStage(map, gametype);
+}
+
 static void OflLeave(unsigned long long owner) /* lobby thread */
 {
+    SnStage("", "");
     K33LocalPlayLeave(owner);
 }
 
@@ -557,6 +564,7 @@ static BOOL InstallOfflineLobby(void)
     cfg.start = OflStart;
     cfg.leave = OflLeave;
     cfg.startGame = OflStartGame;
+    cfg.startNames = OflStartNames;
     cfg.displayName = OflDisplayName; /* player_name.c: the console's `name` for this profile */
     cfg.survivalSupported = K33SurvivalSupported; /* maplist_filter.c: the zones' Survival rows */
     int port = DwOfflineStartServer(&cfg);

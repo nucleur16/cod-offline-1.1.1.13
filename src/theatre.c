@@ -67,6 +67,7 @@
 #define TH_UI_CONTEXT_VA     0x016CF898u
 #define TH_MENU_CLOSE_VA     0x005F9AE0u
 #define TH_MENU_SHOW_VA      0x005F9690u
+#define TH_CONST_SELECT_VA   0x00612850u   /* edi = category: picks mp/constConfigStrings_<mp|coop|zm>.csv (0x2A99A44) */
 #define TH_POLL_MS           200
 #define TH_ROWS              10
 #define TH_MAX_LOCAL         512
@@ -355,6 +356,20 @@ static void ThLocalCatalogue(void)
 
 /* ---- main thread --------------------------------------------------------------------------------------------- */
 
+/* A gamestate carries only the configstrings that differ from its category's constant table, and C1 fills the rest
+ * from the table it selected last (0x612850, run when a match is joined; nothing runs it for a film). MEASURED: an MP
+ * film after a Zombies match played on constConfigStrings_zm.csv, and its match countdown line read a Zombies hint,
+ * "Hold &&1 to Rebuild Barrier". So select the film's own table first. */
+static void ThSelectConstStrings(const ThRow *r)
+{
+    static const BYTE kSelect[] = { 0x56, 0x57, 0xB8, 0x04, 0x00, 0x00, 0x00, 0xBA, 0x78, 0x23, 0xC4, 0x00,
+                                    0xBE, 0x94, 0xDF, 0xC6, 0x00, 0xE8 };
+    const void *fn = (const void *)(DWORD_PTR)TH_CONST_SELECT_VA;
+    const char *category = ThZombieRow(r) ? "zm" : !_stricmp(r->mode, "coop") ? "coop" : "mp";
+    if (!Readable(fn, sizeof(kSelect)) || memcmp(fn, kSelect, sizeof(kSelect))) return;
+    __asm__ __volatile__("call *%1" : "+D"(category) : "r"(fn) : "eax", "ecx", "edx", "memory", "cc");
+}
+
 static void ThWatchLocal(const char *id, const ThState *s)
 {
     for (int i = 0; i < g_thLocalCount; i++) {
@@ -366,6 +381,7 @@ static void ThWatchLocal(const char *id, const ThState *s)
         _snwprintf(p + base, MAX_PATH - base, L"%hs.demo", r->file);
         if (!ThDemoEnvelope(p, NULL, NULL)) break;
         if (!ThIdle(s)) { ThStatus(TH_MENU_FIRST); return; }
+        ThSelectConstStrings(r);
         ThSet("Playback", "1");
         lstrcpynA(g_thPlayingZone, ThZombieRow(r) ? "zm" : "mp", sizeof(g_thPlayingZone));
         ThQueue("cl_demo_play %s\n", r->file);
