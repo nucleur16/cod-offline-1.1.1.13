@@ -574,6 +574,7 @@ survival_emp()
 	players = getPlayers();
 	for ( i = 0; i < players.size; i++ )
 		players[ i ] playLocalSound( "emp_activate" );
+	maps\mp\gametypes\_survival_audio::speak( "use_emp" );
 	codolprintln( "CoDOL survival: " + self.name + "'s EMP: " + choppers + " choppers, " + claymores + " claymores" );
 	return true;
 }
@@ -610,6 +611,7 @@ mortar_strike()
 		return false;
 	}
 	self iPrintLnBold( "Mortar strike inbound" );
+	maps\mp\gametypes\_survival_audio::speak( "use_mortar" );
 	self thread mortar_barrage( targets );
 	return true;
 }

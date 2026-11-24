@@ -172,6 +172,10 @@ onPlayerSpawned()
 
 	self waittill( "spawned_player" );
 
+	// Survival has its own music and announcer (_survival_audio).
+	if ( isDefined( level.survival_audio ) )
+		return;
+
 	if ( !level.splitscreen || level.splitscreen && !isDefined( level.playedStartingMusic ) )
 	{
 		self playLocalSound( game["music"]["spawn_" + self.team] );
@@ -349,7 +353,7 @@ musicController()
 {
 	level endon ( "game_ended" );
 	
-	if ( !level.hardcoreMode )
+	if ( !level.hardcoreMode && !isDefined( level.survival_audio ) )
 		thread suspenseMusic();
 	
 	level waittill ( "match_ending_soon", reason );

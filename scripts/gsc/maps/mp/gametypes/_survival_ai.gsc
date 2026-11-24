@@ -670,6 +670,7 @@ claymore_planter()
 		yaw = vectorToAngles( target.origin - spot.origin );
 		spot.survival_claymore = spawn_claymore( self.origin, ( 0, yaw[ 1 ], 0 ) );
 		spot.survival_claymore.survival_spot = spot;
+		level notify( "survival_claymore_planted" );
 		planted++;
 		self thread hunt();
 	}
