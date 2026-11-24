@@ -77,6 +77,8 @@ static int effect_slots[EFFECT_SLOTS];
 static int byte_effect_slots[EFFECT_SLOTS];
 static unsigned char reserved_byte_effects[BYTE_EFFECT_SLOTS];
 static int RefreshInheritedRange(int localized);
+/* Whether an inherited byte-bank effect is absent from this map's zones, asked once per level (reclaim_byte_effect_slot). */
+static struct { const char *name; int absent; } inherited_byte_effects[BYTE_EFFECT_SLOTS];
 /* Extra native slots cannot live at CS_FX+index: slot100 overlaps the
  * retained tagged-effect range. Their names belong to this map's registry. */
 static char extra_effect_names[EFFECT_SLOTS-100][64];
@@ -111,6 +113,7 @@ void ResetServerAssetNames(void)
     memset(effect_slots,0,sizeof(effect_slots));
     memset(byte_effect_slots,0,sizeof(byte_effect_slots));
     memset(reserved_byte_effects,0,sizeof(reserved_byte_effects));
+    memset(inherited_byte_effects,0,sizeof(inherited_byte_effects));
     memset(tagged_effect_slots,0,sizeof(tagged_effect_slots));
     memset(masked_tagged_effects,0,sizeof(masked_tagged_effects));
 }
@@ -190,6 +193,17 @@ int ServerByteEffectToWire(unsigned index)
 { return index<EFFECT_SLOTS && (!index || byte_effect_slots[index]>0) ? byte_effect_slots[index] : -1; }
 int ServerTaggedEffectToWire(unsigned index)
 { return index<256 && (!index || tagged_effect_slots[index]) ? tagged_effect_slots[index] : -1; }
+/* Runs before every snapshot for every effect without a byte slot: on a full bank (zm) that was the whole bank's effects
+ * looked up in the mounted zones each time, 38 ms a frame with the zones shared with C1 (12 million lookups in 20 s). */
+static int inherited_byte_effect_absent(unsigned slot,const char *name)
+{
+    if(inherited_byte_effects[slot].name!=name) {
+        const effect_source_t *source;
+        inherited_byte_effects[slot].absent=LoadMountedEffectSource(name,&source)!=1;
+        inherited_byte_effects[slot].name=name;
+    }
+    return inherited_byte_effects[slot].absent;
+}
 /* The byte bank (ET_FX / ET_LOOP_FX selectors, 1..255) shares its slots with
  * the zone type's inherited constant effects; on zm those fill 249 of them,
  * so all but six script effects (trap zappers and lights, the monkey glow,
@@ -204,13 +218,12 @@ static int reclaim_byte_effect_slot(configstrings_t *bank,const configstrings_t 
 {
     unsigned slot,index;
     for(slot=1;slot<BYTE_EFFECT_SLOTS;++slot) {
-        const effect_source_t *source;
         const char *base=GetConfigstring(inherited,CS_EFFECTS+slot);
         const char *changed=bank->values[CS_EFFECTS+slot];
         int used=0;
         if(reserved_byte_effects[slot]) continue;
         if(changed && *changed) continue;
-        if(!base || !*base || LoadMountedEffectSource(base,&source)==1) continue;
+        if(!base || !*base || !inherited_byte_effect_absent(slot,base)) continue;
         for(index=1;index<EFFECT_SLOTS && !used;++index)
             used=effect_slots[index]==(int)slot || byte_effect_slots[index]==(int)slot;
         if(used) continue;
