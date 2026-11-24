@@ -41,7 +41,7 @@ def decode(b):
         p += 12
         path = text() + "/" + text()
         p += 8 + 128
-        assert text() == "$default"
+        assert text() == ",$default", "a reference: C1 has 64 sndcurves"
         p += 8 + 400
         out.append((subtitle, mixer, path, a[14], text()))
     assert p == len(b), (p, len(b))
@@ -61,7 +61,8 @@ class SurvivalAudio(unittest.TestCase):
                     self.assertFalse(o[3] & 1, "not looping: the script repeats it")
 
     def test_zone_carries_base(self):
-        manifest = open(os.path.join(ROOT, "zone_source", "patch_common_gametype_survival.csv"), encoding="utf-8").read()
+        with open(os.path.join(ROOT, "zone_source", "patch_common_gametype_survival.csv"), encoding="utf-8") as f:
+            manifest = f.read()
         for name, variants in aliases.BASE.items():
             self.assertIn("sound,%s,file=sound/%s.bin\n" % (name, name), manifest)
             with open(os.path.join(ROOT, "zones", "patch_common_gametype_survival", "sound", name + ".bin"), "rb") as f:

@@ -9,7 +9,7 @@ mus_zombie_bossbattle) and on CODOL-AssetExplorer Sounds/SoundAliasReader.cs:
             1C volMin 20 volMax 24 pitchMin 28 pitchMax 2C distMin 30 distMax 34 ? 38 flags 3C masterPriority
             40 master% 44 slave% 48 probability 4C lfe% 50 center% 54 startDelay 58 SndCurve* 5C 60 64 ? 68 SpeakerMap*
     file    {u8 type, u8 exists, u16, dir*, name*} + dir + name; type 2 = streamed ("sound/<dir>/<name>" in the IWDs)
-    curve   {name*, knots, vec2[16]} + name
+    curve   {name*, knots, vec2[16]} + name; ",$default" names the loaded one, as stock zones do
     map     {u32 isDefault, name*, MSSChannelMap[2][2]} + name
 
 Every pointer is 0xFFFFFFFF with its data inline, so a blob has no back references and can sit in any zone.
@@ -71,7 +71,8 @@ def _alias(name, v):
         d += _s(v["mixer"])
     folder, _, file = v["file"].rpartition("/")
     d += struct.pack("<BBHII", 2, 1, 0, INLINE, INLINE) + _s(folder) + _s(file)
-    d += struct.pack("<II", INLINE, 2) + _f(0, 1, 1, 0) + b"\0" * (8 * 14) + _s("$default")
+    # by name (","): a curve of its own per variant would fill C1's pool of 64 sndcurves and end the map load
+    d += struct.pack("<II", INLINE, 0) + b"\0" * (8 * 16) + _s(",$default")
     d += struct.pack("<II", 0, INLINE) + b"".join(SPEAKER_MAPS[map_name]) + _s(map_name)
     return raw, d
 
