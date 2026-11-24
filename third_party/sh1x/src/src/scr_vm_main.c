@@ -1271,6 +1271,8 @@ void Scr_AddStockMethods()
     Scr_AddFunction("playsoundatposition", Scr_PlaySoundAtPosition, 0);
     Scr_AddMethod("stopsounds", Scr_StopSounds, 0);
     Scr_AddFunction("soundaliassubtitle", Scr_SoundAliasSubtitle, 0);
+    Scr_AddMethod("codol_playmusic", Scr_PlayMusicToPlayer, 0);
+    Scr_AddMethod("codol_stopmusic", Scr_StopMusicToPlayer, 0);
     /* Drafts that existed without registration, plus the player-link
      * registrar that was never invoked. */
     Scr_AddMethod("ishost", Scr_IsHost, 0);

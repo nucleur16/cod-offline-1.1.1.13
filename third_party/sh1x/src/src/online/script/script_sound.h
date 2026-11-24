@@ -104,6 +104,10 @@ void Scr_StopSounds(scr_entref_t);
  * prints the subtitle of the variant it actually plays into message window 2
  * on its own, so the server only needs to know that one exists. */
 void Scr_SoundAliasSubtitle(void);
+/* <player> codol_playmusic(<alias>), <player> codol_stopmusic([<fade seconds>])
+ * - musicPlay / musicStop for one client (C1 server commands 'l' and 'm'). */
+void Scr_PlayMusicToPlayer(scr_entref_t);
+void Scr_StopMusicToPlayer(scr_entref_t);
 #ifdef __cplusplus
 }
 #endif
