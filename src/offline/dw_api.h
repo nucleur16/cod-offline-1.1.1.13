@@ -53,6 +53,9 @@ typedef struct DwOfflineConfig {
     /* The owner left its room (K33LocalPlayLeave). */
     void (*leave)(unsigned long long ownerUid);
     void (*startGame)(const DwOfflineStartInfo *info);
+    /* Optional: the owner's next START_GAME loads this map and mode while its room keeps its own names and roster
+     * (dw::Host::StartNames); empty names drop what was staged. -> 1 when it will. Called on the lobby thread. */
+    int (*startNames)(const char *map, const char *gametype);
     /* Optional: the display name the local player set for the profile `profileName` (the console's `name`).
      * -> 1 and the name in out (NUL-terminated), or 0 when there is none. Called on the lobby thread; it must
      * only copy data. */
