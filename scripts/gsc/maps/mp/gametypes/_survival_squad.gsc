@@ -79,6 +79,48 @@ farthest_location()
 	return pool[ 0 ];
 }
 
+// IW5 get_furthest_from_these( locations, players, count ): the location
+// closest to each player in turn is dropped until `count` are left; one of
+// those at random, another than the last one when there is a choice.
+far_location( count )
+{
+	pool = [];
+	for ( i = 0; i < level.survival_squad_locs.size; i++ )
+		pool[ i ] = level.survival_squad_locs[ i ];
+	players = maps\mp\gametypes\_survival_utility::living_players();
+	if ( !players.size || pool.size <= count )
+		return farthest_location();
+	while ( pool.size > count )
+	{
+		for ( a = 0; a < players.size && pool.size > count; a++ )
+		{
+			closest = 0;
+			best = distanceSquared( pool[ 0 ].origin, players[ a ].origin );
+			for ( i = 1; i < pool.size; i++ )
+			{
+				d = distanceSquared( pool[ i ].origin, players[ a ].origin );
+				if ( d < best )
+				{
+					best = d;
+					closest = i;
+				}
+			}
+			rest = [];
+			for ( i = 0; i < pool.size; i++ )
+			{
+				if ( i != closest )
+					rest[ rest.size ] = pool[ i ];
+			}
+			pool = rest;
+		}
+	}
+	pick = randomInt( pool.size );
+	if ( isDefined( level.survival_last_far ) && pool[ pick ] == level.survival_last_far )
+		pick = ( pick + 1 ) % pool.size;
+	level.survival_last_far = pool[ pick ];
+	return pool[ pick ];
+}
+
 // IW5 spawn_far_squad + spawn_enemy_group: a leader of AI type `ref` and up to
 // size - 1 followers.  Returns the spawned actors.
 spawn_squad( ref, size, scale )
@@ -188,8 +230,11 @@ setup_follower( leader )
 			return;
 		if ( !isDefined( leader ) || !isAlive( leader ) )
 			return;
-		self.goalradius = 128;
-		self setGoalPos( leader.origin );
-		wait( 1.5 );
+		if ( !isDefined( self.survival_dash ) )
+		{
+			self.goalradius = 96;
+			self setGoalPos( leader.origin );
+		}
+		wait( 0.75 );
 	}
 }
