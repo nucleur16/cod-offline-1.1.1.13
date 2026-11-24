@@ -696,10 +696,12 @@ game_over()
 	survived = level.survival_wave_num - 1;
 	if ( survived < 0 )
 		survived = 0;
-	announce( "Survived " + survived + " waves" );
+	waves = " waves";
+	if ( survived == 1 )
+		waves = " wave";
 	// IW5 congrat_min_wave 5: five waves or more is a success for the
 	// lobby's mission report.
-	maps\mp\gametypes\_survival_utility::match_over( survived >= 5, "survived " + survived + " waves" );
+	maps\mp\gametypes\_survival_utility::match_over( survived >= 5, "survived " + survived + waves, "Survived " + survived + waves );
 }
 
 // IW5 survival_wave_pickup_downed_players, and the dead come back.
