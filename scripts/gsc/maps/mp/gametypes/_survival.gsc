@@ -290,6 +290,9 @@ player_damage( eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, 
 {
 	if ( !isAlive( self ) )
 		return;
+	// Nothing hurts a player during his slam zoom.
+	if ( self maps\mp\gametypes\_survival_intro::dropping() )
+		return;
 	// The team's own players: no friendly fire.
 	if ( isDefined( eAttacker ) && isPlayer( eAttacker ) && eAttacker != self )
 		return;

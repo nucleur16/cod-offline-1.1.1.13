@@ -110,12 +110,14 @@ slamzoom()
 	down = ( 89, angles[ 1 ], 0 );
 
 	self.survival_in_intro = true;
+	self.survival_intro_land = land;
 	self freezeControlsWrapper( true );
 	self _disableWeapon();
 	self _disableOffhandWeapons();
 	self setClientDvar( "hud_drawHud", 0 );
 	// Out of reach of the waves (a late joiner drops in while one is on);
-	// _survival::ai_hit honours it.
+	// _survival::ai_hit honours it, and dropping() keeps everything else off
+	// him until he lands.
 	self.survival_invul_until = getTime() + int( ( time + 1.75 ) * 1000 );
 	// Partners do not see a body falling out of the sky.
 	self hide();
@@ -160,6 +162,26 @@ slamzoom()
 	wait( 0.45 );
 
 	self finish();
+}
+
+// The player is being moved for the view: the drop passes through whatever
+// stands over the start, kill triggers included (mp_nuked's sky is one from
+// 320 to 13184 units up), and none of it may hurt him: not the engine's
+// trigger_hurt (_survival::player_damage), not the MP layer's kill of whoever
+// touches one (_utility::_suicide).
+dropping()
+{
+	return isDefined( self.survival_in_intro ) && self.survival_in_intro;
+}
+
+// Where a player stands, or will once his drop ends: survival::getSpawnPoint
+// spreads the starts by it, and 16000 units up he was near none of them, so
+// everybody landed on the first.
+standing_at()
+{
+	if ( self dropping() && isDefined( self.survival_intro_land ) )
+		return self.survival_intro_land;
+	return self.origin;
 }
 
 // Landed: the player stands on his start with his own angles and gets his

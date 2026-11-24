@@ -84,6 +84,7 @@ onStartGameType()
 	if ( !maps\mp\gametypes\_survival_levels::data( getDvar( "mapname" ) ) &&
 	     !maps\mp\survival\_generic::data() )
 		println( "CoDOL survival: " + getDvar( "mapname" ) + " has no survival data (maps/mp/survival/)" );
+	drop_floorless_starts();
 
 	// The MP spawns are the fallback start (getSpawnPoint). Some levels have
 	// no war starts (mp_tunisia), and placeSpawnPoints aborts the level on a
@@ -109,6 +110,62 @@ onStartGameType()
 	level thread maps\mp\gametypes\_survival::main();
 }
 
+// A start with no floor within 256 units under it drops its player out of the
+// level (mp_qadeem_sh's authored fifth start hangs below the map).
+drop_floorless_starts()
+{
+	if ( !isDefined( level.survival_player_starts ) )
+		return;
+	good = [];
+	for ( i = 0; i < level.survival_player_starts.size; i++ )
+	{
+		p = level.survival_player_starts[ i ];
+		floor = playerPhysicsTrace( p.origin + ( 0, 0, 4 ), p.origin - ( 0, 0, 256 ) );
+		if ( floor[ 2 ] <= p.origin[ 2 ] - 255 )
+			codolprintln( "CoDOL survival: player start " + p.origin + " has no floor; left out" );
+		else
+			good[ good.size ] = p;
+	}
+	if ( good.size )
+		level.survival_player_starts = good;
+}
+
+// A free spot with a floor, two or three steps from where a partner stands.
+beside_team( angles )
+{
+	players = level.players;
+	for ( j = 0; j < players.size; j++ )
+	{
+		if ( players[ j ] == self || !isAlive( players[ j ] ) )
+			continue;
+		o = players[ j ] maps\mp\gametypes\_survival_intro::standing_at();
+		for ( i = 0; i < 16; i++ )
+		{
+			reach = 64 + 48 * int( i / 8 );
+			to = o + anglesToForward( ( 0, i * 45, 0 ) ) * reach + ( 0, 0, 18 );
+			end = playerPhysicsTrace( o + ( 0, 0, 18 ), to );
+			if ( distance( end, to ) > 2 )
+				continue;
+			floor = playerPhysicsTrace( to, to - ( 0, 0, 48 ) );
+			if ( floor[ 2 ] <= to[ 2 ] - 47 )
+				continue;
+			taken = false;
+			for ( k = 0; k < players.size && !taken; k++ )
+			{
+				if ( players[ k ] != self && isAlive( players[ k ] ) )
+					taken = distance( players[ k ] maps\mp\gametypes\_survival_intro::standing_at(), floor ) < 48;
+			}
+			if ( taken )
+				continue;
+			s = spawnStruct();
+			s.origin = floor + ( 0, 0, 1 );
+			s.angles = angles;
+			return s;
+		}
+	}
+	return undefined;
+}
+
 // The survival starts (IW5 info_player_start_so), spread as IW4
 // _specialops_code pick_starting_location_so does; the level's MP spawns
 // when the map has no survival data.
@@ -127,7 +184,11 @@ getSpawnPoint()
 			{
 				if ( players[ j ] == self || !isAlive( players[ j ] ) )
 					continue;
-				d = distance( players[ j ].origin, p.origin );
+				// A start may float well above the floor its player stands on.
+				o = players[ j ] maps\mp\gametypes\_survival_intro::standing_at();
+				d = distance( o, p.origin );
+				if ( distance2d( o, p.origin ) < 64 && abs( o[ 2 ] - p.origin[ 2 ] ) < 256 )
+					d = 0;
 				if ( d < near )
 					near = d;
 			}
@@ -142,6 +203,14 @@ getSpawnPoint()
 				bestScore = score;
 				best = p;
 			}
+		}
+		// The authored starts lie all over some levels (1700 units apart on
+		// Seatown); a partner comes in beside his team, as MW3's do.
+		if ( isDefined( best ) && bestScore >= 1001 && bestScore < 100000 - 700 )
+		{
+			beside = self beside_team( best.angles );
+			if ( isDefined( beside ) )
+				return beside;
 		}
 		if ( isDefined( best ) )
 			return best;
