@@ -12,9 +12,10 @@
  * linked, so C1 reads the name "": no ',' makes it an asset of its own, "" hashes to the first slot, and the first
  * preset CG_RegisterSounds looks at has no prefix (AV read 0 at 0x0046DC36, multiplayer and Survival alike).
  *
- * The repair, after C1 has read a preset (0x004BB3F0) and before it links it (0x004CC390): a preset without a name
- * becomes the stub ",default" (C1's own preset "default", what the type falls back to everywhere else), and a missing
- * prefix becomes "", which C1 takes as "no sounds of its own" (collision_default).
+ * The repair, after C1 has read a preset (0x004BB3F0) and before it links it (0x004CC390): a stub (no mass, no prefix)
+ * without a name becomes ",default" (C1's own preset "default", what the type falls back to everywhere else), and a
+ * missing prefix becomes "", which C1 takes as "no sounds of its own" (collision_default). A whole preset whose name
+ * is not there yet (mp_sd_jardin's on another model) keeps its values under the name "", which C1 copes with.
  *
  * C1 sites (1.1.1.13), byte-checked; on a mismatch one line is logged and nothing is changed:
  *   0x004BB563  call 0x004BB3F0 (Load_PhysPreset, its only caller), replaced by a call to PhysPresetLoad
@@ -24,6 +25,7 @@
 #define PPN_CALL_VA   0x004BB563u
 #define PPN_LOAD_VA   0x004BB3F0u
 #define PPN_VAR_VA    0x017C6974u
+#define PPN_MASS      0x08u
 #define PPN_PREFIX    0x1Cu
 #define PPN_SIZE      0x44u
 
@@ -33,11 +35,12 @@ static void __cdecl PhysPresetLoad(void)
     BYTE *preset = *(BYTE *const *)(DWORD_PTR)PPN_VAR_VA;
     if (!Readable(preset, PPN_SIZE)) return;
     const char **name = (const char **)preset, **prefix = (const char **)(preset + PPN_PREFIX);
-    if (!*name || !**name) {
+    if (*prefix) return;
+    if ((!*name || !**name) && !*(const DWORD *)(preset + PPN_MASS)) {
         *name = ",default";
-        Log("physpreset: a zone names one before its name is loaded; C1's \"default\" stands in");
+        Log("physpreset: a zone refers to one before its name is loaded; C1's \"default\" stands in");
     }
-    if (!*prefix) *prefix = "";
+    *prefix = "";
 }
 
 static void InstallPhysPresetNames(void)
