@@ -8,7 +8,7 @@ KIOSKS_AIRSUPPORT_DELTA_DESC	Call in a heli-dropped Delta squad
 KIOSKS_AIRSUPPORT_MORTAR	Mortar
 KIOSKS_AIRSUPPORT_MORTAR_DESC	Call in mortar fire support
 KIOSKS_AIRSUPPORT_PREDATOR	Predator Missile
-KIOSKS_AIRSUPPORT_PREDATOR_DESC	One remote-controlled Predator missile strike\nHint: follow the on-screen prompt at the bottom right
+KIOSKS_AIRSUPPORT_PREDATOR_DESC	One remote-controlled Predator missile strike\nHint: follow the prompt at the bottom right
 KIOSKS_AIRSUPPORT_RIOT	Riot Squad
 KIOSKS_AIRSUPPORT_RIOT_DESC	Call in a heli-dropped riot shield squad
 KIOSKS_AMMO_CRATE	Ammo Crate
