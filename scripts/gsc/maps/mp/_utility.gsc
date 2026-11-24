@@ -1924,6 +1924,11 @@ swap(array, index1, index2)
 
 _suicide()
 {
+	// Survival's slam zoom moves the live player through whatever stands over
+	// his start: the kill triggers there (hurtPlayersThink) are not for him.
+	if ( isDefined( self.survival_in_intro ) && self.survival_in_intro )
+		return;
+
 	if ( self isUsingRemote() && !isDefined( self.fauxDead ) )
 		self thread maps\mp\gametypes\_damage::PlayerKilled_internal( self, self, self, 10000, "MOD_SUICIDE", "frag_grenade_mp", (0,0,0), "none", 0, 1116, true );
 	else if( !self isUsingRemote() && !isDefined( self.fauxDead ) )
