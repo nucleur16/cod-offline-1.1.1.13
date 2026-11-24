@@ -114,3 +114,13 @@ entityState statics of that name. That zero-selector observation is discarded.
 The verified reader follows the actual entity getter's CALL and resolver's live
 record LEA, and resolves the correct relocated entity extension base. Both runs'
 logs remain under `obj/survival_helicopter_probe*`; neither altered user processes.
+
+## 2026-11-24: the little bird's own icon
+
+The little bird boss flew on `cobra_mp` and so selected the Cobra's material.
+`codol_vehicleSetCompassIcon( variant [, vehicle definition] )` can now take the
+icon of another mounted definition; Survival passes `littlebird_mp`
+(`compass_objpoint_littlebird_busy` / `_friendly`, common_gametype_mp). The
+vehicle itself stays `cobra_mp`: `littlebird_mp`'s turret arc ends 30 degrees
+down (header+198: 60/60/35/30 against the Cobra's 135/135/-20/85). Icon slots
+in use in a Survival match: 13 of 15.
