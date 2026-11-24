@@ -589,7 +589,9 @@ martyrdom_ability( fuse )
 
 detonate_c4( origin, fuse )
 {
-	charge = spawn( "script_model", origin );
+	// The charge lies on the ground where he fell; the blast stays at its own
+	// height, where the ground does not shadow it.
+	charge = spawn( "script_model", floor_under( origin ) );
 	charge.survival_enemy = true;
 	if ( codescripts\character::modelMounted( "weapon_c4" ) )
 		charge setModel( "weapon_c4" );
@@ -1058,7 +1060,23 @@ drop_shield()
 	s = spawn( "script_model", origin );
 	s.angles = angles;
 	s setModel( model );
+	// A script_model does not fall: it hung at his hand for its 30 s.
+	ground = floor_under( origin ) + ( 0, 0, 2 );
+	time = sqrt( ( origin[ 2 ] - ground[ 2 ] + 1 ) / 400 );
+	if ( time < 0.1 )
+		time = 0.1;
+	s moveTo( ground, time, time, 0 );
+	s rotateTo( ( 0, angles[ 1 ], 90 ), time );
 	s thread delete_after( 30 );
+}
+
+// The ground under a point (the point itself over a drop).
+floor_under( origin )
+{
+	trace = bulletTrace( origin + ( 0, 0, 8 ), origin - ( 0, 0, 400 ), false, undefined );
+	if ( trace[ "fraction" ] >= 1 )
+		return origin;
+	return trace[ "position" ];
 }
 
 delete_after( time )
@@ -1090,12 +1108,14 @@ hunt()
 	self endon( "death" );
 	self notify( "survival_hunt" );
 	self endon( "survival_hunt" );
+	if ( !isAlive( self ) )
+		return;
 	self.survival_hunting = true;
 	// Staggered: a squad spawned on one frame must not re-plan on one frame.
 	wait( randomFloat( 1 ) );
 	for ( ;; )
 	{
-		if ( level.survival_over )
+		if ( level.survival_over || !isDefined( self ) )
 			return;
 		target = closest_player( self.origin );
 		if ( isDefined( target ) )
@@ -1346,6 +1366,7 @@ chase_watch()
 		target = closest_player( self.origin );
 		if ( !isDefined( target ) )
 			continue;
+		self drop_downed_enemy( target );
 		now = getTime();
 		d = distance( self.origin, target.origin );
 		close = self chase_close_range();
@@ -1749,6 +1770,24 @@ combat_dash( spot )
 	target = closest_player( self.origin );
 	if ( isDefined( target ) )
 		self.favoriteenemy = target;
+}
+
+// The native enemy is kept until another is seen, so soldiers fighting a player
+// who went down stood over him shooting while the standing one was out of their
+// sight (setDontTarget only stops a new acquisition). ignoreall drops it and
+// the hunt goes for the standing one.
+drop_downed_enemy( target )
+{
+	e = self.enemy;
+	if ( !isDefined( e ) || e == target || isDefined( self.survival_dash ) )
+		return;
+	if ( !isPlayer( e ) || !isDefined( e.laststand ) || !e.laststand )
+		return;
+	if ( isDefined( target.laststand ) && target.laststand )
+		return;
+	self.ignoreall = true;
+	self.favoriteenemy = target;
+	self.ignoreall = false;
 }
 
 closest_player( origin )
