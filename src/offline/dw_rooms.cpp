@@ -634,12 +634,14 @@ static std::string ReadyPress(Server &s, Conn &c, uint64_t rid, uint32_t trailer
     if (!map.empty()) {
         Bytes jr = BuildJoinResponseRecord(map, gt), mr = BuildRoomInfoRecord(map, gt);
         /* Every other owner's client is told the names beside its room, which stays as it is (Survival: room
-         * coop_survival_<level> / coop, match <level> / survival). */
-        bool want = route.owner && built && !ownRoom, beside = false;
+         * coop_survival_<level> / coop, match <level> / survival). So is one whose room carries the map under another
+         * category's mode: C1 would load that category's zones and constant strings. */
+        bool otherMode = HandoffRoomInfoOtherCategory(s, map, sel.type);
+        bool want = route.owner && built && (!ownRoom || otherMode), beside = false;
         if (route.owner) beside = s.host->StartNames(want ? map : std::string(), want ? gt : std::string()) && want;
         if (beside)
             note += " | no JoinResponse: the owner's client loads " + map + "/" + gt + " and keeps its room";
-        else if (!ownRoom)
+        else if (!ownRoom || otherMode)
             c.Queue(MapPushPayload(jr, rid, 0, kSenderName, trailer), Fmt("push 7 SET_MAP(joinresp) %s/%s, %uB", map.c_str(), gt.c_str(), (unsigned)jr.size()));
         else
             note += " | no JoinResponse: the owner's own room already names " + map;

@@ -49,6 +49,9 @@ void HandoffObserveDescriptor(Server &s, int task, const Vals &args);
 bool HandoffLatchRoom(Server &s, const std::string &map, const std::string *gametype, int maxPlayers, const std::string &why);
 /* -> true and the latched room gametype when a live room latch holds one. */
 bool HandoffRoomLatchGametype(Server &s, std::string &gametype);
+/* -> true when the newest dwRoomInfo the client broadcast for this map named a mode of another zone category than
+ * `type` (mp / coop / zm / survival): devmap in a Survival room changes the room's map, and its mode stays coop. */
+bool HandoffRoomInfoOtherCategory(Server &s, const std::string &map, const std::string &type);
 /* The levels the Survival category can be played on, in the Python lobby's order
  * (map_handoff.available_survival_levels): the supported list, cut down to the levels whose zone and
  * authored placement script are installed when Config::gameDir is known. */
