@@ -805,6 +805,8 @@ TEST_test_xanim_notify = -m32 -msse2 -O1 -no-pie -ffunction-sections -fdata-sect
 RUN_test_xanim_notify = timeout 15s ./$(OBJ_DIR)/test_xanim_notify$(BIN_EXT)
 OL_TESTS += test_model_flags
 TEST_test_model_flags = -m32 -O1 $(OL_INC) tests/test_model_flags.c $(OBJ_DIR)/test_model_flags_asm.o -Wl,--gc-sections
+OL_TESTS += test_hunk_user
+TEST_test_hunk_user = -m32 -O1 -fno-builtin -no-pie tests/test_hunk_user.c $(OBJ_DIR)/test_hunk_user_asm.o
 OL_TESTS += test_stream_fs
 TEST_test_stream_fs = -m32 -O1 -ffunction-sections -fdata-sections -DOL_SERVER -D_GNU_SOURCE $(OL_INC) tests/test_stream_fs.c src/online/assets/sv_xmodel.c src/online/assets/stream_model.c -Wl,--gc-sections
 
@@ -840,6 +842,10 @@ $(OBJ_DIR)/test_xanim_dispatch.o: src/asmsource/_xanim_eval.asm | $(OBJ_DIR)
 	@mkdir -p $(TOBJ_DIR)/asm
 	$(NASM) -f elf src/asmsource/_xanim_eval.asm -MD $(TOBJ_DIR)/asm/$(notdir $@).d -MT $@ -o $@
 TEST_DEPS += $(TOBJ_DIR)/asm/$(notdir $(OBJ_DIR)/test_xanim_dispatch.o).d
+$(OBJ_DIR)/test_hunk_user_asm.o: src/asmsource/_com_memory.asm | $(OBJ_DIR)
+	@mkdir -p $(TOBJ_DIR)/asm
+	$(NASM) -f elf src/asmsource/_com_memory.asm -MD $(TOBJ_DIR)/asm/$(notdir $@).d -MT $@ -o $@
+TEST_DEPS += $(TOBJ_DIR)/asm/$(notdir $(OBJ_DIR)/test_hunk_user_asm.o).d
 $(OBJ_DIR)/test_model_flags_asm.o: src/asmsource/_xmodel_load_obj.asm | $(OBJ_DIR)
 	@mkdir -p $(TOBJ_DIR)/asm
 	$(NASM) -f elf src/asmsource/_xmodel_load_obj.asm -MD $(TOBJ_DIR)/asm/$(notdir $@).d -MT $@ -o $@

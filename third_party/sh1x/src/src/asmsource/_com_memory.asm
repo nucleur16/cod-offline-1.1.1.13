@@ -1301,9 +1301,10 @@ Hunk_UserAlloc:
 	and esi, ecx
 	mov edx, [ebp+0xc]
 	add edx, esi
+	jc Hunk_UserAlloc_10	; past 4 GB
 	mov ecx, [ebp-0x28]
 	cmp edx, [ecx+0xc]
-	jg Hunk_UserAlloc_10
+	ja Hunk_UserAlloc_10	; addresses: unsigned. A signed compare took an end past 2 GB as below any block under 2 GB
 Hunk_UserAlloc_90:
 	mov [ecx+0x10], edx
 	lea ecx, [eax+0xfff]
@@ -1340,12 +1341,22 @@ Hunk_UserAlloc_60:
 	mov esi, [edi+0x8]
 	movzx ecx, byte [edi+0x19]
 	mov [ebp-0x30], ecx
+	mov eax, [ebp+0xc]	; a request larger than the user's block gets a block of its own size
+	add eax, [ebp-0x1c]
+	add eax, 0x20
+	cmp eax, esi
+	jbe Hunk_UserAlloc_65
+	lea esi, [eax+0xffff]
+	and esi, 0xffff0000
+Hunk_UserAlloc_65:
 	mov dword [esp+0xc], 0x4
 	mov dword [esp+0x8], 0x2000
 	mov [esp+0x4], esi
 	mov dword [esp], 0x0
 	call _VirtualAlloc
 	mov ebx, eax
+	test eax, eax
+	jz Hunk_UserAlloc_40
 	mov dword [esp+0xc], 0x4
 	mov dword [esp+0x8], 0x1000
 	mov dword [esp+0x4], 0x20
@@ -1376,7 +1387,7 @@ Hunk_UserAlloc_80:
 	mov ecx, [ebp+0xc]
 	lea edx, [esi+ecx]
 	cmp edx, [ebx+0xc]
-	jle Hunk_UserAlloc_50
+	jbe Hunk_UserAlloc_50
 	mov [ebp-0x28], ebx
 Hunk_UserAlloc_10:
 	cmp byte [edi+0x18], 0x0
@@ -1517,6 +1528,8 @@ Hunk_UserCreate:
 	mov dword [esp], 0x0
 	call _VirtualAlloc
 	mov ebx, eax
+	test eax, eax
+	jz Hunk_UserCreate_20
 	mov dword [esp+0xc], 0x4
 	mov dword [esp+0x8], 0x1000
 	mov dword [esp+0x4], 0x20
@@ -1524,6 +1537,7 @@ Hunk_UserCreate:
 	call _VirtualAlloc
 	test eax, eax
 	jnz Hunk_UserCreate_10
+Hunk_UserCreate_20:
 	mov dword [esp+0x4], 0x1aa
 	mov dword [esp], _cstring_aspyrbuilddepotc
 	call Sys_OutOfMemErrorInternal
