@@ -693,24 +693,16 @@ claymore_planter()
 		}
 		if ( !isDefined( spot ) )
 			continue;
-		// The hunt leaves him alone meanwhile (it and the native chase own the
-		// goal otherwise, and he never got to a spot); IW5's planter ignores
-		// everybody too.
-		self.survival_dash = spot.origin;
-		self.ignoreall = true;
 		self.goalradius = 48;
 		self setGoalPos( spot.origin );
-		for ( t = 0; t < 40 && distanceSquared( self.origin, spot.origin ) > 72 * 72; t++ )
+		for ( t = 0; t < 20 && distanceSquared( self.origin, spot.origin ) > 72 * 72; t++ )
 			wait( 0.5 );
-		self.ignoreall = false;
-		self.survival_dash = undefined;
-		if ( distanceSquared( self.origin, spot.origin ) > 96 * 96 || !isDefined( target ) )
+		if ( distanceSquared( self.origin, spot.origin ) > 96 * 96 )
 			continue;
 		yaw = vectorToAngles( target.origin - spot.origin );
 		spot.survival_claymore = spawn_claymore( self.origin, ( 0, yaw[ 1 ], 0 ) );
 		spot.survival_claymore.survival_spot = spot;
 		planted++;
-		self.survival_planted = planted;
 		self thread hunt();
 	}
 }

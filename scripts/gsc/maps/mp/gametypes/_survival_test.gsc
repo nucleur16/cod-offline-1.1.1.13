@@ -225,6 +225,13 @@ status()
 		codolprintln( "CoDOL survivaltest:   ai " + e getEntityNumber() + " " + e.survival_ref + " " + weapon + " hp " + e.health +
 			" at " + e.origin + " enemy " + enemy + " body " + e.model + " head " + head );
 	}
+	claymores = 0;
+	for ( i = 0; isDefined( level.survival_claymores ) && i < level.survival_claymores.size; i++ )
+	{
+		if ( isDefined( level.survival_claymores[ i ] ) )
+			claymores++;
+	}
+	codolprintln( "CoDOL survivaltest:   claymores planted " + claymores );
 	if ( isDefined( level.survival_choppers ) )
 	{
 		for ( i = 0; i < level.survival_choppers.size; i++ )
