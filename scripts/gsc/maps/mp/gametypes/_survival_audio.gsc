@@ -457,9 +457,7 @@ boss_spawning( kind, refs )
 			speak( "choppers" );
 		else
 			speak( "chopper" );
-		// The juggernauts' track wins in a wave that has both.
-		if ( !isDefined( level.survival_music ) || level.survival_music.key != "jug" )
-			music_start( "chopper" );
+		level thread chopper_music();
 		return;
 	}
 	count = 0;
@@ -475,6 +473,16 @@ boss_spawning( kind, refs )
 	else
 		speak( "jug" );
 	music_start( "jug" );
+}
+
+// The juggernauts' track wins in a wave that sends both at once.
+chopper_music()
+{
+	level endon( "survival_over" );
+	level endon( "wave_ended" );
+	wait( 0.5 );
+	if ( !isDefined( level.survival_music ) )
+		music_start( "chopper" );
 }
 
 // One enemy left, once a wave.
