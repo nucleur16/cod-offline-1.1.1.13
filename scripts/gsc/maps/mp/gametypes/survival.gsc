@@ -148,7 +148,11 @@ getSpawnPoint()
 			{
 				if ( players[ j ] == self || !isAlive( players[ j ] ) )
 					continue;
-				d = distance( players[ j ] maps\mp\gametypes\_survival_intro::standing_at(), p.origin );
+				// A start may float well above the floor its player stands on.
+				o = players[ j ] maps\mp\gametypes\_survival_intro::standing_at();
+				d = distance( o, p.origin );
+				if ( distance2d( o, p.origin ) < 64 && abs( o[ 2 ] - p.origin[ 2 ] ) < 256 )
+					d = 0;
 				if ( d < near )
 					near = d;
 			}
