@@ -209,8 +209,9 @@ kiosk_spot( home, minRadius, maxRadius, others )
 		angles = facing( p, home.origin );
 		for ( turn = 0; turn < 2; turn++ )
 		{
-			s = spot( p, ( 0, angles[ 1 ] + turn * 90, 0 ) );
-			s.cost = kiosk_cost( s.origin, s.angles );
+			// Its front (a case's right side) to the start, else an end.
+			s = spot( p, ( 0, angles[ 1 ] + 90 - turn * 90, 0 ) );
+			s.cost = kiosk_cost( s.origin, s.angles, home.origin );
 			if ( !isDefined( best ) || s.cost < best.cost )
 				best = s;
 		}
@@ -223,8 +224,8 @@ kiosk_spot( home, minRadius, maxRadius, others )
 // What speaks against a kiosk at a waypoint: no floor under its feet, an
 // uneven or a steep one, the case cutting a wall or a prop, a doorway or a narrow
 // passage (a way through it under 130 units wide), a player start within 110
-// units, too few sides to use it from.
-kiosk_cost( origin, angles )
+// units, too few sides to use it from that the start has a route to.
+kiosk_cost( origin, angles, home )
 {
 	placed = maps\mp\gametypes\_survival_kiosk::place( origin, angles );
 	if ( !isDefined( placed.spread ) )
@@ -243,7 +244,7 @@ kiosk_cost( origin, angles )
 	}
 	if ( near_any( level.survival_player_starts, origin, 110 ) )
 		cost += 60;
-	sides = maps\mp\gametypes\_survival_kiosk::usable_sides( placed.origin, angles[ 1 ], undefined, undefined );
+	sides = maps\mp\gametypes\_survival_kiosk::usable_sides( placed.origin, angles[ 1 ], home, undefined );
 	if ( sides < 3 )
 		cost += 200;
 	else if ( sides < 6 )
